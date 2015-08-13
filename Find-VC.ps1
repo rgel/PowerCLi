@@ -21,10 +21,12 @@
 	C:\PS> .\Find-VC.ps1 vc1 esxprod 1 20 -AddZero
 .EXAMPLE
 	C:\PS> .\Find-VC.ps1 -VC vc1 -HostSuffix esxdev -PostfixEnd 6
+.EXAMPLE
+	C:\PS> .\Find-VC.ps1 vc1 esxprod |fl
 .NOTES
 	Author: Roman Gelman.
 .OUTPUTS
-	System.String
+	PSCustomObject with two Properties: VC,VMHost or $null.
 .LINK
 	http://rgel75.wix.com/blog
 #>
@@ -76,13 +78,22 @@ Process {
 			}
 		}
 		Connect-VIServer $hosts -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -User $root -Password $pwd |select Name,IsConnected |ft -AutoSize
-		$VMHostName = (Get-VM $VC -ErrorAction SilentlyContinue |select -ExpandProperty VMHost).Name
-		Disconnect-VIServer -Server '*' -Force -Confirm:$false
+		If ($global:DefaultVIServers.Length -ne 0) {
+			$VMHostName = (Get-VM -ErrorAction SilentlyContinue |? {$_.Name -eq $VC} |select -ExpandProperty VMHost).Name
+			Disconnect-VIServer -Server '*' -Force -Confirm:$false
+		}
 	}
 }
 
 End {
 
-	If ($VMHostName)	{Write-Output "vCenter's VM with name '$VC' found on Host '$VMHostName'`n"}
-	Else				{Write-Output "vCenter's VM with name '$VC' not found on these Hosts`n"}
+	If ($VMHostName)	{
+		$Properties = [ordered]@{
+			VC     = $VC
+			VMHost = $VMHostName
+		}
+		$Object = New-Object PSObject -Property $Properties
+		return $Object
+	}
+	Else {return $null}
 }
