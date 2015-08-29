@@ -42,7 +42,7 @@
 .NOTES
 	Author: Roman Gelman.
 .LINK
-	http://rgel75.wix.com/blog#!Kickstart-ESXi-hosts-on-IBMLenovo-servers-using-PowerShell/c1tye/55dea8d30cf269cc03e36039
+	http://goo.gl/XD9RpA
 #>
 
 #region Parameters
