@@ -66,8 +66,6 @@ Process {
 	$VMHostName = ''
 	$cred = Get-Credential -UserName root -Message "Common VMHost Credentials"
 	If ($cred) {
-		$root = $cred.GetNetworkCredential().UserName
-		$pwd  = $cred.GetNetworkCredential().Password
 		$hosts = @()
 		
 		For ($i=$PostfixStart; $i -le $PostfixEnd; $i++) {
@@ -77,7 +75,7 @@ Process {
 				$hosts += $HostSuffix + $i
 			}
 		}
-		Connect-VIServer $hosts -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -User $root -Password $pwd |select Name,IsConnected |ft -AutoSize
+		Connect-VIServer $hosts -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -Credential $cred |select Name,IsConnected |ft -AutoSize
 		If ($global:DefaultVIServers.Length -ne 0) {
 			$VMHostName = (Get-VM -ErrorAction SilentlyContinue |? {$_.Name -eq $VC} |select -ExpandProperty VMHost).Name
 			Disconnect-VIServer -Server '*' -Force -Confirm:$false
