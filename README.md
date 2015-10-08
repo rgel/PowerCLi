@@ -1,8 +1,17 @@
 # PowerCLi Repo
-### Scripts & Functions
+### Scripts & Modules
 
-##### </b><ins>Get-RDM.ps1</ins></b>
+### </b><ins>Vi-Module.psm1</ins></b>
 
-`Get-RDM.ps1` script contains <b>Get-RDM</b> function only.
-To use its functionality, add one of `.EXAMPLEs` or your own code to the last line of the script,
-navigate to the script's directory `cd C:\VMware\scripts` for example and run the script `.\Get-RDM.ps1`.
+To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories.
+The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable.
+The default per-user module path is: `"$env:HOMEDRIVE$env:HOMEPATH\Documents\WindowsPowerShell\Modules"`.
+The default computer-level module path is: `"$env:windir\System32\WindowsPowerShell\v1.0\Modules"`.
+To use the module, type following command: `ipmo Vi-Module -Force -Verbose`.
+To see the commands imported, type `gc -Module Vi-Module`.
+For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [-Online][-Examples]`.
+
+##### <ins>Cmdlets</ins>
+
+###### <b>Get-RDM</b>
+Report all VM with their RDM disks.
