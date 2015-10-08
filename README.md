@@ -11,7 +11,7 @@ To use the module, type following command: `ipmo Vi-Module -Force -Verbose`.
 To see the commands imported, type `gc -Module Vi-Module`.
 For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [-Online][-Examples]`.
 
-##### <ins>Cmdlets</ins>
+##### <ins>Cmdlets:</ins>
 
-###### <b>Get-RDM</b>
+###### <b>1. Get-RDM</b>
 Report all VM with their RDM disks.
