@@ -87,3 +87,4 @@ End {
 }
 
 } #EndFunction Get-RDM
+New-Alias -Name Get-ViMRDM -Value Get-RDM -Force:$true
