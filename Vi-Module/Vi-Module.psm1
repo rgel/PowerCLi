@@ -21,7 +21,7 @@ Function Get-RDM {
 .NOTES
 	Author: Roman Gelman.
 .LINK
-	http://rgel75.wix.com/blog
+	http://goo.gl/3wO4pi
 #>
 
 [CmdletBinding()]
