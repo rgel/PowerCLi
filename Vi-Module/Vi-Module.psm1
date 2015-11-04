@@ -152,14 +152,28 @@ Process {
 			    If (($dev.GetType()).Name -eq "VirtualDisk") {
 					If ($dev.Backing.ThinProvisioned -and $dev.Backing.Parent -eq $null) {
 					
-			        	$sizeGB = [math]::Round(($dev.CapacityInKB / 1MB), 1) 	
-						Write-Progress -Activity "Inflate virtual disk task is in progress ..." -CurrentOperation "$($dev.DeviceInfo.Label) - $($dev.Backing.FileName) - $sizeGB GB" -Status "VM - $($vm.Name)"
+			        	$sizeGB = [math]::Round(($dev.CapacityInKB / 1MB), 1)
 						
 						### Invoke 'Inflate virtual disk' task ###
 						$ViDM      = Get-View -Id 'VirtualDiskManager-virtualDiskManager'
 						$taskMoRef = $ViDM.InflateVirtualDisk_Task($dev.Backing.FileName, $datacenter)
 						$task      = Get-View $taskMoRef
- 						While ("running","queued" -contains $task.Info.State) {$task.UpdateViewData("Info")}
+						
+						### Show task progress ###
+						For ($i=1;$i -lt [int32]::MaxValue;$i++) {
+							If ("running","queued" -contains $task.Info.State) {
+								$task.UpdateViewData("Info")
+								If ($task.Info.Progress -ne $null) {
+									Write-Progress -Activity "Inflate virtual disk task is in progress ..." -Status "VM - $($vm.Name)" `
+									-CurrentOperation "$($dev.DeviceInfo.Label) - $($dev.Backing.FileName) - $sizeGB GB" `
+									-PercentComplete $task.Info.Progress -ErrorAction SilentlyContinue
+									Start-Sleep -Seconds 3
+								}
+							}
+ 							Else {Break}
+						}
+						
+						### Get task completion results ###
 						$tResult       = $task.Info.State
 						$tStart        = $task.Info.StartTime
 						$tEnd          = $task.Info.CompleteTime
@@ -169,14 +183,16 @@ Process {
 						$null = $dev.Backing.FileName -match $regxVMDK
 						
 						$Properties = [ordered]@{
-							VM        = $vm.Name
-							VMHost    = $esx.Name
-							Datastore = $Matches.Datastore
-							VMDK      = $Matches.Filename
-							HDLabel   = $dev.DeviceInfo.Label
-							HDSizeGB  = $sizeGB
-							Result    = $tResult
-							TimeMin   = $tCompleteTime
+							VM           = $vm.Name
+							VMHost       = $esx.Name
+							Datastore    = $Matches.Datastore
+							VMDK         = $Matches.Filename
+							HDLabel      = $dev.DeviceInfo.Label
+							HDSizeGB     = $sizeGB
+							Result       = $tResult
+							StartTime    = $tStart
+							CompleteTime = $tEnd
+							TimeMin      = $tCompleteTime
 						}
 						$Object = New-Object PSObject -Property $Properties
 						$Object
@@ -297,3 +313,5 @@ End {
 
 } #EndFunction Find-VcVm
 New-Alias -Name Find-ViMVcVm -Value Find-VcVm -Force:$true
+
+Export-ModuleMember -Alias '*' -Function '*'
