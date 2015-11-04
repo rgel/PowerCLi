@@ -15,3 +15,9 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 
 ###### <b>1. Get-RDM</b>
 Report all VM with their RDM disks.
+
+###### <b>2. Convert-VmdkThin2EZThick</b>
+Inflate thin virtual disks.
+
+###### <b>3. Find-VcVm</b>
+Search VC's VM throw direct connection to group of ESXi Hosts.
