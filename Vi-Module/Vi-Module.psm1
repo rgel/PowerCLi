@@ -110,7 +110,7 @@ Function Convert-VmdkThin2EZThick {
 .NOTES
 	Author: Roman Gelman.
 .LINK
-	http://rgel75.wix.com/blog
+	http://goo.gl/cVpTpO
 #>
 
 [CmdletBinding(ConfirmImpact='High',SupportsShouldProcess=$true)]
