@@ -1,6 +1,10 @@
 # PowerCLi Repo
 ### Scripts & Modules
 
+### </b><ins>[Kickstart-VMHostIMM.ps1</ins></b>] (http://goo.gl/XD9RpA)
+
+Kickstart ESXi hosts on IBM/Lenovo servers without PXE using PowerShell.
+
 ### </b><ins>Vi-Module.psm1</ins></b>
 
 To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories.
@@ -13,11 +17,11 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 
 ##### <ins>Cmdlets:</ins>
 
-###### <b>1. [Get-RDM</b>] (http://rgel75.wix.com/blog#!How-to-get-RDM-Raw-Device-Mappings-disks-using-PowerCLi/c1tye/5620e39c0cf2c3576e613aa8)
+###### <b>1. [Get-RDM</b>] (http://goo.gl/3wO4pi)
 
 Report all VM with their RDM disks.
 
-###### <b>2. [Convert-VmdkThin2EZThick</b>] (http://rgel75.wix.com/blog#!How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi/c1tye/563b04550cf28330832dd514)
+###### <b>2. [Convert-VmdkThin2EZThick</b>] (http://goo.gl/cVpTpO)
 
 Inflate thin virtual disks.
 
