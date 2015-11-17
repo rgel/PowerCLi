@@ -28,3 +28,7 @@ Inflate thin virtual disks.
 ###### <b>3. [Find-VcVm</b>] (http://www.vmgu.ru/news/vmware-vcenter-how-to-find-powered-off)
 
 Search VC's VM throw direct connection to group of ESXi hosts.
+
+###### <b>4. [Set-PowerCLiTitle</b>] (http://goo.gl/0h97C6)
+
+Write connected VI servers info to PowerCLi window title bar.
