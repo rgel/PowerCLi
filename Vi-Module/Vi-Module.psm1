@@ -314,4 +314,41 @@ End {
 } #EndFunction Find-VcVm
 New-Alias -Name Find-ViMVcVm -Value Find-VcVm -Force:$true
 
+Function Set-PowerCLiTitle {
+
+<#
+.SYNOPSIS
+	Write connected VI servers info to PowerCLi window title bar.
+.DESCRIPTION
+	This function write connected VI servers info to PowerCLi window/console title bar [Name :: Product (VCenter/ESXi) ProductVersion].
+.EXAMPLE
+	C:\PS> Set-PowerCLiTitle
+.NOTES
+	Author: Roman Gelman.
+.LINK
+	http://rgel75.wix.com/blog
+#>
+
+$VIS = $global:DefaultVIServers |sort -Descending ProductLine,Name
+
+If ($VIS) {
+	Foreach ($VIObj in $VIS) {
+		If ($VIObj.IsConnected) {
+			Switch -exact ($VIObj.ProductLine) {
+				vpx			{$VIProduct = 'VCenter'; Break}
+				embeddedEsx {$VIProduct = 'ESXi'; Break}
+				Default		{$VIProduct = $VIObj.ProductLine; Break}
+			}
+			$Header += "[$($VIObj.Name) :: $VIProduct$($VIObj.Version)] "
+		}
+	}
+} Else {
+	$Header = ':: Not connected to Virtual Infra Services ::'
+}
+
+$Host.UI.RawUI.WindowTitle = $Header
+
+} #EndFunction Set-PowerCLiTitle
+New-Alias -Name Set-ViMPowerCLiTitle -Value Set-PowerCLiTitle -Force:$true
+
 Export-ModuleMember -Alias '*' -Function '*'
