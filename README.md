@@ -17,8 +17,10 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 
 Report all VM with their RDM disks.
 
-###### <b>2. Convert-VmdkThin2EZThick</b>
+###### <b>2. [Convert-VmdkThin2EZThick</b>] (rgel75.wix.com/blog#!How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi/c1tye/563b04550cf28330832dd514)
+
 Inflate thin virtual disks.
 
-###### <b>3. Find-VcVm</b>
-Search VC's VM throw direct connection to group of ESXi Hosts.
+###### <b>3. [Find-VcVm</b>] (http://www.vmgu.ru/news/vmware-vcenter-how-to-find-powered-off)
+
+Search VC's VM throw direct connection to group of ESXi hosts.
