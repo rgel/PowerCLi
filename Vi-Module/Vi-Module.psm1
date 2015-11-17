@@ -326,7 +326,7 @@ Function Set-PowerCLiTitle {
 .NOTES
 	Author: Roman Gelman.
 .LINK
-	http://rgel75.wix.com/blog
+	http://goo.gl/0h97C6
 #>
 
 $VIS = $global:DefaultVIServers |sort -Descending ProductLine,Name
