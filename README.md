@@ -17,7 +17,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 
 Report all VM with their RDM disks.
 
-###### <b>2. [Convert-VmdkThin2EZThick</b>] (rgel75.wix.com/blog#!How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi/c1tye/563b04550cf28330832dd514)
+###### <b>2. [Convert-VmdkThin2EZThick</b>] (http://rgel75.wix.com/blog#!How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi/c1tye/563b04550cf28330832dd514)
 
 Inflate thin virtual disks.
 
