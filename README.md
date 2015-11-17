@@ -13,7 +13,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 
 ##### <ins>Cmdlets:</ins>
 
-###### [<b>1. Get-RDM</b>] (http://rgel75.wix.com/blog#!How-to-get-RDM-Raw-Device-Mappings-disks-using-PowerCLi/c1tye/5620e39c0cf2c3576e613aa8)
+###### <b>1. [Get-RDM</b>] (http://rgel75.wix.com/blog#!How-to-get-RDM-Raw-Device-Mappings-disks-using-PowerCLi/c1tye/5620e39c0cf2c3576e613aa8)
 
 Report all VM with their RDM disks.
 
