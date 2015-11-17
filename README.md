@@ -1,9 +1,9 @@
 # PowerCLi Repo
 ### Scripts & Modules
 
-### </b><ins>[Kickstart-VMHostIMM.ps1</ins></b>] (http://goo.gl/XD9RpA)
+### </b><ins>Kickstart-VMHostIMM.ps1</ins></b>
 
-Kickstart ESXi hosts on IBM/Lenovo servers without PXE using PowerShell.
+[Kickstart ESXi hosts on IBM/Lenovo servers without PXE using PowerShell] (http://goo.gl/XD9RpA)
 
 ### </b><ins>Vi-Module.psm1</ins></b>
 
