@@ -13,13 +13,20 @@ Function Get-RDM {
 	C:\PS> Get-VM |? {$_.Name -like 'linux*'} |Get-RDM |sort VM,Datastore,HDLabel |ft -au
 .EXAMPLE
 	C:\PS> Get-Datacenter 'North' |Get-VM |Get-RDM |? {$_.HDSizeGB -gt 1} |Export-Csv -NoTypeInformation 'C:\reports\North_RDMs.csv'
+.EXAMPLE
+	C:\PS> $res = Get-Cluster prod |Get-VM |Get-ViMRDM
+	C:\PS> $res |Export-Csv -NoTypeInformation 'C:\reports\ProdCluster_RDMs.csv'
+	Save the results in variable and than export them to a file.
 .INPUTS
-	Get-VM collection.
-	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VirtualMachineImpl[]]
+	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VirtualMachineImpl[]] Get-VM collection.
 .OUTPUTS
-	PSObject collection.
+	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
 	Author: Roman Gelman.
+	Version 1.0 :: 16-Oct-2015 :: Initial release.
+	Version 1.1 :: 03-Dec-2015 :: Bugfix :: Error message appear while VML mismatch,
+	when the VML identifier does not match for an RDM on two or more ESXi hosts.
+	VMware [KB2097287].
 .LINK
 	http://goo.gl/3wO4pi
 #>
@@ -55,8 +62,12 @@ Process {
 					$esxScsiLun = $esx.Config.StorageDevice.ScsiLun |? {$_.Uuid -eq $dev.Backing.LunUuid}
 					
 					### Expand 'LUNID' from device runtime name (vmhba2:C0:T0:L12) ###
-					$null = (Get-ScsiLun -VmHost $esx.Name -CanonicalName $esxScsiLun.CanonicalName).RuntimeName -match $regxLUNID
-					$lunID      = $Matches.LUNID
+					$lunCN = $esxScsiLun.CanonicalName
+					$Matches = $null
+					If ($lunCN) {
+						$null  = (Get-ScsiLun -VmHost $esx.Name -CanonicalName $lunCN -ErrorAction SilentlyContinue).RuntimeName -match $regxLUNID
+						$lunID = $Matches.LUNID
+					} Else {$lunID = ''}
 					
 					### Expand 'Datastore' and 'VMDK' from file path ###
 					$null = $dev.Backing.FileName -match $regxVMDK
@@ -71,7 +82,7 @@ Process {
 						HDMode        = $dev.Backing.CompatibilityMode
 						DeviceName    = $dev.Backing.DeviceName
 						Vendor        = $esxScsiLun.Vendor
-						CanonicalName = $esxScsiLun.CanonicalName
+						CanonicalName = $lunCN
 						LUNID         = $lunID
 					}
 					$Object = New-Object PSObject -Property $Properties
