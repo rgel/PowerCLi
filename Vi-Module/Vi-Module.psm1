@@ -23,7 +23,7 @@ Function Get-RDM {
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
 	Author: Roman Gelman.
-	Version 1.0 :: 16-Oct-2015 :: Initial release.
+	Version 1.0 :: 16-Oct-2015 :: Release
 	Version 1.1 :: 03-Dec-2015 :: Bugfix :: Error message appear while VML mismatch,
 	when the VML identifier does not match for an RDM on two or more ESXi hosts.
 	VMware [KB2097287].
