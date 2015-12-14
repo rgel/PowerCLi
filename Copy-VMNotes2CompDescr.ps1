@@ -41,7 +41,7 @@
 	Script assumes that VM Name in VCenter/ESXi is equal to the hostname within VM Operating System.
 	Author: Roman Gelman.
 .LINK
-	http://rgel75.wix.com/blog
+	http://goo.gl/lZSbTn
 #>
 
 Param (
