@@ -1,6 +1,10 @@
 # PowerCLi Repo
 ### Scripts & Modules
 
+### </b><ins>Copy-VMNotes2CompDescr.ps1</ins></b>
+
+###### <b>[How to copy VMware VM Notes to Computer/AD Computer Account Description</b>] (http://goo.gl/lZSbTn)
+
 ### </b><ins>Kickstart-VMHostIMM.ps1</ins></b>
 
 ###### <b>[Kickstart ESXi hosts on IBM/Lenovo servers without PXE using PowerShell</b>] (http://goo.gl/XD9RpA)
