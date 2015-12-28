@@ -1,15 +1,15 @@
 # PowerCLi Repo
 ## Scripts & Modules
 
-### </b><ins>Copy-VMNotes2CompDescr.ps1</ins></b>
+### </b><ins>[Copy-VMNotes2CompDescr.ps1</ins></b>] (https://github.com/rgel/PowerCLi/blob/master/Copy-VMNotes2CompDescr.ps1)
 
 ###### <b>[How to copy VMware VM Notes to Computer/AD Computer Account Description</b>] (http://goo.gl/lZSbTn)
 
-### </b><ins>Kickstart-VMHostIMM.ps1</ins></b>
+### </b><ins>[Kickstart-VMHostIMM.ps1</ins></b>] (https://github.com/rgel/PowerCLi/tree/master/Kickstart)
 
 ###### <b>[Kickstart ESXi hosts on IBM/Lenovo servers without PXE using PowerShell</b>] (http://goo.gl/XD9RpA)
 
-### </b><ins>Vi-Module.psm1</ins></b>
+### </b><ins>[Vi-Module.psm1</ins></b>] (https://github.com/rgel/PowerCLi/tree/master/Vi-Module)
 
 To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories.
 
