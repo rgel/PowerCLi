@@ -362,4 +362,51 @@ $Host.UI.RawUI.WindowTitle = $Header
 } #EndFunction Set-PowerCLiTitle
 New-Alias -Name Set-ViMPowerCLiTitle -Value Set-PowerCLiTitle -Force:$true
 
+Filter Get-VMHostFirmwareVersion {
+
+<#
+.SYNOPSIS
+	Get ESXi host BIOS version.
+.DESCRIPTION
+	This filter returns ESXi host BIOS/UEFI Version and Release Date as a single string.
+.EXAMPLE
+	PS C:\> Get-VMHost 'esxprd1.*' |Get-VMHostFirmwareVersion
+	Get single ESXi host's Firmware version.
+.EXAMPLE
+	PS C:\> Get-Cluster PROD |Get-VMHost |select Name,@{N='BIOS';E={$_ |Get-VMHostFirmwareVersion}}
+	Get ESXi Name and Firmware version for single cluster.
+.EXAMPLE
+	PS C:\> Get-VMHost |sort Name |select Name,Version,Manufacturer,Model,@{N='BIOS';E={$_ |Get-VMHostFirmwareVersion}} |ft -au
+	Add calculated property, that will contain Firmware version for all registered ESXi hosts.
+.EXAMPLE
+	PS C:\> Get-View -ViewType 'HostSystem' |select Name,@{N='BIOS';E={$_ |Get-VMHostFirmwareVersion}}
+.EXAMPLE
+	PS C:\> 'esxprd1.domain.com','esxdev2' |Get-VMHostFirmwareVersion
+.INPUTS
+	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl[]] Objects, returned by Get-VMHost cmdlet.
+	[VMware.Vim.HostSystem[]] Objects, returned by Get-View cmdlet.
+	[System.String[]] ESXi hostname or FQDN.
+.OUTPUTS
+	[System.String[]] BIOS/UEFI version and release date.
+.NOTES
+	Author: Roman Gelman.
+.LINK
+	https://goo.gl/Yg7mYp
+#>
+
+Try
+	{
+		If     ($_.GetType().Name -eq 'VMHostImpl') {$BiosInfo = ($_ |Get-View).Hardware.BiosInfo}
+		ElseIf ($_.GetType().Name -eq 'HostSystem') {$BiosInfo = $_.Hardware.BiosInfo}
+		ElseIf ($_.GetType().Name -eq 'String')     {$BiosInfo = (Get-View -ViewType HostSystem -Filter @{"Name" = $_}).Hardware.BiosInfo}
+		Else   {Throw "Not supported data type as pipeline"}
+
+		$fVersion = $BiosInfo.BiosVersion -replace ('^-\[|\]-$', $null)
+		$fDate    = [Regex]::Match($BiosInfo.ReleaseDate, '(\d{1,2}/){2}\d+').Value
+		If ($fVersion) {return "$fVersion [$fDate]"} Else {return $null}
+	}
+Catch
+	{}
+} #EndFilter Get-VMHostFirmwareVersion
+
 Export-ModuleMember -Alias '*' -Function '*'
