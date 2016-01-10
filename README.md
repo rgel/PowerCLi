@@ -48,3 +48,7 @@ Write connected VI servers info to PowerCLi window title bar.
 ###### <b>5. [Get-VMHostFirmwareVersion</b>] (http://goo.gl/EGhE3c)
 
 Get a Firmware version and release date of your ESXi hosts.
+
+###### <b>6. [Compare-VMHostSoftwareVib</b>] (http://goo.gl/qMPFu3)
+
+Compare installed VIB packages between two or more ESXi hosts.
