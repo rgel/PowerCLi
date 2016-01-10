@@ -409,4 +409,92 @@ Catch
 	{}
 } #EndFilter Get-VMHostFirmwareVersion
 
+Function Compare-VMHostSoftwareVib {
+
+<#
+.SYNOPSIS
+	Compares the installed VIB packages between VMware ESXi Hosts.
+.DESCRIPTION
+	This function compares the installed VIB packages between reference ESXi Host and
+	group of difference/target ESXi Hosts or single ESXi Host.
+.PARAMETER ReferenceVMHost
+	Reference VMHost.
+.PARAMETER DifferenceVMHosts
+	Target VMHosts to compare them with the reference VMHost.
+.EXAMPLE
+	PS C:\> Compare-VMHostSoftwareVib -ReferenceVMHost (Get-VMHost 'esxprd1.*') -DifferenceVMHosts  (Get-VMHost 'esxprd2.*')
+	Compare two ESXi hosts.
+.EXAMPLE
+	PS C:\> Get-VMHost 'esxdev2.*','esxdev3.*' |Compare-VMHostSoftwareVib -ReferenceVMHost (Get-VMHost 'esxdev1.*')
+	Compare two target ESXi Hosts with the reference Host.
+.EXAMPLE
+	PS C:\> Get-Cluster DEV |Get-VMHost |Compare-VMHostSoftwareVib -ReferenceVMHost (Get-VMHost 'esxdev1.*')
+	Compare all HA/DRS cluster members with the reference ESXi Host.
+.EXAMPLE
+	PS C:\> Get-Cluster PRD |Get-VMHost |Compare-VMHostSoftwareVib -ReferenceVMHost (Get-VMHost 'esxhai1.*') |Export-Csv -NoTypeInformation -Path '.\VibCompare.csv'
+	Export the comparison report to the file.
+.INPUTS
+	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl[]] Objects, returned by Get-VMHost cmdlet.
+.OUTPUTS
+	[System.Management.Automation.PSCustomObject] PSObject collection.
+.NOTES
+	Author: Roman Gelman.
+.LINK
+	https://goo.gl/Yg7mYp
+#>
+
+Param (
+
+	[Parameter(Mandatory,Position=1,HelpMessage="Reference VMHost")]
+		[Alias("ReferenceESXi")]
+	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl]$ReferenceVMHost
+	,
+	[Parameter(Mandatory,Position=2,ValueFromPipeline,HelpMessage="Difference VMHosts collection")]
+		[Alias("DifferenceESXi")]
+	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl[]]$DifferenceVMHosts
+)
+
+Begin {
+
+
+}
+
+Process {
+
+	 Try 
+		{
+			$esxcliRef = Get-EsxCli -VMHost $ReferenceVMHost -ErrorAction Stop
+			$refVibId  = ($esxcliRef.software.vib.list()).ID 
+		}
+	Catch
+		{
+			"{0}" -f $Error.Exception.Message
+		}
+
+	Foreach ($esx in $DifferenceVMHosts) {
+	
+		 Try
+			{
+				$esxcliDif = Get-EsxCli -VMHost $esx -ErrorAction Stop
+				$diffObj   = Compare-Object -ReferenceObject $refVibId -DifferenceObject ($esxcliDif.software.vib.list()).ID -IncludeEqual:$false
+				Foreach ($diff in $diffObj) {
+					If ($diff.SideIndicator -eq '=>') {$diffOwner = $esx} Else {$diffOwner = $ReferenceVMHost}
+					$Properties = [ordered]@{
+						VIB    = $diff.InputObject
+						VMHost = $diffOwner 
+					}
+					$Object = New-Object PSObject -Property $Properties
+					$Object
+				}
+			}
+		Catch
+			{
+				"{0}" -f $Error.Exception.Message
+			}
+	}
+}
+
+} #EndFunction Compare-VMHostSoftwareVib
+New-Alias -Name Compare-ViMVMHostSoftwareVib -Value Compare-VMHostSoftwareVib -Force:$true
+
 Export-ModuleMember -Alias '*' -Function '*'
