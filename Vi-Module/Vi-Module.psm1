@@ -408,6 +408,7 @@ Try
 Catch
 	{}
 } #EndFilter Get-VMHostFirmwareVersion
+New-Alias -Name Get-ViMVMHostFirmwareVersion -Value Get-VMHostFirmwareVersion -Force:$true
 
 Function Compare-VMHostSoftwareVib {
 
