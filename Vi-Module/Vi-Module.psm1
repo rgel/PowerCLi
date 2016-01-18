@@ -498,4 +498,51 @@ Process {
 } #EndFunction Compare-VMHostSoftwareVib
 New-Alias -Name Compare-ViMVMHostSoftwareVib -Value Compare-VMHostSoftwareVib -Force:$true
 
+Filter Get-VMHostBirthday {
+
+<#
+.SYNOPSIS
+	Get ESXi host installation date (Birthday).
+.DESCRIPTION
+	This filter returns ESXi host installation date.
+.EXAMPLE
+	PS C:\> Get-VMHost 'esxprd1.*' |Get-VMHostBirthday
+	Get single ESXi host's Birthday.
+.EXAMPLE
+	PS C:\> Get-Cluster DEV |Get-VMHost |select Name,Version,@{N='Birthday';E={$_ |Get-VMHostBirthday}} |sort Name
+	Get ESXi Name and Birthday for single cluster.
+.EXAMPLE
+	PS C:\> 'esxprd1.domain.com','esxprd2' |select @{N='ESXi';E={$_}},@{N='Birthday';E={$_ |Get-VMHostBirthday}}
+	Pipe hostnames (strings) to the function.
+.EXAMPLE
+	PS C:\> Get-VMHost |select Name,@{N='Birthday';E={($_ |Get-VMHostBirthday).ToString('yyyy-MM-dd HH:mm:ss')}} |sort Name |ft -au
+	Format output using ToString() method.
+	http://blogs.technet.com/b/heyscriptingguy/archive/2015/01/22/formatting-date-strings-with-powershell.aspx
+.INPUTS
+	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl[]] Objects, returned by Get-VMHost cmdlet.
+	[System.String[]] ESXi hostname or FQDN.
+.OUTPUTS
+	[System.DateTime[]] ESXi installation date/time.
+.NOTES
+	Original idea: Magnus Andersson
+	Author:        Roman Gelman
+	Requirements:  vSphere 5.x or above
+.LINK
+	http://vcdx56.com/2016/01/05/find-esxi-installation-date/
+#>
+
+Try
+	{
+		$EsxCli = Get-EsxCli -VMHost $_ -ErrorAction Stop
+		$Uuid   = $EsxCli.system.uuid.get()
+		$bdHexa = [Regex]::Match($Uuid, '^(\w{8,})-').Groups[1].Value
+		$bdDeci = [Convert]::ToInt64($bdHexa, 16)
+		$bdDate = [TimeZone]::CurrentTimeZone.ToLocalTime(([DateTime]'1/1/1970').AddSeconds($bdDeci))
+		If ($bdDate) {return $bdDate} Else {return $null}
+	}
+Catch
+	{ }
+} #EndFilter Get-VMHostBirthday
+New-Alias -Name Get-ViMVMHostBirthday -Value Get-VMHostBirthday -Force:$true
+
 Export-ModuleMember -Alias '*' -Function '*'
