@@ -56,3 +56,9 @@ Get a Firmware version and release date of your ESXi hosts.
 ###### <b>6. [Compare-VMHostSoftwareVib</b>] (http://goo.gl/qMPFu3)
 
 Compare installed VIB packages between two or more ESXi hosts.
+
+###### <b>7. [Get-VMHostBirthday</b>] (http://vcdx56.com/2016/01/05/find-esxi-installation-date/)
+
+Get ESXi hosts' installation date.
+
+![01 get-vmhostbirthday](https://cloud.githubusercontent.com/assets/6964549/12399803/c8439dfa-be24-11e5-8141-09199caa301e.png)
