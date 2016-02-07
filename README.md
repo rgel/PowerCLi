@@ -62,3 +62,7 @@ Compare installed VIB packages between two or more ESXi hosts.
 Get ESXi hosts' installation date.
 
 ![01 get-vmhostbirthday](https://cloud.githubusercontent.com/assets/6964549/12399803/c8439dfa-be24-11e5-8141-09199caa301e.png)
+
+###### <b>8. [Enable-VMHostSSH/Disable-VMHostSSH</b>] (http://goo.gl/oknVaE)
+
+Enable/Disable SSH on all ESXi hosts in a cluster.
