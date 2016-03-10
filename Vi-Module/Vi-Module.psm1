@@ -697,4 +697,107 @@ Process {
 }
 New-Alias -Name Disable-ViMVMHostSSH -Value Disable-VMHostSSH -Force:$true
 
+Function Set-VMHostNtpServer {
+
+<#
+.SYNOPSIS
+	Set NTP server settings on a group of ESXi hosts.
+.DESCRIPTION
+	This cmdlet sets NTP server settings on a group of ESXi hosts
+	and restarts the NTP daemon to apply these settings.
+.PARAMETER VMHost
+	ESXi hosts.
+.PARAMETER NewNtp
+	NTP servers (IP/Hostname).
+.EXAMPLE
+	PS C:\> Set-VMHostNtpServer -NewNtp 'ntp1','ntp2'
+	Set two NTP servers to all hosts in inventory.
+.EXAMPLE
+	PS C:\> Get-VMHost 'esx1.*','esx2.*' |Set-VMHostNtpServer -NewNtp 'ntp1','ntp2'
+.EXAMPLE
+	PS C:\> Get-Cluster DEV,TEST |Get-VMHost |sort Parent,Name |Set-VMHostNtpServer -NewNtp 'ntp1','10.1.2.200' |ft -au
+.EXAMPLE
+	PS C:\> Get-VMHost -Location Datacenter1 |sort Name |Set-VMHostNtpServer -NewNtp 'ntp1','ntp2' |epcsv -notype -Path '.\Ntp_report.csv'
+	Export the results to Excel.
+.INPUTS
+	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl[]] VMHost collection returned by Get-VMHost cmdlet.
+.OUTPUTS
+	[System.Management.Automation.PSCustomObject] PSObject collection.
+.NOTES
+	Author      ::	Roman Gelman.
+	Version 1.0 ::	08-Mar-2016  :: Release.
+.LINK
+	https://goo.gl/Yg7mYp
+#>
+
+[CmdletBinding()]
+
+Param (
+
+	[Parameter(Mandatory=$false,Position=1,ValueFromPipeline=$true)]
+		[ValidateNotNullorEmpty()]
+	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl[]]$VMHost = (Get-VMHost)
+	,
+	[Parameter(Mandatory,Position=2)]
+	[System.String[]]$NewNtp
+)
+
+Begin {
+	$ErrorActionPreference = 'Stop'
+}
+
+Process {
+
+	Foreach ($esx in $VMHost) {
+	
+		If ('Connected','Maintenance' -contains $esx.ConnectionState -and $esx.PowerState -eq 'PoweredOn') {
+
+			### Get current Ntp ###
+			$Ntps = Get-VMHostNtpServer -VMHost $esx
+			
+			### Remove previously configured Ntp ###
+			$removed = $false
+			Try
+			{
+				Remove-VMHostNtpServer -NtpServer $Ntps -VMHost $esx -Confirm:$false
+				$removed = $true
+			}
+			Catch { }
+
+			### Add new Ntp ###
+			$added = $null
+			Try
+			{
+				$added = Add-VMHostNtpServer -NtpServer $NewNtp -VMHost $esx -Confirm:$false
+			}
+			Catch { }
+			
+			### Restart NTP Daemon ###
+			$restarted = $false
+			Try
+			{
+				If ($added) {Get-VMHostService -VMHost $esx |? {$_.Key -eq 'ntpd'} |Restart-VMHostService -Confirm:$false |Out-Null}
+				$restarted = $true
+			}
+			Catch {}
+			
+			### Return results ###
+			$Properties = [ordered]@{
+				VMHost            = $esx
+				OldNtp            = $Ntps
+				IsOldRemoved      = $removed
+				NewNtp            = $added
+				IsDaemonRestarted = $restarted
+			}
+			$Object = New-Object PSObject -Property $Properties
+			$Object
+		}
+		Else {Write-Warning "VMHost '$($esx.Name)' is in unsupported state"}
+	}
+
+}
+
+} #EndFunction Set-VMHostNtpServer
+New-Alias -Name Set-ViMVMHostNtpServer -Value Set-VMHostNtpServer -Force:$true
+
 Export-ModuleMember -Alias '*' -Function '*'
