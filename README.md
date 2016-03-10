@@ -69,4 +69,4 @@ Enable/Disable SSH on all ESXi hosts in a cluster.
 
 ###### <b>9. [Set-VMHostNtpServer</b>] (http://goo.gl/Q4S6yc)
 
-Set "NTP servers" setting on ESXi hosts.
+Set "NTP Servers" setting on ESXi hosts.
