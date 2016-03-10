@@ -725,7 +725,7 @@ Function Set-VMHostNtpServer {
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
 	Author      ::	Roman Gelman.
-	Version 1.0 ::	08-Mar-2016  :: Release.
+	Version 1.0 ::	10-Mar-2016  :: Release.
 .LINK
 	http://goo.gl/Q4S6yc
 #>
