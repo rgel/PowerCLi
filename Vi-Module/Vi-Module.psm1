@@ -727,7 +727,7 @@ Function Set-VMHostNtpServer {
 	Author      ::	Roman Gelman.
 	Version 1.0 ::	08-Mar-2016  :: Release.
 .LINK
-	https://goo.gl/Yg7mYp
+	http://goo.gl/Q4S6yc
 #>
 
 [CmdletBinding()]
