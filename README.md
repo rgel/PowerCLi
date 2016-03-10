@@ -66,3 +66,7 @@ Get ESXi hosts' installation date.
 ###### <b>8. [Enable-VMHostSSH/Disable-VMHostSSH</b>] (http://goo.gl/oknVaE)
 
 Enable/Disable SSH on all ESXi hosts in a cluster.
+
+###### <b>9. [Set-VMHostNtpServer</b>] (http://goo.gl/Q4S6yc)
+
+Set "NTP servers" setting on ESXi hosts.
