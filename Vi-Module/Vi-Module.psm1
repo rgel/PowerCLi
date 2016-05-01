@@ -435,11 +435,14 @@ Function Compare-VMHostSoftwareVib {
 	PS C:\> Get-Cluster PRD |Get-VMHost |Compare-VMHostSoftwareVib -ReferenceVMHost (Get-VMHost 'esxhai1.*') |Export-Csv -NoTypeInformation -Path '.\VibCompare.csv'
 	Export the comparison report to the file.
 .INPUTS
-	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl[]] Objects, returned by Get-VMHost cmdlet.
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]] Objects, returned by Get-VMHost cmdlet.
 .OUTPUTS
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
-	Author: Roman Gelman.
+	Author       ::	Roman Gelman.
+	Dependencies ::	ESXCLI V2 works on vCenter 5.0/ESXi 5.0 and later.
+	Version 1.0  ::	10-Jan-2016  :: Release.
+	Version 1.1  ::	01-May-2016  :: Improvement :: Added support for PowerCLi 6.3R1 and ESXCLI V2 interface.
 .LINK
 	https://goo.gl/Yg7mYp
 #>
@@ -448,24 +451,30 @@ Param (
 
 	[Parameter(Mandatory,Position=1,HelpMessage="Reference VMHost")]
 		[Alias("ReferenceESXi")]
-	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl]$ReferenceVMHost
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$ReferenceVMHost
 	,
 	[Parameter(Mandatory,Position=2,ValueFromPipeline,HelpMessage="Difference VMHosts collection")]
 		[Alias("DifferenceESXi")]
-	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.VMHostImpl[]]$DifferenceVMHosts
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]$DifferenceVMHosts
 )
 
 Begin {
-
-
+	$PcliVer = Get-PowerCLIVersion -ErrorAction SilentlyContinue
+	$PcliMM  = ($PcliVer.Major.ToString() + $PcliVer.Minor.ToString()) -as [int]
 }
 
 Process {
 
 	 Try 
 		{
-			$esxcliRef = Get-EsxCli -VMHost $ReferenceVMHost -ErrorAction Stop
-			$refVibId  = ($esxcliRef.software.vib.list()).ID 
+			If ($PcliMM -ge 63) {
+				$esxcliRef = Get-EsxCli -V2 -VMHost $ReferenceVMHost -ErrorAction Stop
+				$refVibId  = ($esxcliRef.software.vib.list.Invoke()).ID
+			}
+			Else {
+				$esxcliRef = Get-EsxCli -VMHost $ReferenceVMHost -ErrorAction Stop
+				$refVibId  = ($esxcliRef.software.vib.list()).ID
+			}
 		}
 	Catch
 		{
@@ -476,8 +485,15 @@ Process {
 	
 		 Try
 			{
-				$esxcliDif = Get-EsxCli -VMHost $esx -ErrorAction Stop
-				$diffObj   = Compare-Object -ReferenceObject $refVibId -DifferenceObject ($esxcliDif.software.vib.list()).ID -IncludeEqual:$false
+				If ($PcliMM -ge 63) {
+					$esxcliDif = Get-EsxCli -V2 -VMHost $esx -ErrorAction Stop
+					$difVibId = ($esxcliDif.software.vib.list.Invoke()).ID
+				}
+				Else {
+					$esxcliDif = Get-EsxCli -VMHost $esx -ErrorAction Stop
+					$difVibId = ($esxcliDif.software.vib.list()).ID
+				}
+				$diffObj = Compare-Object -ReferenceObject $refVibId -DifferenceObject $difVibId -IncludeEqual:$false
 				Foreach ($diff in $diffObj) {
 					If ($diff.SideIndicator -eq '=>') {$diffOwner = $esx} Else {$diffOwner = $ReferenceVMHost}
 					$Properties = [ordered]@{
