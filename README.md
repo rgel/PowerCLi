@@ -70,3 +70,7 @@ Enable/Disable SSH on all ESXi hosts in a cluster.
 ###### <b>9. [Set-VMHostNtpServer</b>] (http://goo.gl/Q4S6yc)
 
 Set "NTP Servers" setting on ESXi hosts.
+
+###### <b>10. [Get-Version</b>] (http://goo.gl/Dd6Ilt)
+
+Get VMware Virtual Infrastructure objects' version info: `VM, ESXi hosts, VDSwitches, Datastores, VCenters, PowerCLi & License Keys`.
