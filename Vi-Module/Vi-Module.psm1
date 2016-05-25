@@ -859,7 +859,7 @@ Function Get-Version {
 	Author       ::	Roman Gelman.
 	Version 1.0  ::	23-May-2016  :: Release.
 .LINK
-	https://goo.gl/Yg7mYp
+	http://goo.gl/Dd6Ilt
 #>
 
 [CmdletBinding(DefaultParameterSetName='VIO')]
