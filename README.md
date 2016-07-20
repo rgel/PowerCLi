@@ -41,7 +41,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |4|<b> [Set-PowerCLiTitle</b>] (http://www.ps1code.com/single-post/2015/11/17/ConnectVIServer-deep-dive-or-%C2%ABWhere-am-I-connected-%C2%BB)|Write connected VI servers info to PowerCLi window title bar|
 |5|<b> [Get-VMHostFirmwareVersion</b>] (http://www.ps1code.com/single-post/2016/1/9/How-to-know-ESXi-servers%E2%80%99-BIOSFirmware-version-using-PowerCLi)|Get a Firmware version and release date of your ESXi hosts|
 |6|<b> [Compare-VMHostSoftwareVib</b>] (http://www.ps1code.com/single-post/2016/1/10/How-to-compare-installed-VIB-packages-between-two-or-more-ESXi-hosts)|Compare installed VIB packages between two or more ESXi hosts|
-|7|<b> [Get-VMHostBirthday</b>] (http://vcdx56.com/2016/01/05/find-esxi-installation-date/)|Get ESXi hosts' installation date|
+|7|<b> [Get-VMHostBirthday</b>] (http://vcdx56.com/2016/01/05/find-esxi-installation-date/)|[Get ESXi hosts' installation date] (https://cloud.githubusercontent.com/assets/6964549/12399803/c8439dfa-be24-11e5-8141-09199caa301e.png)|
 |8|<b> [Enable-VMHostSSH/Disable-VMHostSSH</b>] (http://www.ps1code.com/single-post/2016/02/07/How-to-enabledisable-SSH-on-all-ESXi-hosts-in-a-cluster-using-PowerCLi)|Enable/Disable SSH on all ESXi hosts in a cluster|
 |9|<b> [Set-VMHostNtpServer</b>] (http://www.ps1code.com/single-post/2016/03/10/How-to-configure-NTP-servers-setting-on-ESXi-hosts-using-PowerCLi)|Set "NTP Servers" setting on ESXi hosts|
 |10|<b> [Get-Version</b>] (http://www.ps1code.com/single-post/2016/05/25/How-to-know-any-VMware-object%E2%80%99s-version-Use-GetVersion)|Get VMware Virtual Infrastructure objects' version info: `VM, ESXi hosts, VDSwitches, Datastores, VCenters, PowerCLi & License Keys`|
