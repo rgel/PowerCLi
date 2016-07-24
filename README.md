@@ -1,5 +1,5 @@
-# PowerCLi Repo
-## Scripts & Modules
+# ![powerclilogo](https://cloud.githubusercontent.com/assets/6964549/17082247/44e1392e-517f-11e6-9cbe-9efa0277deaa.png) PowerCLi Repo
+## VMware Scripts & Modules
 
 ### <ins>[Copy-VMNotes2CompDescr.ps1</ins>] (https://github.com/rgel/PowerCLi/blob/master/Copy-VMNotes2CompDescr.ps1)
 
