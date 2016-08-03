@@ -345,7 +345,7 @@ Function Set-PowerCLiTitle {
 .NOTES
 	Author: Roman Gelman.
 .LINK
-	http://goo.gl/0h97C6
+	http://www.ps1code.com/single-post/2015/11/17/ConnectVIServer-deep-dive-or-%C2%ABWhere-am-I-connected-%C2%BB
 #>
 
 $VIS = $global:DefaultVIServers |sort -Descending ProductLine,Name
