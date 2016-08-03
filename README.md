@@ -37,7 +37,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |----|----|----|
 |1|<b>[Get-RDM</b>] (http://www.ps1code.com/single-post/2015/10/16/How-to-get-RDM-Raw-Device-Mappings-disks-using-PowerCLi)|Report all VM with their RDM disks|
 |2|<b>[Convert-VmdkThin2EZThick</b>] (http://www.ps1code.com/single-post/2015/11/05/How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi)|Inflate thin virtual disks|
-|3|<b>[Find-VcVm</b>] (http://www.vmgu.ru/news/vmware-vcenter-how-to-find-powered-off)|Search VCenter VM throw direct connection to group of ESXi hosts|
+|3|<b>[Find-VcVm</b>] (https://cloud.githubusercontent.com/assets/6964549/17361776/d5dff80e-597a-11e6-85a2-a782db875f78.png)|Search VCenter VM throw direct connection to group of ESXi hosts. Tnanks to <i>VMGU.ru</i> for the [article] (http://www.vmgu.ru/news/vmware-vcenter-how-to-find-powered-off)|
 |4|<b>[Set-PowerCLiTitle</b>] (http://www.ps1code.com/single-post/2015/11/17/ConnectVIServer-deep-dive-or-%C2%ABWhere-am-I-connected-%C2%BB)|Write connected VI servers info to PowerCLi window title bar|
 |5|<b>[Get-VMHostFirmwareVersion</b>] (http://www.ps1code.com/single-post/2016/1/9/How-to-know-ESXi-servers%E2%80%99-BIOSFirmware-version-using-PowerCLi)|Get a Firmware version and release date of your ESXi hosts|
 |6|<b>[Compare-VMHostSoftwareVib</b>] (http://www.ps1code.com/single-post/2016/1/10/How-to-compare-installed-VIB-packages-between-two-or-more-ESXi-hosts)|Compare installed VIB packages between two or more ESXi hosts|
