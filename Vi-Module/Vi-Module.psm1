@@ -399,7 +399,7 @@ Filter Get-VMHostFirmwareVersion {
 .NOTES
 	Author: Roman Gelman.
 .LINK
-	https://goo.gl/Yg7mYp
+	http://www.ps1code.com/single-post/2016/1/9/How-to-know-ESXi-servers%E2%80%99-BIOSFirmware-version-using-PowerCLi
 #>
 
 Try
@@ -452,7 +452,7 @@ Function Compare-VMHostSoftwareVib {
 	Version 1.0  ::	10-Jan-2016  :: Release.
 	Version 1.1  ::	01-May-2016  :: Improvement :: Added support for PowerCLi 6.3R1 and ESXCLI V2 interface.
 .LINK
-	https://goo.gl/Yg7mYp
+	http://www.ps1code.com/single-post/2016/1/10/How-to-compare-installed-VIB-packages-between-two-or-more-ESXi-hosts
 #>
 
 Param (
@@ -590,7 +590,7 @@ Function Enable-VMHostSSH {
 	Version 1.0 :: 07-Feb-2016 :: Release.
 	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type.
 .LINK
-	https://goo.gl/Yg7mYp
+	http://www.ps1code.com/single-post/2016/02/07/How-to-enabledisable-SSH-on-all-ESXi-hosts-in-a-cluster-using-PowerCLi
 #>
 
 Param (
@@ -665,7 +665,7 @@ Function Disable-VMHostSSH {
 	Version 1.0 :: 07-Feb-2016 :: Release.
 	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type.
 .LINK
-	https://goo.gl/Yg7mYp
+	http://www.ps1code.com/single-post/2016/02/07/How-to-enabledisable-SSH-on-all-ESXi-hosts-in-a-cluster-using-PowerCLi
 #>
 
 Param (
@@ -753,7 +753,7 @@ Function Set-VMHostNtpServer {
 	Author      ::	Roman Gelman.
 	Version 1.0 ::	10-Mar-2016  :: Release.
 .LINK
-	http://goo.gl/Q4S6yc
+	http://www.ps1code.com/single-post/2016/03/10/How-to-configure-NTP-servers-setting-on-ESXi-hosts-using-PowerCLi
 #>
 
 [CmdletBinding()]
@@ -869,7 +869,7 @@ Function Get-Version {
 	Author       ::	Roman Gelman.
 	Version 1.0  ::	23-May-2016  :: Release.
 .LINK
-	http://goo.gl/Dd6Ilt
+	http://www.ps1code.com/single-post/2016/05/25/How-to-know-any-VMware-object%E2%80%99s-version-Use-GetVersion
 #>
 
 [CmdletBinding(DefaultParameterSetName='VIO')]
