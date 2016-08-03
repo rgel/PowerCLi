@@ -224,15 +224,13 @@ New-Alias -Name Convert-ViMVmdkThin2EZThick -Value Convert-VmdkThin2EZThick -For
 
 Function Find-VcVm {
 
-#requires -version 3.0
-
 <#
 .SYNOPSIS
 	Search VC's VM throw direct connection to group of ESXi Hosts.
 .DESCRIPTION
-	This script generate list of ESXi Hosts with common suffix in name,
+	This script generates a list of ESXi Hosts with common suffix in a name,
 	e.g. (esxprod1,esxprod2, ...) or (esxdev01,esxdev02, ...) etc. and
-	search VCenter's VM throw direct connection to this group of ESXi Hosts.
+	searches VCenter's VM throw direct connection to this group of ESXi Hosts.
 .PARAMETER VC
 	VC's VM Name.
 .PARAMETER HostSuffix
@@ -244,41 +242,45 @@ Function Find-VcVm {
 .PARAMETER AddZero
 	Add ESXi Hosts' postfix leading zero to one-digit postfix (from 01 to 09).
 .EXAMPLE
-	C:\PS> .\Find-VC.ps1 vc1 esxprod 1 20 -AddZero
+	PS C:\> Find-VcVm vc1 esxprod 1 20 -AddZero
 .EXAMPLE
-	C:\PS> .\Find-VC.ps1 -VC vc1 -HostSuffix esxdev -PostfixEnd 6
+	PS C:\> Find-VcVm -VC vc1 -HostSuffix esxdev -PostfixEnd 6
 .EXAMPLE
-	C:\PS> .\Find-VC.ps1 vc1 esxprod |fl
+	PS C:\> Find-VcVm vc1 esxprod |fl
 .NOTES
-	Author: Roman Gelman.
+	Author      :: Roman Gelman.
+	Limitation  :: [1] The function uses common credentials for all ESXi hosts.
+	               [2] The hosts' Lockdown mode should be disabled.
+	Version 1.0 :: 03-Sep-2015 :: Release.
+	Version 1.1 :: 03-Aug-2016 :: Improvement :: Returned object properties changed.
 .OUTPUTS
-	PSCustomObject with two Properties: VC,VMHost or $null.
+	[System.Management.Automation.PSCustomObject] PSObject collection.
 .LINK
-	http://rgel75.wix.com/blog
+	http://ps1code.com
 #>
 
 Param (
 
 	[Parameter(Mandatory=$true,Position=1,HelpMessage="vCenter's VM Name")]
 		[Alias("vCenter","VcVm")]
-	[System.String]$VC
+	[string]$VC
 	,
 	[Parameter(Mandatory=$true,Position=2,HelpMessage="ESXi Hosts' common suffix")]
 		[Alias("VMHostSuffix","ESXiSuffix")]
-	[System.String]$HostSuffix
+	[string]$HostSuffix
 	,
 	[Parameter(Mandatory=$false,Position=3,HelpMessage="ESXi Hosts' postfix number start")]
 		[ValidateRange(1,98)]
 		[Alias("PostfixFirst","Start")]
-	[Int]$PostfixStart = 1
+	[int]$PostfixStart = 1
 	,
 	[Parameter(Mandatory=$false,Position=4,HelpMessage="ESXi Hosts' postfix number end")]
 		[ValidateRange(2,99)]
 		[Alias("PostfixLast","End")]
-	[Int]$PostfixEnd = 9
+	[int]$PostfixEnd = 9
 	,
 	[Parameter(Mandatory=$false,Position=5,HelpMessage="Add ESXi Hosts' postfix leading zero")]
-	[Switch]$AddZero = $false
+	[switch]$AddZero = $false
 )
 
 Begin {
@@ -289,7 +291,6 @@ Begin {
 
 Process {
 
-	$VMHostName = ''
 	$cred = Get-Credential -UserName root -Message "Common VMHost Credentials"
 	If ($cred) {
 		$hosts = @()
@@ -301,9 +302,15 @@ Process {
 				$hosts += $HostSuffix + $i
 			}
 		}
-		Connect-VIServer $hosts -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -Credential $cred |select Name,IsConnected |ft -AutoSize
+		
+		Connect-VIServer $hosts -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -Credential $cred `
+		|select @{N='VMHost';E={$_.Name}},IsConnected |ft -AutoSize
+		
 		If ($global:DefaultVIServers.Length -ne 0) {
-			$VMHostName = (Get-VM -ErrorAction SilentlyContinue |? {$_.Name -eq $VC} |select -ExpandProperty VMHost).Name
+			$TargetVM = Get-VM -ErrorAction SilentlyContinue |? {$_.Name -eq $VC}
+			$VCHostname     = $TargetVM.Guest.HostName
+			$PowerState     = $TargetVM.PowerState
+			$VMHostHostname = $TargetVM.VMHost.Name
 			Disconnect-VIServer -Server '*' -Force -Confirm:$false
 		}
 	}
@@ -311,15 +318,16 @@ Process {
 
 End {
 
-	If ($VMHostName)	{
+	If ($TargetVM)	{
 		$Properties = [ordered]@{
-			VC     = $VC
-			VMHost = $VMHostName
+			VC         = $VC
+			Hostname   = $VCHostname
+			PowerState = $PowerState
+			VMHost     = $VMHostHostname
 		}
 		$Object = New-Object PSObject -Property $Properties
-		return $Object
+		$Object
 	}
-	Else {return $null}
 }
 
 } #EndFunction Find-VcVm
