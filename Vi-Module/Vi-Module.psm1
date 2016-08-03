@@ -28,7 +28,7 @@ Function Get-RDM {
 	when the VML identifier does not match for an RDM on two or more ESXi hosts.
 	VMware [KB2097287].
 .LINK
-	http://goo.gl/3wO4pi
+	http://www.ps1code.com/single-post/2015/10/16/How-to-get-RDM-Raw-Device-Mappings-disks-using-PowerCLi
 #>
 
 [CmdletBinding()]
@@ -121,7 +121,7 @@ Function Convert-VmdkThin2EZThick {
 .NOTES
 	Author: Roman Gelman.
 .LINK
-	http://goo.gl/cVpTpO
+	http://www.ps1code.com/single-post/2015/11/05/How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi
 #>
 
 [CmdletBinding(ConfirmImpact='High',SupportsShouldProcess=$true)]
