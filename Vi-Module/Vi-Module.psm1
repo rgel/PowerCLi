@@ -858,7 +858,7 @@ Function Get-Version {
 	PS C:\> Get-Version -VCenter |Format-Table -AutoSize
 	Get all connected VCenter servers/ESXi hosts versions and PowerCLi version.
 .EXAMPLE
-	PS C:\> Get-DistributedSwitch |Get-Version |sort Version |? {$_.Version -lt 5.5}
+	PS C:\> Get-VDSwitch |Get-Version |sort Version |? {$_.Version -lt 5.5}
 	Get all DVSwitches that have version below 5.5.
 .EXAMPLE
 	PS C:\> Get-Datastore |Get-Version |? {$_.Version.Major -eq 3}
@@ -874,6 +874,9 @@ Function Get-Version {
 .NOTES
 	Author       ::	Roman Gelman.
 	Version 1.0  ::	23-May-2016  :: Release.
+	Version 1.1  ::	03-Aug-2016  :: Bugfix ::
+	[1] VDSwitch data type changed from [VMware.Vim.VmwareDistributedVirtualSwitch] to [VMware.VimAutomation.Vds.Types.V1.VmwareVDSwitch].
+	[2] Function Get-VersionVDSwitch edited to support data type change.
 .LINK
 	http://www.ps1code.com/single-post/2016/05/25/How-to-know-any-VMware-object%E2%80%99s-version-Use-GetVersion
 #>
@@ -1097,7 +1100,7 @@ Begin {
 	$ProductTypeName = 'VMware DVSwitch'
 	Try
 		{
-			$ProductInfo = $InputObject.Summary.ProductInfo
+			$ProductInfo = $InputObject.ExtensionData.Summary.ProductInfo
 			$ProductFullVersion = 'VMware Distributed Virtual Switch ' + $ProductInfo.Version + ' build-' + $ProductInfo.Build
 			$ProductVersion = [version]($ProductInfo.Version + '.' + $ProductInfo.Build)
 			
@@ -1211,11 +1214,11 @@ Process {
 
 	If ($PSCmdlet.ParameterSetName -eq 'VIO') {
 		Foreach ($obj in $VIObject) {
-			If     ($obj -is 'VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost')                  {Get-VersionVMHostImpl -InputObject $obj}
-			ElseIf ($obj -is 'VMware.Vim.HostSystem')                                                  {Get-VersionVMHostView -InputObject $obj}
-			ElseIf ($obj -is 'VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine')          {Get-VersionVM -InputObject $obj}
-			ElseIf ($obj -is 'VMware.Vim.VmwareDistributedVirtualSwitch')                              {Get-VersionVDSwitch -InputObject $obj}
-			ElseIf ($obj -is 'VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore') {Get-VersionDatastore -InputObject $obj}
+			If     ($obj -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost])                  {Get-VersionVMHostImpl -InputObject $obj}
+			ElseIf ($obj -is [VMware.Vim.HostSystem])                                                  {Get-VersionVMHostView -InputObject $obj}
+			ElseIf ($obj -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine])          {Get-VersionVM -InputObject $obj}
+			ElseIf ($obj -is [VMware.VimAutomation.Vds.Types.V1.VmwareVDSwitch])                       {Get-VersionVDSwitch -InputObject $obj}
+			ElseIf ($obj -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore]) {Get-VersionDatastore -InputObject $obj}
 			Else   {Write-Warning "Not supported object type"}
 		}
 	}
