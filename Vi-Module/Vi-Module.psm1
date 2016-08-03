@@ -398,15 +398,17 @@ Filter Get-VMHostFirmwareVersion {
 	[System.String[]] BIOS/UEFI version and release date.
 .NOTES
 	Author: Roman Gelman.
+	Version 1.0 :: 09-Jan-2016 :: Release.
+	Version 1.1 :: 03-Aug-2016 :: Improvement :: GetType() method replaced by -is for type determine.
 .LINK
 	http://www.ps1code.com/single-post/2016/1/9/How-to-know-ESXi-servers%E2%80%99-BIOSFirmware-version-using-PowerCLi
 #>
 
 Try
 	{
-		If     ($_.GetType().Name -eq 'VMHostImpl') {$BiosInfo = ($_ |Get-View).Hardware.BiosInfo}
-		ElseIf ($_.GetType().Name -eq 'HostSystem') {$BiosInfo = $_.Hardware.BiosInfo}
-		ElseIf ($_.GetType().Name -eq 'String')     {$BiosInfo = (Get-View -ViewType HostSystem -Filter @{"Name" = $_}).Hardware.BiosInfo}
+		If     ($_ -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]) {$BiosInfo = ($_ |Get-View).Hardware.BiosInfo}
+		ElseIf ($_ -is [VMware.Vim.HostSystem])                                 {$BiosInfo = $_.Hardware.BiosInfo}
+		ElseIf ($_ -is [string])                                                {$BiosInfo = (Get-View -ViewType HostSystem -Filter @{"Name" = $_}).Hardware.BiosInfo}
 		Else   {Throw "Not supported data type as pipeline"}
 
 		$fVersion = $BiosInfo.BiosVersion -replace ('^-\[|\]-$', $null)
