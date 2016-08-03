@@ -107,20 +107,23 @@ Function Convert-VmdkThin2EZThick {
 .SYNOPSIS
 	Inflate thin virtual disks.
 .DESCRIPTION
-	This function convert all Thin Provisioned VM's disks to type 'Thick Provision Eager Zeroed'.
+	This function converts all Thin Provisioned VM' disks to type 'Thick Provision Eager Zeroed'.
 .PARAMETER VM
-	VM's collection, returned by Get-VM cmdlet.
+	Virtual Machine(s).
 .EXAMPLE
 	C:\PS> Get-VM VM1 |Convert-VmdkThin2EZThick
 .EXAMPLE
 	C:\PS> Get-VM VM1,VM2 |Convert-VmdkThin2EZThick -Confirm:$false |sort VM,Datastore,VMDK |ft -au
 .INPUTS
-	Get-VM collection.
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]] Objects, returned by Get-VM cmdlet.
 .OUTPUTS
-	PSObject collection.
+	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
 	Author: Roman Gelman.
+	Version 1.0 :: 05-Nov-2015 :: Release.
+	Version 1.1 :: 03-Aug-2016 :: Improvements ::
+	[1] GetType() method replaced by -is for type determine.
+	[2] Parameter 'VMs' renamed to 'VM', parameter alias renamed from 'VM' to 'VMs'.
 .LINK
 	http://www.ps1code.com/single-post/2015/11/05/How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi
 #>
@@ -131,8 +134,8 @@ Param (
 
 	[Parameter(Mandatory=$true,Position=1,ValueFromPipeline=$true,HelpMessage="VM's collection, returned by Get-VM cmdlet")]
 		[ValidateNotNullorEmpty()]
-		[Alias("VM")]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VMs
+		[Alias("VMs")]
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VM
 
 )
 
@@ -145,23 +148,23 @@ Begin {
 
 Process {
 	
-	Foreach ($vm in ($VMs |Get-View)) {
+	Foreach ($vmv in ($VM |Get-View)) {
 	
 		### Ask confirmation to proceed if VM is PoweredOff ###
-		If ($vm.Runtime.PowerState -eq 'poweredOff' -and $PSCmdlet.ShouldProcess("VM [$($vm.Name)]","Convert all Thin Provisioned VMDK to Type: 'Thick Provision Eager Zeroed'")) {
+		If ($vmv.Runtime.PowerState -eq 'poweredOff' -and $PSCmdlet.ShouldProcess("VM [$($vmv.Name)]","Convert all Thin Provisioned VMDK to Type: 'Thick Provision Eager Zeroed'")) {
 		
-			### Get ESXi object where $vm is registered ###
-			$esx = Get-View $vm.Runtime.Host
+			### Get ESXi object where $vmv is registered ###
+			$esx = Get-View $vmv.Runtime.Host
 			
-			### Get Datacenter object where $vm is registered ###
-			$parentObj = Get-View $vm.Parent
+			### Get Datacenter object where $vmv is registered ###
+			$parentObj = Get-View $vmv.Parent
 		    While ($parentObj -isnot [VMware.Vim.Datacenter]) {$parentObj = Get-View $parentObj.Parent}
 		    $datacenter       = New-Object VMware.Vim.ManagedObjectReference
 			$datacenter.Type  = 'Datacenter'
 			$datacenter.Value = $parentObj.MoRef.Value
 		   
-			Foreach ($dev in $vm.Config.Hardware.Device) {
-			    If (($dev.GetType()).Name -eq "VirtualDisk") {
+			Foreach ($dev in $vmv.Config.Hardware.Device) {
+			    If ($dev -is [VMware.Vim.VirtualDisk]) {
 					If ($dev.Backing.ThinProvisioned -and $dev.Backing.Parent -eq $null) {
 					
 			        	$sizeGB = [math]::Round(($dev.CapacityInKB / 1MB), 1)
@@ -172,11 +175,11 @@ Process {
 						$task      = Get-View $taskMoRef
 						
 						### Show task progress ###
-						For ($i=1;$i -lt [int32]::MaxValue;$i++) {
+						For ($i=1; $i -lt [int32]::MaxValue; $i++) {
 							If ("running","queued" -contains $task.Info.State) {
 								$task.UpdateViewData("Info")
 								If ($task.Info.Progress -ne $null) {
-									Write-Progress -Activity "Inflate virtual disk task is in progress ..." -Status "VM - $($vm.Name)" `
+									Write-Progress -Activity "Inflate virtual disk task is in progress ..." -Status "VM - $($vmv.Name)" `
 									-CurrentOperation "$($dev.DeviceInfo.Label) - $($dev.Backing.FileName) - $sizeGB GB" `
 									-PercentComplete $task.Info.Progress -ErrorAction SilentlyContinue
 									Start-Sleep -Seconds 3
@@ -195,7 +198,7 @@ Process {
 						$null = $dev.Backing.FileName -match $regxVMDK
 						
 						$Properties = [ordered]@{
-							VM           = $vm.Name
+							VM           = $vmv.Name
 							VMHost       = $esx.Name
 							Datastore    = $Matches.Datastore
 							VMDK         = $Matches.Filename
@@ -211,7 +214,7 @@ Process {
 					}
 				}
 			}
-			$vm.Reload()
+			$vmv.Reload()
 		}
 	}
 }
