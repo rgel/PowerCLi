@@ -27,6 +27,7 @@ Function Get-RDM {
 	Version 1.1 :: 03-Dec-2015 :: Bugfix :: Error message appear while VML mismatch,
 	when the VML identifier does not match for an RDM on two or more ESXi hosts.
 	VMware [KB2097287].
+	Version 1.2 :: 03-Aug-2016 :: Improvement :: GetType() method replaced by -is for type determine.
 .LINK
 	http://www.ps1code.com/single-post/2015/10/16/How-to-get-RDM-Raw-Device-Mappings-disks-using-PowerCLi
 #>
@@ -53,7 +54,7 @@ Process {
 	
 	Foreach ($vm in ($VMs |Get-View)) {
 		Foreach ($dev in $vm.Config.Hardware.Device) {
-		    If (($dev.GetType()).Name -eq "VirtualDisk") {
+		    If ($dev -is [VMware.Vim.VirtualDisk]) {
 				If ("physicalMode","virtualMode" -contains $dev.Backing.CompatibilityMode) {
 		         	
 					Write-Progress -Activity "Gathering RDM ..." -CurrentOperation "Hard disk - [$($dev.DeviceInfo.Label)]" -Status "VM - $($vm.Name)"
