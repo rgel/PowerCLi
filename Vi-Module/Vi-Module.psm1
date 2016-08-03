@@ -454,8 +454,8 @@ Param (
 	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$ReferenceVMHost
 	,
 	[Parameter(Mandatory,Position=2,ValueFromPipeline,HelpMessage="Difference VMHosts collection")]
-		[Alias("DifferenceESXi")]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]$DifferenceVMHosts
+		[Alias("DifferenceESXi","DifferenceVMHosts")]
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]$DifferenceVMHost
 )
 
 Begin {
@@ -580,6 +580,7 @@ Function Enable-VMHostSSH {
 .NOTES
 	Author      ::	Roman Gelman.
 	Version 1.0 :: 07-Feb-2016 :: Release.
+	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type.
 .LINK
 	https://goo.gl/Yg7mYp
 #>
@@ -588,7 +589,7 @@ Param (
 
 	[Parameter(Mandatory=$false,Position=0,ValueFromPipeline=$true)]
 		[ValidateNotNullorEmpty()]
-	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl[]]$Cluster = (Get-Cluster)
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster[]]$Cluster = (Get-Cluster)
 )
 
 Process {
@@ -654,6 +655,7 @@ Function Disable-VMHostSSH {
 .NOTES
 	Author      ::	Roman Gelman.
 	Version 1.0 :: 07-Feb-2016 :: Release.
+	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type.
 .LINK
 	https://goo.gl/Yg7mYp
 #>
@@ -662,7 +664,7 @@ Param (
 
 	[Parameter(Mandatory=$false,Position=0,ValueFromPipeline=$true)]
 		[ValidateNotNullorEmpty()]
-	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl[]]$Cluster = (Get-Cluster)
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster[]]$Cluster = (Get-Cluster)
 	,
 	[Parameter(Mandatory=$false,Position=1)]
 	[Switch]$BlockFirewall
