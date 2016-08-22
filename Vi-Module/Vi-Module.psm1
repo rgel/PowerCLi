@@ -369,9 +369,9 @@ If ($VIS) {
 	Foreach ($VIObj in $VIS) {
 		If ($VIObj.IsConnected) {
 			Switch -exact ($VIObj.ProductLine) {
-				vpx			{If ($VIObj.ExtensionData.Content.About.OsType -match '^linux') {$VIProduct = 'VCSA'} Else {$VIProduct = 'VCenter'} ; Break}
+				vpx         {If ($VIObj.ExtensionData.Content.About.OsType -match '^linux') {$VIProduct = 'VCSA'} Else {$VIProduct = 'VCenter'} ; Break}
 				embeddedEsx {$VIProduct = 'ESXi' ; Break}
-				Default		{$VIProduct = $VIObj.ProductLine}
+				Default     {$VIProduct = $VIObj.ProductLine}
 			}
 			$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 		}
@@ -382,8 +382,8 @@ If ($SRM) {
 	Foreach ($VIObj in $SRM) {
 		If ($VIObj.IsConnected) {
 			Switch -exact ($VIObj.ProductLine) {
-				srm		{$VIProduct = 'SRM' ; Break}
-				Default	{$VIProduct = $VIObj.ProductLine}
+				srm     {$VIProduct = 'SRM' ; Break}
+				Default {$VIProduct = $VIObj.ProductLine}
 			}
 			$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 		}
