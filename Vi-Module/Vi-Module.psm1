@@ -343,31 +343,54 @@ Function Set-PowerCLiTitle {
 .SYNOPSIS
 	Write connected VI servers info to PowerCLi window title bar.
 .DESCRIPTION
-	This function write connected VI servers info to PowerCLi window/console title bar [Name :: Product (VCenter/ESXi) ProductVersion].
+	This function writes connected VI servers info to PowerCLi window/console title bar
+	in the following format: [VIServerName :: ProductType (VCenter/VCSA/ESXi/SRM)-ProductVersion].
 .EXAMPLE
-	C:\PS> Set-PowerCLiTitle
+	PS C:\> Connect-VIServer vc1 -WarningAction SilentlyContinue
+	PS C:\> Set-PowerCLiTitle
+.EXAMPLE
+	PS C:\> Connect-SrmServer srm1
+	PS C:\> Set-PowerCLiTitle
 .NOTES
 	Author: Roman Gelman.
+	Version 1.0  ::	17-Nov-2015  :: Release.
+	Version 1.1  ::	22-Aug-2016  :: Improvements.
+	[1] Added support for SRM servers.
+	[2] Now the function differs VCSA from Windows VCenters.
+	[3] Minor visual changes.
 .LINK
 	http://www.ps1code.com/single-post/2015/11/17/ConnectVIServer-deep-dive-or-%C2%ABWhere-am-I-connected-%C2%BB
 #>
 
 $VIS = $global:DefaultVIServers |sort -Descending ProductLine,Name
+$SRM = $global:DefaultSrmServers |sort -Descending ProductLine,Name
 
 If ($VIS) {
 	Foreach ($VIObj in $VIS) {
 		If ($VIObj.IsConnected) {
 			Switch -exact ($VIObj.ProductLine) {
-				vpx			{$VIProduct = 'VCenter'; Break}
-				embeddedEsx {$VIProduct = 'ESXi'; Break}
-				Default		{$VIProduct = $VIObj.ProductLine; Break}
+				vpx			{If ($VIObj.ExtensionData.Content.About.OsType -match '^linux') {$VIProduct = 'VCSA'} Else {$VIProduct = 'VCenter'} ; Break}
+				embeddedEsx {$VIProduct = 'ESXi' ; Break}
+				Default		{$VIProduct = $VIObj.ProductLine}
 			}
-			$Header += "[$($VIObj.Name) :: $VIProduct$($VIObj.Version)] "
+			$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 		}
 	}
-} Else {
-	$Header = ':: Not connected to Virtual Infra Services ::'
 }
+
+If ($SRM) {
+	Foreach ($VIObj in $SRM) {
+		If ($VIObj.IsConnected) {
+			Switch -exact ($VIObj.ProductLine) {
+				srm		{$VIProduct = 'SRM' ; Break}
+				Default	{$VIProduct = $VIObj.ProductLine}
+			}
+			$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
+		}
+	}
+}
+
+If (!$VIS -and !$SRM) {$Header = ':: Not connected to any VI Servers ::'}
 
 $Host.UI.RawUI.WindowTitle = $Header
 
