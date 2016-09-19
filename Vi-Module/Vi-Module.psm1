@@ -1303,7 +1303,10 @@ Function Search-Datastore {
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
 	Author       ::	Roman Gelman.
-	Version 1.0  ::	09-Aug-2016  :: Release.
+	Version 1.0  ::	09-Aug-2016  :: [Release].
+	Version 1.1  ::	19-Sep-2016  ::
+	[Bugfix] Some SAN as NetApp return `*-flat.vmdk` files in the search. Such files were recognized as orphaned.
+	[Change] `Changed Block Tracking Disk` file type was renamed to `CBT Disk`.
 .LINK
 	http://www.ps1code.com/single-post/2016/08/21/Browse-VMware-Datastores-with-PowerCLi
 #>
@@ -1413,10 +1416,10 @@ Process {
 					If ($FileTypes.ContainsKey($ShortExt)) {$LongExt = $FileTypes.$ShortExt} Else {$LongExt = '.'+$ShortExt.ToUpper()}
 					
 					If ($ShortExt -eq 'vmdk') {
-						If ($FileBody -match '-ctk$') {$LongExt = 'Changed Block Tracking Disk'}
+						If ($FileBody -match '-ctk$') {$LongExt = 'CBT Disk'}
 						Else {
 							If ($FileBody -match '-(\d{6}|delta)$') {$LongExt = 'Snapshot Disk'}
-							If ($UsedDisks -notcontains ($folder.FolderPath + $fileResult.Path)) {$LongExt = 'Orphaned '+$LongExt}
+							If ($UsedDisks -notcontains ($folder.FolderPath + $fileResult.Path) -and $FileBody -notmatch '-flat$') {$LongExt = 'Orphaned '+$LongExt}
 						}
 					}
 					
