@@ -1469,4 +1469,206 @@ End {Write-Progress -Activity "Completed" -Completed}
 } #EndFunction Search-Datastore
 New-Alias -Name Search-ViMDatastore -Value Search-Datastore -Force:$true
 
+Function Compare-VMHost {
+
+<#
+.SYNOPSIS
+	Compare two or more ESXi hosts on different properties.
+.DESCRIPTION
+	This cmdlet can compare two or more ESXi hosts on different criteria.
+.PARAMETER ReferenceVMHost
+	Reference ESXi host.
+.PARAMETER DifferenceVMHost
+	Difference ESXi host.
+.PARAMETER Compare
+	What to compare.
+.PARAMETER Truncate
+	Try to truncate ESXi hostname.
+.PARAMETER ColorOutput
+	Redirect color output to the console.
+.EXAMPLE
+	PS C:\> Get-VMHost 'esx2.*' |Compare-VMHost -ReferenceVMHost (Get-VMHost 'esx1.*') -Compare ScsiDevice
+.EXAMPLE
+	PS C:\> Get-VMHost 'esx2[78].*' |Compare-VMHost -ReferenceVMHost (Get-VMHost 'esx21.*') -Compare SharedDatastore
+	Compare shared datastores of two VMHosts [esx27],[esx28] with the reference VMHost [esx21].
+.EXAMPLE
+	PS C:\> Get-VMHost 'esx2.*' |Compare-VMHost -ReferenceVMHost (Get-VMHost 'esx1.*') -Compare Portgroup -Truncate -ColorOutput
+	Compare portgroups between two hosts, truncate hostnames and redirect color output to the console.
+.INPUTS
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost] VMHost objects, returned by `Get-VMHost` cmdlet.
+.OUTPUTS
+	[System.Management.Automation.PSCustomObject] PSObject collection.
+.NOTES
+	Author       ::	Roman Gelman
+	Version 1.0  ::	19-Sep-2016 :: [Release].
+.LINK
+	http://ps1code.com
+#>
+
+Param (
+
+	[Parameter(Mandatory,Position=1,HelpMessage="Reference VMHost")]
+		[Alias("ReferenceESXi")]
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$ReferenceVMHost
+	,
+	[Parameter(Mandatory,Position=2,ValueFromPipeline,HelpMessage="Difference VMHosts collection")]
+		[Alias("DifferenceESXi","DifferenceVMHosts")]
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]$DifferenceVMHost
+	,
+	[Parameter(Mandatory=$false,Position=3,HelpMessage="Compare VMHosts on this property")]
+		[ValidateSet("ScsiDevice","ScsiLun","Datastore","SharedDatastore","Portgroup")]
+	[string]$Compare = 'ScsiLun'
+	,
+	[Parameter(Mandatory=$false,Position=4,HelpMessage="Try to truncate a VMHost name from its FQDN")]
+		[Alias("TruncateVMHostName")]
+	[switch]$Truncate
+	,
+	[Parameter(Mandatory=$false,Position=5,HelpMessage="Send colorized output to the console")]
+		[Alias("Color")]
+	[switch]$ColorOutput
+)
+
+Begin {
+
+	$ErrorActionPreference = 'Stop'
+	$Width = 3
+
+	Try
+	{
+		Switch -exact ($Compare) {
+		
+			'ScsiLun'
+			{
+				$RefHost = (Get-ScsiLun -VmHost $ReferenceVMHost -LunType 'disk' |
+				select @{N='LUN';E={([regex]::Match($_.RuntimeName, ':L(\d+)$').Groups[1].Value) -as [int]}} |
+				sort LUN).LUN
+				$Length = 'ScsiLun'.Length
+				Break
+			}
+			'ScsiDevice'
+			{
+				$RefHost = (Get-ScsiLun -VmHost $ReferenceVMHost -LunType 'disk' |
+				select CanonicalName |sort CanonicalName).CanonicalName
+				$Length = 'ScsiDevice'.Length
+				$Width = $Width + 1
+				Break
+			}
+			'Datastore'
+			{
+				$RefHost = ($ReferenceVMHost |Get-Datastore |select Name |sort Name).Name
+				$Length = 'Datastore'.Length
+				$Width = $Width - 1
+				Break
+			}
+			'SharedDatastore'
+			{
+				$RefHost = ($ReferenceVMHost |Get-Datastore |? {$_.ExtensionData.Summary.MultipleHostAccess} |select Name |sort Name).Name
+				$Length = 'SharedDatastore'.Length
+				$Width = $Width - 1
+				Break
+			}
+			'Portgroup'
+			{
+				$RefHost = (($ReferenceVMHost).NetworkInfo.ExtensionData.Portgroup).Spec.Name
+				$Length = 'Portgroup'.Length
+				$Width = $Width - 1
+			}
+		} #EndSwitch
+		
+		### Write a header to the console ###
+		If ($ColorOutput) {
+			$Tab = "`t"*$Width
+			$Minus = "-"*$Length
+			Write-Host ("`n$Compare$Tab"+'VMHost') -ForegroundColor Green
+			Write-Host ("$Minus$Tab"+'-'*6) -ForegroundColor Green
+		}
+	}
+	Catch
+	{
+		"{0}" -f $Error.Exception.Message
+	}
+}
+
+Process {
+
+	Try
+	{
+		Switch -exact ($Compare) {
+		
+			'ScsiLun'
+			{
+				$DifHost = (Get-ScsiLun -VmHost $DifferenceVMHost -LunType 'disk' |
+				select @{N='LUN';E={([regex]::Match($_.RuntimeName, ':L(\d+)$').Groups[1].Value) -as [int]}} |
+				sort LUN).LUN
+				Break
+			}
+			'ScsiDevice'
+			{
+				$DifHost = (Get-ScsiLun -VmHost $DifferenceVMHost -LunType 'disk' |
+				select CanonicalName |sort CanonicalName).CanonicalName
+				Break
+			}
+			'Datastore'
+			{
+				$DifHost = ($DifferenceVMHost |Get-Datastore |select Name |sort Name).Name
+				Break
+			}
+			'SharedDatastore'
+			{
+				$DifHost = ($DifferenceVMHost |Get-Datastore |? {$_.ExtensionData.Summary.MultipleHostAccess} |select Name |sort Name).Name
+				Break
+			}
+			'Portgroup'
+			{
+				$DifHost = (($DifferenceVMHost).NetworkInfo.ExtensionData.Portgroup).Spec.Name
+			}
+		} #EndSwitch
+		
+		$diffObj = Compare-Object -ReferenceObject $RefHost -DifferenceObject $DifHost -IncludeEqual:$false -CaseSensitive
+		Foreach ($diff in $diffObj) {
+			If ($diff.SideIndicator -eq '=>') {
+				$diffOwner  = $DifferenceVMHost.Name
+				$Reference  = $false
+				$Difference = ''
+			}
+			Else {
+				$diffOwner  = $ReferenceVMHost.Name
+				$Reference  = $true
+				$Difference = $DifferenceVMHost.Name
+			}
+			
+			If ($Truncate) {
+				$diffOwner  = [regex]::Match($diffOwner, '^(.+?)(\.|$)').Groups[1].Value
+				$Difference = [regex]::Match($Difference, '^(.+?)(\.|$)').Groups[1].Value
+			}
+			
+			$Properties = [ordered]@{
+				$Compare   = $diff.InputObject
+				VMHost     = $diffOwner
+				Reference  = $Reference
+				Difference = $Difference
+			}
+			$Object = New-Object PSObject -Property $Properties
+			
+			### Return resultant object ###
+			If ($ColorOutput) {
+				If (($Object.$Compare).Length -lt 8) {$Tabs = "`t"*3} ElseIf (8..15 -contains ($Object.$Compare).Length) {$Tabs = "`t"*2} Else {$Tabs = "`t"}
+				$Output = "$($Object.$Compare)$Tabs$diffOwner"
+				If ($Reference) {Write-Host $Output -ForegroundColor Yellow}
+				Else            {Write-Host $Output -ForegroundColor Gray}
+			} Else {$Object}
+		}
+	}
+	Catch
+	{
+		"{0}" -f $Error.Exception.Message
+	}
+	
+} #EndProcess
+
+End {If ($ColorOutput) {"`r"}}
+
+} #EndFunction Compare-VMHost
+New-Alias -Name Compare-ViMVMHost -Value Compare-VMHost -Force:$true
+
 Export-ModuleMember -Alias '*' -Function '*'
