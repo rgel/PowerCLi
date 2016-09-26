@@ -1502,7 +1502,7 @@ Function Compare-VMHost {
 	Author       ::	Roman Gelman
 	Version 1.0  ::	19-Sep-2016 :: [Release].
 .LINK
-	http://ps1code.com
+	http://www.ps1code.com/single-post/2016/09/26/Compare-two-or-more-ESXi-hosts-with-PowerCLi
 #>
 
 Param (
