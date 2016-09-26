@@ -12,7 +12,7 @@
 RootModule = 'Vi-Module'
 
 # Version number of this module.
-ModuleVersion = '1.0.0.1'
+ModuleVersion = '1.0.0.2'
 
 # ID used to uniquely identify this module
 GUID = '6ef8e79d-bd24-4707-9029-7726ebf48cd5'
