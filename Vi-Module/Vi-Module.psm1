@@ -1500,7 +1500,7 @@ Function Compare-VMHost {
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
 	Author       ::	Roman Gelman
-	Version 1.0  ::	19-Sep-2016 :: [Release].
+	Version 1.0  ::	26-Sep-2016 :: [Release].
 .LINK
 	http://www.ps1code.com/single-post/2016/09/26/Compare-two-or-more-ESXi-hosts-with-PowerCLi
 #>
