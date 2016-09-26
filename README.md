@@ -45,3 +45,4 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |8|<b>[Enable-VMHostSSH/Disable-VMHostSSH</b>] (http://www.ps1code.com/single-post/2016/02/07/How-to-enabledisable-SSH-on-all-ESXi-hosts-in-a-cluster-using-PowerCLi)|Enable/Disable SSH on all ESXi hosts in a cluster|
 |9|<b>[Set-VMHostNtpServer</b>] (http://www.ps1code.com/single-post/2016/03/10/How-to-configure-NTP-servers-setting-on-ESXi-hosts-using-PowerCLi)|Set `NTP Servers` setting on ESXi hosts|
 |10|<b>[Get-Version</b>] (http://www.ps1code.com/single-post/2016/05/25/How-to-know-any-VMware-object%E2%80%99s-version-Use-GetVersion)|Get VMware Virtual Infrastructure objects' version info: `VM`, `ESXi Hosts`, `VDSwitches`, `Datastores`, `VCenters`, `PowerCLi`, `License Keys`|
+|11|<b>[Compare-VMHost</b>] (http://www.ps1code.com/single-post/2016/09/26/Compare-two-or-more-ESXi-hosts-with-PowerCLi)|Compare two or more ESXi hosts with PowerCLi|
