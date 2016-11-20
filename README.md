@@ -19,13 +19,15 @@ To install this module, drop the entire '<b>Vi-Module</b>' folder into one of yo
 
 The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable.
 
-To make it look better, split the paths in this manner `$env:PSModulePath -split ';'`
+To make it look better, split the paths in this manner: `$env:PSModulePath -split ';'`
 
 The default per-user module path is: `"$env:HOMEDRIVE$env:HOMEPATH\Documents\WindowsPowerShell\Modules"`.
 
 The default computer-level module path is: `"$env:windir\System32\WindowsPowerShell\v1.0\Modules"`.
 
 To use the module, type following command: `Import-Module Vi-Module -Force -Verbose`.
+
+To get the module version type following command: `Get-Module -ListAvailable |? {$_.Name -eq 'Vi-Module'}`.
 
 To see the commands imported, type `Get-Command -Module Vi-Module`.
 
