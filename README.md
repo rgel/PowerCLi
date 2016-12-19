@@ -48,3 +48,4 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |9|<b>[Set-VMHostNtpServer</b>] (http://www.ps1code.com/single-post/2016/03/10/How-to-configure-NTP-servers-setting-on-ESXi-hosts-using-PowerCLi)|Set `NTP Servers` setting on ESXi hosts|
 |10|<b>[Get-Version</b>] (http://www.ps1code.com/single-post/2016/05/25/How-to-know-any-VMware-object%E2%80%99s-version-Use-GetVersion)|Get VMware Virtual Infrastructure objects' version info: `VM`, `ESXi Hosts`, `VDSwitches`, `Datastores`, `VCenters`, `PowerCLi`, `License Keys`|
 |11|<b>[Compare-VMHost</b>] (http://www.ps1code.com/single-post/2016/09/26/Compare-two-or-more-ESXi-hosts-with-PowerCLi)|Compare two or more ESXi hosts with PowerCLi|
+|12|<b>[Move-Template2Datastore</b>] (http://www.ps1code.com/single-post/2016/12/19/How-to-migrate-VMware-VM-Templates-to-another-Datastore-by-PowerCLi)|Invoke Storage VMotion task for VM Template(s)|
