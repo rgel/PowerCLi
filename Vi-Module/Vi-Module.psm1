@@ -1671,4 +1671,118 @@ End {If ($ColorOutput) {"`r"}}
 } #EndFunction Compare-VMHost
 New-Alias -Name Compare-ViMVMHost -Value Compare-VMHost -Force:$true
 
+Function Move-Template2Datastore {
+
+<#
+.SYNOPSIS
+	Invoke SVMotion for VM Templates.
+.DESCRIPTION
+	The Move-Template2Datastore cmdlet invokes Storage vMotion task for VM Template(s).
+.PARAMETER Template
+	VM Template object(s), returned by `Get-Template` cmdlet.
+.PARAMETER Datastore
+	Target Datastore object, returned by `Get-Datastore` cmdlet.
+.EXAMPLE
+	PS C:\> Get-Template 'rhel*' |Move-Template2Datastore (Get-Datastore $DatastoreName)
+.EXAMPLE
+	PS C:\> (Get-Template).Where{$_.ExtensionData.Guest.GuestId -match '^windows'} |Move-Template2Datastore -DatastoreCluster $DatastoreClusterName
+	Distribute all Windows Guest based templates to randomly choisen Datastores in a DatastoreCluster.
+.NOTES
+	Author      :: Roman Gelman
+	Shell       :: Tested on PowerShell 5.0/5.1|PowerCLi 6.5
+	Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
+	Requirement :: ESXi Hosts where Templates are registered must be HA/DRS Cluster members. PowerShell 3.0+
+	Version 1.0 :: 14-Dec-2016 :: [Release]
+.LINK
+	http://ps1code.com
+#>
+
+[CmdletBinding(DefaultParameterSetName='DS')]
+[OutputType([PSCustomObject])]
+
+Param (
+	[Parameter(Mandatory,ValueFromPipeline)]
+		[Alias("VMTemplate","Templates")]
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.Template[]]$Template
+	,
+	[Parameter(Mandatory,Position=0,ParameterSetName='DS')]
+	$Datastore
+	,
+	[Parameter(Mandatory,Position=0,ParameterSetName='DSC')]
+	[VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.DatastoreCluster]$DatastoreCluster
+)
+
+Begin {
+	$ErrorActionPreference = 'Stop'
+	If ($PSCmdlet.ParameterSetName -eq 'DS') {
+		If ($Datastore -isnot [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore] `
+		-and $Datastore -isnot [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.NasDatastore]) {Throw "Unsupported Datastore type"}
+	}
+} #EndBegin
+
+Process {
+	Try
+	{
+		$null = . {
+		
+			### Get random Datastore from the DatastoreCluster ###
+			If ($PSCmdlet.ParameterSetName -eq 'DSC') {
+				$Datastore = Get-DatastoreCluster $DatastoreCluster |Get-Datastore |sort {Get-Random} |select -First 1
+			}
+			
+			### Convert the Template to a VM ###
+			$poolMoref = (Get-ResourcePool -Location (Get-VMHost -Id $Template.HostId |Get-Cluster) -Name Resources).Id
+			$hostMoref = $Template.HostId
+			$ViewTemplate = Get-View -VIObject $Template
+			$ViewTemplate.MarkAsVirtualMachine($poolMoref,$hostMoref)
+			$VM = Get-VM -Name $Template.Name
+			
+			### Initialize SVMotion Task ###
+			$ViewVM = Get-View -VIObject $VM
+			$spec = New-Object -TypeName 'VMware.Vim.VirtualMachineRelocateSpec'
+			$spec.Datastore = New-Object -TypeName 'VMware.Vim.ManagedObjectReference'
+			$spec.Datastore = $Datastore.Id
+			$priority = [VMware.Vim.VirtualMachineMovePriority]'defaultPriority'
+			$TaskMoref = $ViewVM.RelocateVM_Task($spec,$priority)
+
+			$ViewTask = Get-View $TaskMoref
+			For ($i=1; $i -lt [int32]::MaxValue; $i++) {
+				If ("running","queued" -contains $ViewTask.Info.State) {
+					$ViewTask.UpdateViewData("Info")
+					If ($ViewTask.Info.Progress -ne $null) {
+						Write-Progress -Activity "Migrating Template ..." -Status "Template [$($VM.Name)]" `
+						-CurrentOperation "Datastore [$($Datastore.Name)]" `
+						-PercentComplete $ViewTask.Info.Progress -ErrorAction SilentlyContinue
+						Start-Sleep -Seconds 3
+					}
+				} Else {Write-Progress -Activity "Completed" -Completed; Break}
+			}
+			If ($ViewTask.Info.State -eq "error") {
+				$ViewTask.UpdateViewData("Info.Error")
+				$ViewTask.Info.Error.Fault.FaultMessage |% {$_.Message}
+			}
+			
+			### Convert the VM back to the Template ###
+			$ViewVM.MarkAsTemplate()
+			
+			$ErrorMsg = $null
+		}
+	}
+	Catch {$ErrorMsg = "{0}" -f $Error.Exception.Message}
+	
+	$Properties = [ordered]@{
+		Template  = $Template.Name
+		Datastore = $Datastore.Name
+		Error     = $ErrorMsg
+	}
+	$Object = New-Object PSObject -Property $Properties
+	$Object
+	
+} #EndProcess
+
+End {}
+
+} #EndFunction Move-Template2Datastore
+New-Alias -Name Move-ViMTemplate2Datastore -Value Move-Template2Datastore -Force:$true
+
 Export-ModuleMember -Alias '*' -Function '*'
