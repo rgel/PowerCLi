@@ -13,7 +13,7 @@
 
 ###### <b>[Create enterprise-wide input file for IBM multiple warranty lookup using PowerShell</b>] (http://www.ps1code.com/single-post/2016/1/13/How-to-create-enterprisewide-input-file-for-IBM-multiple-warranty-lookup-web-service-using-PowerShell)
 
-### <ins>[Vi-Module.psm1</ins>] (https://github.com/rgel/PowerCLi/tree/master/Vi-Module)
+### <ins>[Vi-Module</ins>] (https://github.com/rgel/PowerCLi/tree/master/Vi-Module)
 
 To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories.
 
