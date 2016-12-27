@@ -1785,4 +1785,96 @@ End {}
 } #EndFunction Move-Template2Datastore
 New-Alias -Name Move-ViMTemplate2Datastore -Value Move-Template2Datastore -Force:$true
 
+Function Read-VMHostCredential {
+
+<#
+.SYNOPSIS
+	Decrypt an encrypted file.
+.DESCRIPTION
+	The Read-VMHostCredential cmdlet decrypts an encrypted file, created by `New-SecureCred.ps1` script.
+.PARAMETER CredFile
+	Full path to an encrypted file.
+.PARAMETER User
+	Returns username and not a password.
+.EXAMPLE
+	PS C:\> Read-VMHostCredential "$($env:USERPROFILE)\Documents\esx.sec"
+	Decrypts the password from the default file.
+.EXAMPLE
+	PS C:\> Read-VMHostCredential -User
+	Returns user name.
+.NOTES
+	Author      :: Roman Gelman
+	Requirement :: PowerShell 3.0+
+	Version 1.0 :: 27-Dec-2016 :: [Release]
+.LINK
+	https://github.com/rgel/Azure/blob/master/New-SecureCred.ps1
+#>
+
+Param (
+	[Parameter(Mandatory=$false,Position=0)]
+		[ValidateNotNullorEmpty()]
+		[ValidateScript({Test-Path $_ -PathType Leaf})]
+	[string]$CredFile = "$(Split-Path $PROFILE)\esx.cred"
+	,
+	[Parameter(Mandatory=$false)]
+	[switch]$User
+)
+
+	$Login = 'root'
+
+	If (Test-Path $CredFile -PathType Leaf) {
+		$SecurePwd = gc $CredFile |ConvertTo-SecureString
+		Try
+		{
+			$immCred = New-Object -TypeName 'System.Management.Automation.PSCredential'($Login,$SecurePwd) -EA Stop
+			If ($User) {return $Login}
+			Else       {return $immCred.GetNetworkCredential().Password}
+		}
+		Catch {return $null}
+	} Else {return $null}
+
+} #EndFunction Read-VMHostCredential
+
+Function Connect-VMHostPutty {
+
+<#
+.SYNOPSIS
+	Connect to an ESXi host by putty SSH client.
+.DESCRIPTION
+	The Connect-VMHostPutty cmdlet runs `putty.exe` from the PowerShell console
+	and opens SSH connection(s) to the ESXi host(s) with no password prompt.
+.PARAMETER VMHost
+	ESXi hostname or IP address.
+.PARAMETER PuttyExec
+	'putty.exe' executable full path.
+.EXAMPLE
+	PS C:\> putty esx1
+.EXAMPLE
+	PS C:\> 1..9 |% {putty "esx$_"}
+	Open multiple connections, usable to connect to all HA/DRS cluster hosts.
+.NOTES
+	Author      :: Roman Gelman
+	Requirement :: PowerShell 3.0+
+	Version 1.0 :: 27-Dec-2016 :: [Release]
+.LINK
+	http://ps1code.com
+#>
+
+Param (
+	[Parameter(Mandatory,ValueFromPipeline)]
+	[string]$VMHost
+	,
+	[Parameter(Mandatory=$false)]
+		[ValidateNotNullorEmpty()]
+		[ValidateScript({Test-Path $_ -PathType Leaf})]
+	[string]$PuttyExec = "$(Split-Path $PROFILE)\putty.exe"
+)
+
+	$PuttyPwd   = Read-VMHostCredential
+	$PuttyLogin = Read-VMHostCredential -User
+	If ($PuttyPwd) {&$PuttyExec -ssh $PuttyLogin@$VMHost -pw $PuttyPwd}
+	
+} #EndFunction Connect-VMHostPutty
+New-Alias -Name putty -Value Connect-VMHostPutty -Force:$true
+
 Export-ModuleMember -Alias '*' -Function '*'
