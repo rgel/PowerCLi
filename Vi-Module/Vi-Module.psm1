@@ -1857,7 +1857,7 @@ Function Connect-VMHostPutty {
 	Requirement :: PowerShell 3.0+
 	Version 1.0 :: 27-Dec-2016 :: [Release]
 .LINK
-	http://ps1code.com
+	http://www.ps1code.com/single-post/2016/12/27/PowerShell-and-putty-%E2%80%93-better-together
 #>
 
 Param (
