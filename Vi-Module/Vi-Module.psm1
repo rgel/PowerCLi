@@ -1856,9 +1856,12 @@ Function Connect-VMHostPutty {
 	Author      :: Roman Gelman
 	Requirement :: PowerShell 3.0+
 	Version 1.0 :: 27-Dec-2016 :: [Release]
+	Version 1.1 :: 04-Jan-2017 :: [Bugfix]  The `putty` Alias was not created during Module import.
 .LINK
 	http://www.ps1code.com/single-post/2016/12/27/PowerShell-and-putty-%E2%80%93-better-together
 #>
+
+[Alias("Connect-ViMVMHostPutty","putty")]
 
 Param (
 	[Parameter(Mandatory,ValueFromPipeline)]
@@ -1875,6 +1878,4 @@ Param (
 	If ($PuttyPwd) {&$PuttyExec -ssh $PuttyLogin@$VMHost -pw $PuttyPwd}
 	
 } #EndFunction Connect-VMHostPutty
-New-Alias -Name putty -Value Connect-VMHostPutty -Force:$true
 
-Export-ModuleMember -Alias '*' -Function '*'
