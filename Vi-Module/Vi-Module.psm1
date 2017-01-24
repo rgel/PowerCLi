@@ -1847,14 +1847,14 @@ Function Set-MaxSnapshotNumber {
 	PowerCLI C:\> Get-VM |? {$_.Name -like 'win*'} |Set-MaxSnapshotNumber 0 -Confirm:$false
 	Prohibit snapshots for multiple VM without confirmation.
 .NOTES
-      Idea        :: William Lam
-      Author      :: Roman Gelman
-      Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
-      Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
-      Requirement :: PowerShell 3.0+
-      Version 1.0 :: 24-Jan-2017 :: [Release]
+	Idea        :: William Lam
+	Author      :: Roman Gelman
+	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
+	Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
+	Requirement :: PowerShell 3.0+
+	Version 1.0 :: 24-Jan-2017 :: [Release]
 .LINK
-      http://www.ps1code.com/
+	https://www.ps1code.com/single-post/2017/01/24/How-to-control-maximum-number-of-VMware-snapshots-with-PowerCLi
 #>
 
 [CmdletBinding(DefaultParameterSetName="SET",ConfirmImpact='High',SupportsShouldProcess=$true)]
