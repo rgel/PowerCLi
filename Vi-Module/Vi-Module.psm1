@@ -23,8 +23,8 @@ Function Get-RDM {
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
 	Author: Roman Gelman.
-	Version 1.0 :: 16-Oct-2015 :: [Release].
-	Version 1.1 :: 03-Dec-2015 :: [Bugfix] :: Error message appear while VML mismatch,
+	Version 1.0 :: 16-Oct-2015 :: Release
+	Version 1.1 :: 03-Dec-2015 :: Bugfix :: Error message appear while VML mismatch,
 	when the VML identifier does not match for an RDM on two or more ESXi hosts.
 	VMware [KB2097287].
 	Version 1.2 :: 03-Aug-2016 :: Improvement :: GetType() method replaced by -is for type determine.
@@ -33,6 +33,7 @@ Function Get-RDM {
 #>
 
 [CmdletBinding()]
+[Alias("Get-ViMRDM")]
 
 Param (
 
@@ -99,88 +100,85 @@ End {
 }
 
 } #EndFunction Get-RDM
-New-Alias -Name Get-ViMRDM -Value Get-RDM -Force:$true
 
 Function Convert-VmdkThin2EZThick {
 
 <#
 .SYNOPSIS
-	Inflate thin virtual disks.
+	Inflate Thin Provision virtual disks.
 .DESCRIPTION
-	This function converts all Thin Provisioned VM' disks to type 'Thick Provision Eager Zeroed'.
+	The Convert-VmdkThin2EZThick function converts Thin Provision VM disk(s) to the type 'Thick Provision Eager Zeroed'.
+	Thick disks or disks with snapshots are skipped by the function.
 .PARAMETER VM
-	Virtual Machine(s).
+	Object(s), returned by `Get-VM` cmdlet.
 .EXAMPLE
-	C:\PS> Get-VM VM1 |Convert-VmdkThin2EZThick
+	PowerCLI C:\> Get-VM VM1 |Convert-VmdkThin2EZThick
 .EXAMPLE
-	C:\PS> Get-VM VM1,VM2 |Convert-VmdkThin2EZThick -Confirm:$false |sort VM,Datastore,VMDK |ft -au
-.INPUTS
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]] Objects, returned by Get-VM cmdlet.
-.OUTPUTS
-	[System.Management.Automation.PSCustomObject] PSObject collection.
+	PowerCLI C:\> Get-VM VM1,VM2 |Convert-VmdkThin2EZThick -Confirm:$false |sort VM,Datastore,VMDK |ft -au
+.EXAMPLE
+	PowerCLI C:\> Get-VM 'vm[1-5]' |thin2thick -Verbose
 .NOTES
-	Author: Roman Gelman.
-	Version 1.0 :: 05-Nov-2015 :: Release.
-	Version 1.1 :: 03-Aug-2016 :: Improvements ::
-	[1] GetType() method replaced by -is for type determine.
-	[2] Parameter 'VMs' renamed to 'VM', parameter alias renamed from 'VM' to 'VMs'.
+	Author      :: Roman Gelman
+	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
+	Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
+	Requirement :: PowerShell 3.0+, VM must be PoweredOff
+	Version 1.0 :: 05-Nov-2015 :: [Release]
+	Version 1.1 :: 03-Aug-2016 :: [Change] :: Parameter `-VMs` renamed to `-VM`
+	Version 1.2 :: 18-Jan-2017 :: [Change] :: Cofirmation asked on per-disk basis instead of per-VM, added `Write-Warning` and `Write-Verbose` messages, minor code changes
 .LINK
 	http://www.ps1code.com/single-post/2015/11/05/How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi
 #>
 
 [CmdletBinding(ConfirmImpact='High',SupportsShouldProcess=$true)]
+[Alias("Convert-ViMVmdkThin2EZThick","thin2thick")]
+[OutputType([PSCustomObject])]
 
 Param (
-
-	[Parameter(Mandatory=$true,Position=1,ValueFromPipeline=$true,HelpMessage="VM's collection, returned by Get-VM cmdlet")]
-		[ValidateNotNullorEmpty()]
+	[Parameter(Mandatory,Position=0,ValueFromPipeline)]
 		[Alias("VMs")]
 	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VM
-
 )
 
 Begin {
-
 	$Object   = @()
 	$regxVMDK = '^\[(?<Datastore>.+)\]\s(?<Filename>.+)$'
-
-}
+} #EndBegin
 
 Process {
 	
-	Foreach ($vmv in ($VM |Get-View)) {
+	Foreach ($vmv in ($VM |Get-View -Verbose:$false)) {
 	
-		### Ask confirmation to proceed if VM is PoweredOff ###
-		If ($vmv.Runtime.PowerState -eq 'poweredOff' -and $PSCmdlet.ShouldProcess("VM [$($vmv.Name)]","Convert all Thin Provisioned VMDK to Type: 'Thick Provision Eager Zeroed'")) {
+		### Validate VM prerequisites ###
+		If ($vmv.Runtime.PowerState -eq 'poweredOff') {
 		
 			### Get ESXi object where $vmv is registered ###
-			$esx = Get-View $vmv.Runtime.Host
+			$esx = Get-View $vmv.Runtime.Host -Verbose:$false
 			
 			### Get Datacenter object where $vmv is registered ###
-			$parentObj = Get-View $vmv.Parent
-		    While ($parentObj -isnot [VMware.Vim.Datacenter]) {$parentObj = Get-View $parentObj.Parent}
+			$parentObj = Get-View $vmv.Parent -Verbose:$false
+		    While ($parentObj -isnot [VMware.Vim.Datacenter]) {$parentObj = Get-View $parentObj.Parent -Verbose:$false}
 		    $datacenter       = New-Object VMware.Vim.ManagedObjectReference
 			$datacenter.Type  = 'Datacenter'
 			$datacenter.Value = $parentObj.MoRef.Value
 		   
 			Foreach ($dev in $vmv.Config.Hardware.Device) {
 			    If ($dev -is [VMware.Vim.VirtualDisk]) {
-					If ($dev.Backing.ThinProvisioned -and $dev.Backing.Parent -eq $null) {
-					
-			        	$sizeGB = [math]::Round(($dev.CapacityInKB / 1MB), 1)
-						
+				
+					$sizeGB = [Math]::Round(($dev.CapacityInKB / 1MB), 1)
+					If ($dev.Backing.ThinProvisioned -and !($dev.Backing.Parent) -and $PSCmdlet.ShouldProcess("VM [$($vmv.Name)]","Convert $sizeGB GiB Thin Provision disk [$($dev.DeviceInfo.Label)] to [Thick Provision Eager Zeroed]")) {
+			
 						### Invoke 'Inflate virtual disk' task ###
-						$ViDM      = Get-View -Id 'VirtualDiskManager-virtualDiskManager'
+						$ViDM      = Get-View -Id 'VirtualDiskManager-virtualDiskManager' -Verbose:$false
 						$taskMoRef = $ViDM.InflateVirtualDisk_Task($dev.Backing.FileName, $datacenter)
-						$task      = Get-View $taskMoRef
+						$task      = Get-View $taskMoRef -Verbose:$false
 						
 						### Show task progress ###
 						For ($i=1; $i -lt [int32]::MaxValue; $i++) {
 							If ("running","queued" -contains $task.Info.State) {
 								$task.UpdateViewData("Info")
 								If ($task.Info.Progress -ne $null) {
-									Write-Progress -Activity "Inflate virtual disk task is in progress ..." -Status "VM - $($vmv.Name)" `
-									-CurrentOperation "$($dev.DeviceInfo.Label) - $($dev.Backing.FileName) - $sizeGB GB" `
+									Write-Progress -Activity "Inflate virtual disk task is in progress ..." -Status "VM [$($vmv.Name)]" `
+									-CurrentOperation "[$($dev.DeviceInfo.Label)] :: $($dev.Backing.FileName) [$sizeGB GiB]" `
 									-PercentComplete $task.Info.Progress -ErrorAction SilentlyContinue
 									Start-Sleep -Seconds 3
 								}
@@ -192,7 +190,7 @@ Process {
 						$tResult       = $task.Info.State
 						$tStart        = $task.Info.StartTime
 						$tEnd          = $task.Info.CompleteTime
-						$tCompleteTime = [math]::Round((New-TimeSpan -Start $tStart -End $tEnd).TotalMinutes, 1)
+						$tCompleteTime = [Math]::Round((New-TimeSpan -Start $tStart -End $tEnd).TotalMinutes, 1)
 						
 						### Expand 'Datastore' and 'VMDK' from file path ###
 						$null = $dev.Backing.FileName -match $regxVMDK
@@ -204,27 +202,27 @@ Process {
 							VMDK         = $Matches.Filename
 							HDLabel      = $dev.DeviceInfo.Label
 							HDSizeGB     = $sizeGB
-							Result       = $tResult
+							Result       = (Get-Culture).TextInfo.ToTitleCase($tResult)
 							StartTime    = $tStart
 							CompleteTime = $tEnd
 							TimeMin      = $tCompleteTime
 						}
 						$Object = New-Object PSObject -Property $Properties
 						$Object
-					}
+					} Else {Write-Verbose "VM [$($vmv.Name)] :: [$($dev.DeviceInfo.Label)] :: $($dev.Backing.FileName) skipped"}
 				}
 			}
 			$vmv.Reload()
-		}
+		} Else {Write-Warning "VM [$($vmv.Name)] must be PoweredOff, but currently it is [$($vmv.Runtime.PowerState)]!"}
 	}
-}
+} #EndProcess
 
 End {
-	Write-Progress -Completed $true -Status "Please wait"
-}
+	Write-Progress -Activity "Completed" -Completed
+	#Write-Progress -Completed $true -Status "Please wait"
+} #End
 
 } #EndFunction Convert-VmdkThin2EZThick
-New-Alias -Name Convert-ViMVmdkThin2EZThick -Value Convert-VmdkThin2EZThick -Force:$true
 
 Function Find-VcVm {
 
@@ -257,11 +255,14 @@ Function Find-VcVm {
 	               [2] The hosts' Lockdown mode should be disabled.
 	Version 1.0 :: 03-Sep-2015 :: Release.
 	Version 1.1 :: 03-Aug-2016 :: Improvement :: Returned object properties changed.
+	Version 1.2 :: 14-Nov-2016 :: Improvement :: Disappear unnecessary error messages while disconnecting VC.
 .OUTPUTS
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .LINK
 	http://ps1code.com
 #>
+
+[Alias("Find-ViMVcVm")]
 
 Param (
 
@@ -291,6 +292,7 @@ Begin {
 
 	Set-PowerCLIConfiguration -DefaultVIServerMode Multiple -Scope Session -Confirm:$false |Out-Null
 	If ($PostfixEnd -le $PostfixStart) {Throw "PostfixEnd must be greater than PostfixStart"}
+	Try {Disconnect-VIServer -Server $VC -Force -Confirm:$false -ErrorAction Stop}  Catch {}
 }
 
 Process {
@@ -307,15 +309,15 @@ Process {
 			}
 		}
 		
-		Connect-VIServer $hosts -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -Credential $cred `
-		|select @{N='VMHost';E={$_.Name}},IsConnected |ft -AutoSize
+		Connect-VIServer $hosts -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -Credential $cred |
+		select @{N='VMHost';E={$_.Name}},IsConnected |ft -AutoSize
 		
 		If ($global:DefaultVIServers.Length -ne 0) {
-			$TargetVM = Get-VM -ErrorAction SilentlyContinue |? {$_.Name -eq $VC}
+			$TargetVM       = Get-VM -ErrorAction SilentlyContinue |? {$_.Name -eq $VC}
 			$VCHostname     = $TargetVM.Guest.HostName
 			$PowerState     = $TargetVM.PowerState
 			$VMHostHostname = $TargetVM.VMHost.Name
-			Disconnect-VIServer -Server '*' -Force -Confirm:$false
+			Try {Disconnect-VIServer -Server "$HostSuffix*" -Force -Confirm:$false -ErrorAction Stop}  Catch {}
 		}
 	}
 }
@@ -335,7 +337,6 @@ End {
 }
 
 } #EndFunction Find-VcVm
-New-Alias -Name Find-ViMVcVm -Value Find-VcVm -Force:$true
 
 Function Set-PowerCLiTitle {
 
@@ -346,56 +347,66 @@ Function Set-PowerCLiTitle {
 	This function writes connected VI servers info to PowerCLi window/console title bar
 	in the following format: [VIServerName :: ProductType (VCenter/VCSA/ESXi/SRM)-ProductVersion].
 .EXAMPLE
-	PS C:\> Connect-VIServer vc1 -WarningAction SilentlyContinue
-	PS C:\> Set-PowerCLiTitle
+	PowerCLI C:\> Connect-VIServer $VCName -WarningAction SilentlyContinue
+	PowerCLI C:\> Set-PowerCLiTitle
 .EXAMPLE
-	PS C:\> Connect-SrmServer srm1
-	PS C:\> Set-PowerCLiTitle
+	PowerCLI C:\> Connect-SrmServer $SRMServerName
+	PowerCLI C:\> title
 .NOTES
-	Author: Roman Gelman.
-	Version 1.0  ::	17-Nov-2015  :: Release.
-	Version 1.1  ::	22-Aug-2016  :: Improvements.
-	[1] Added support for SRM servers.
-	[2] Now the function differs VCSA from Windows VCenters.
-	[3] Minor visual changes.
+	Author      :: Roman Gelman
+	Version 1.0 :: 17-Nov-2015 :: [Release]
+	Version 1.1 :: 22-Aug-2016 :: [Improvement]
+	[1] Added support for SRM servers
+	[2] Now the function differs berween VCSA and Windows VCenters
+	[3] Minor visual changes
+	Version 1.2 :: 11-Jan-2017 :: [Change] :: Now this is advanced function, minor code changes
 .LINK
 	http://www.ps1code.com/single-post/2015/11/17/ConnectVIServer-deep-dive-or-%C2%ABWhere-am-I-connected-%C2%BB
 #>
 
-$VIS = $global:DefaultVIServers |sort -Descending ProductLine,Name
-$SRM = $global:DefaultSrmServers |sort -Descending ProductLine,Name
+[CmdletBinding()]
+[Alias("Set-ViMPowerCLiTitle","title")]
+Param()
 
-If ($VIS) {
-	Foreach ($VIObj in $VIS) {
-		If ($VIObj.IsConnected) {
-			Switch -exact ($VIObj.ProductLine) {
-				vpx         {If ($VIObj.ExtensionData.Content.About.OsType -match '^linux') {$VIProduct = 'VCSA'} Else {$VIProduct = 'VCenter'} ; Break}
-				embeddedEsx {$VIProduct = 'ESXi' ; Break}
-				Default     {$VIProduct = $VIObj.ProductLine}
+Begin {
+	$VIS = $global:DefaultVIServers |sort -Descending ProductLine,Name
+	$SRM = $global:DefaultSrmServers |sort -Descending ProductLine,Name
+} #EndBegin
+
+Process {
+
+	If ($VIS) {
+		Foreach ($VIObj in $VIS) {
+			If ($VIObj.IsConnected) {
+				$VIProduct = Switch -exact ($VIObj.ProductLine) {
+					vpx     	{If ($VIObj.ExtensionData.Content.About.OsType -match '^linux') {'VCSA'} Else {'VCenter'}; Break}
+					embeddedEsx {'ESXi'; Break}
+					Default     {$VIObj.ProductLine}
+				}
+				$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 			}
-			$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 		}
 	}
-}
 
-If ($SRM) {
-	Foreach ($VIObj in $SRM) {
-		If ($VIObj.IsConnected) {
-			Switch -exact ($VIObj.ProductLine) {
-				srm     {$VIProduct = 'SRM' ; Break}
-				Default {$VIProduct = $VIObj.ProductLine}
+	If ($SRM) {
+		Foreach ($VIObj in $SRM) {
+			If ($VIObj.IsConnected) {
+				$VIProduct = Switch -exact ($VIObj.ProductLine) {
+					srm     {'SRM'; Break}
+					Default {$VIObj.ProductLine}
+				}
+				$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 			}
-			$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 		}
 	}
-}
+} #EndProcess
 
-If (!$VIS -and !$SRM) {$Header = ':: Not connected to any VI Servers ::'}
-
-$Host.UI.RawUI.WindowTitle = $Header
+End {
+	If (!$VIS -and !$SRM) {$Header = ':: Not connected to any VI Servers ::'}
+	$Host.UI.RawUI.WindowTitle = $Header
+} #End
 
 } #EndFunction Set-PowerCLiTitle
-New-Alias -Name Set-ViMPowerCLiTitle -Value Set-PowerCLiTitle -Force:$true
 
 Filter Get-VMHostFirmwareVersion {
 
@@ -447,132 +458,55 @@ Catch
 } #EndFilter Get-VMHostFirmwareVersion
 New-Alias -Name Get-ViMVMHostFirmwareVersion -Value Get-VMHostFirmwareVersion -Force:$true
 
-Function Compare-VMHostSoftwareVib {
+Filter Get-VMHostFirmwareVersion {
 
 <#
 .SYNOPSIS
-	Compares the installed VIB packages between VMware ESXi Hosts.
+	Get ESXi host BIOS version.
 .DESCRIPTION
-	This function compares the installed VIB packages between reference ESXi Host and
-	group of difference/target ESXi Hosts or single ESXi Host.
-.PARAMETER ReferenceVMHost
-	Reference VMHost.
-.PARAMETER DifferenceVMHosts
-	Target VMHosts to compare them with the reference VMHost.
+	This filter returns ESXi host BIOS/UEFI Version and Release Date as a single string.
 .EXAMPLE
-	PS C:\> Compare-VMHostSoftwareVib -ReferenceVMHost (Get-VMHost 'esxprd1.*') -DifferenceVMHosts  (Get-VMHost 'esxprd2.*')
-	Compare two ESXi hosts.
+	PS C:\> Get-VMHost 'esxprd1.*' |Get-VMHostFirmwareVersion
+	Get single ESXi host's Firmware version.
 .EXAMPLE
-	PS C:\> Get-VMHost 'esxdev[23].*' |Compare-VMHostSoftwareVib -ReferenceVMHost (Get-VMHost 'esxdev1.*') -Truncate |Format-Table VIB,VMHost,Difference -AutoSize
-	Compare two target ESXi Hosts with the reference Host, truncate hostname and select three properties only.
+	PS C:\> Get-Cluster PROD |Get-VMHost |select Name,@{N='BIOS';E={$_ |Get-VMHostFirmwareVersion}}
+	Get ESXi Name and Firmware version for single cluster.
 .EXAMPLE
-	PS C:\> Get-Cluster DEV |Get-VMHost |Compare-VMHostSoftwareVib -ReferenceVMHost (Get-VMHost 'esxdev1.*') -Truncate |Format-Table -AutoSize
-	Compare all HA/DRS cluster members with the reference ESXi Host.
+	PS C:\> Get-VMHost |sort Name |select Name,Version,Manufacturer,Model,@{N='BIOS';E={$_ |Get-VMHostFirmwareVersion}} |ft -au
+	Add calculated property, that will contain Firmware version for all registered ESXi hosts.
 .EXAMPLE
-	PS C:\> Get-Cluster PRD |Get-VMHost |Compare-VMHostSoftwareVib -ReferenceVMHost (Get-VMHost 'esxhai1.*') |Export-Csv -NoTypeInformation -Path '.\VibCompare.csv'
-	Export the comparison report to the file.
+	PS C:\> Get-View -ViewType 'HostSystem' |select Name,@{N='BIOS';E={$_ |Get-VMHostFirmwareVersion}}
+.EXAMPLE
+	PS C:\> 'esxprd1.domain.com','esxdev2' |Get-VMHostFirmwareVersion
 .INPUTS
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]] Objects, returned by `Get-VMHost` cmdlet.
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]] Objects, returned by Get-VMHost cmdlet.
+	[VMware.Vim.HostSystem[]] Objects, returned by Get-View cmdlet.
+	[System.String[]] ESXi hostname or FQDN.
 .OUTPUTS
-	[System.Management.Automation.PSCustomObject] PSObject collection.
+	[System.String[]] BIOS/UEFI version and release date.
 .NOTES
-	Author       ::	Roman Gelman
-	Dependencies ::	ESXCLI V2 works on vCenter/ESXi 5.0 and later.
-	Version 1.0  ::	10-Jan-2016 :: [Release]
-	Version 1.1  ::	01-May-2016 :: [Improvement] :: Added support for PowerCLi 6.3R1 and ESXCLI V2 interface.
-	Version 1.2  :: 15-Aug-2016 :: [Bugfix]      :: In the `Foreach ($esx in $DifferenceVMHosts)` loop the `$DifferenceVMHosts` var replaced with `$DifferenceVMHost`.
-	Version 1.3  :: 26-Sep-2016 :: [Change]
-	[1] Returned object edited, added three new properties: `Version`, `Reference` and `Difference`.
-	[2] Added new parameter `-Truncate`.
-	[3] Minor logic and example changes.
+	Author: Roman Gelman.
+	Version 1.0 :: 09-Jan-2016 :: Release.
+	Version 1.1 :: 03-Aug-2016 :: Improvement :: GetType() method replaced by -is for type determine.
 .LINK
-	http://www.ps1code.com/single-post/2016/1/10/How-to-compare-installed-VIB-packages-between-two-or-more-ESXi-hosts
+	http://www.ps1code.com/single-post/2016/1/9/How-to-know-ESXi-servers%E2%80%99-BIOSFirmware-version-using-PowerCLi
 #>
 
-Param (
-
-	[Parameter(Mandatory,Position=1,HelpMessage="Reference VMHost")]
-		[Alias("ReferenceESXi")]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$ReferenceVMHost
-	,
-	[Parameter(Mandatory,Position=2,ValueFromPipeline,HelpMessage="Difference VMHosts collection")]
-		[Alias("DifferenceESXi","DifferenceVMHosts")]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]$DifferenceVMHost
-	,
-	[Parameter(Mandatory=$false,Position=3,HelpMessage="Try to truncate a VMHost name from its FQDN")]
-	[switch]$Truncate
-)
-
-Begin {
-	$PcliVer = Get-PowerCLIVersion -ErrorAction SilentlyContinue
-	$PcliMM  = ($PcliVer.Major.ToString() + $PcliVer.Minor.ToString()) -as [int]
-	
-	Try 
-		{
-			If ($PcliMM -ge 63) {
-				$esxcliRef = Get-EsxCli -V2 -VMHost $ReferenceVMHost -ErrorAction Stop
-				$refVibId  = ($esxcliRef.software.vib.list.Invoke()).ID
-			}
-			Else {
-				$esxcliRef = Get-EsxCli -VMHost $ReferenceVMHost -ErrorAction Stop
-				$refVibId  = ($esxcliRef.software.vib.list()).ID
-			}
-		}
-	Catch
-		{
-			"{0}" -f $Error.Exception.Message
-		}
-} #EndBegin
-
-Process {
-
- Try
+Try
 	{
-		If ($PcliMM -ge 63) {
-			$esxcliDif = Get-EsxCli -V2 -VMHost $DifferenceVMHost -ErrorAction Stop
-			$difVibId = ($esxcliDif.software.vib.list.Invoke()).ID
-		}
-		Else {
-			$esxcliDif = Get-EsxCli -VMHost $DifferenceVMHost -ErrorAction Stop
-			$difVibId = ($esxcliDif.software.vib.list()).ID
-		}
-		$diffObj = Compare-Object -ReferenceObject $refVibId -DifferenceObject $difVibId -IncludeEqual:$false
-		Foreach ($diff in $diffObj) {
-			
-			If ($diff.SideIndicator -eq '=>') {
-				$diffOwner  = $DifferenceVMHost
-				$Reference  = $false
-				$Difference = ''
-			} Else {
-				$diffOwner  = $ReferenceVMHost
-				$Reference  = $true
-				$Difference = $DifferenceVMHost
-			}
-			
-			If ($Truncate) {
-				$diffOwner  = [regex]::Match($diffOwner, '^(.+?)(\.|$)').Groups[1].Value
-				$Difference = [regex]::Match($Difference, '^(.+?)(\.|$)').Groups[1].Value
-			}
-								
-			$Properties = [ordered]@{
-				VIB        = $diff.InputObject
-				Version    = [regex]::Match($diff.InputObject, '_(\d.+)$').Groups[1].Value
-				VMHost     = $diffOwner 
-				Reference  = $Reference
-				Difference = $Difference
-			}
-			$Object = New-Object PSObject -Property $Properties
-			$Object
-		}
+		If     ($_ -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]) {$BiosInfo = ($_ |Get-View).Hardware.BiosInfo}
+		ElseIf ($_ -is [VMware.Vim.HostSystem])                                 {$BiosInfo = $_.Hardware.BiosInfo}
+		ElseIf ($_ -is [string])                                                {$BiosInfo = (Get-View -ViewType HostSystem -Filter @{"Name" = $_}).Hardware.BiosInfo}
+		Else   {Throw "Not supported data type as pipeline"}
+
+		$fVersion = $BiosInfo.BiosVersion -replace ('^-\[|\]-$', $null)
+		$fDate    = [Regex]::Match($BiosInfo.ReleaseDate, '(\d{1,2}/){2}\d+').Value
+		If ($fVersion) {return "$fVersion [$fDate]"} Else {return $null}
 	}
 Catch
-	{
-		"{0}" -f $Error.Exception.Message
-	}
-} #EndProcess
-
-} #EndFunction Compare-VMHostSoftwareVib
-New-Alias -Name Compare-ViMVMHostSoftwareVib -Value Compare-VMHostSoftwareVib -Force:$true
+	{}
+} #EndFilter Get-VMHostFirmwareVersion
+New-Alias -Name Get-ViMVMHostFirmwareVersion -Value Get-VMHostFirmwareVersion -Force:$true
 
 Filter Get-VMHostBirthday {
 
@@ -645,6 +579,8 @@ Function Enable-VMHostSSH {
 	http://www.ps1code.com/single-post/2016/02/07/How-to-enabledisable-SSH-on-all-ESXi-hosts-in-a-cluster-using-PowerCLi
 #>
 
+[Alias("Enable-ViMVMHostSSH")]
+
 Param (
 
 	[Parameter(Mandatory=$false,Position=0,ValueFromPipeline=$true)]
@@ -691,7 +627,6 @@ Process {
 }
 
 } #EndFunction Enable-VMHostSSH
-New-Alias -Name Enable-ViMVMHostSSH -Value Enable-VMHostSSH -Force:$true
 
 Function Disable-VMHostSSH {
 
@@ -719,6 +654,8 @@ Function Disable-VMHostSSH {
 .LINK
 	http://www.ps1code.com/single-post/2016/02/07/How-to-enabledisable-SSH-on-all-ESXi-hosts-in-a-cluster-using-PowerCLi
 #>
+
+[Alias("Disable-ViMVMHostSSH")]
 
 Param (
 
@@ -773,7 +710,6 @@ Process {
 }
 
 } #EndFunction Disable-VMHostSSH
-New-Alias -Name Disable-ViMVMHostSSH -Value Disable-VMHostSSH -Force:$true
 
 Function Set-VMHostNtpServer {
 
@@ -809,6 +745,7 @@ Function Set-VMHostNtpServer {
 #>
 
 [CmdletBinding()]
+[Alias("Set-ViMVMHostNtpServer")]
 
 Param (
 
@@ -876,7 +813,6 @@ Process {
 }
 
 } #EndFunction Set-VMHostNtpServer
-New-Alias -Name Set-ViMVMHostNtpServer -Value Set-VMHostNtpServer -Force:$true
 
 Function Get-Version {
 
@@ -928,6 +864,7 @@ Function Get-Version {
 #>
 
 [CmdletBinding(DefaultParameterSetName='VIO')]
+[Alias("Get-ViMVersion")]
 
 Param (
 
@@ -1282,7 +1219,6 @@ Process {
 End {}
 
 } #EndFunction Get-Version
-New-Alias -Name Get-ViMVersion -Value Get-Version -Force:$true
 
 Function Search-Datastore {
 
@@ -1334,6 +1270,7 @@ Function Search-Datastore {
 #>
 
 [CmdletBinding()]
+[Alias("Search-ViMDatastore")]
 
 Param (
 	[Parameter(Mandatory,Position=0,ValueFromPipeline)]
@@ -1467,7 +1404,6 @@ Process {
 End {Write-Progress -Activity "Completed" -Completed}
 
 } #EndFunction Search-Datastore
-New-Alias -Name Search-ViMDatastore -Value Search-Datastore -Force:$true
 
 Function Compare-VMHost {
 
@@ -1499,11 +1435,13 @@ Function Compare-VMHost {
 .OUTPUTS
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
-	Author       ::	Roman Gelman
-	Version 1.0  ::	26-Sep-2016 :: [Release].
+	Author      :: Roman Gelman
+	Version 1.0 :: 26-Sep-2016 :: [Release]
 .LINK
 	http://www.ps1code.com/single-post/2016/09/26/Compare-two-or-more-ESXi-hosts-with-PowerCLi
 #>
+
+[Alias("Compare-ViMVMHost")]
 
 Param (
 
@@ -1669,7 +1607,6 @@ Process {
 End {If ($ColorOutput) {"`r"}}
 
 } #EndFunction Compare-VMHost
-New-Alias -Name Compare-ViMVMHost -Value Compare-VMHost -Force:$true
 
 Function Move-Template2Datastore {
 
@@ -1698,6 +1635,7 @@ Function Move-Template2Datastore {
 #>
 
 [CmdletBinding(DefaultParameterSetName='DS')]
+[Alias("Move-ViMTemplate2Datastore")]
 [OutputType([PSCustomObject])]
 
 Param (
@@ -1783,7 +1721,6 @@ Process {
 End {}
 
 } #EndFunction Move-Template2Datastore
-New-Alias -Name Move-ViMTemplate2Datastore -Value Move-Template2Datastore -Force:$true
 
 Function Read-VMHostCredential {
 
@@ -1857,6 +1794,7 @@ Function Connect-VMHostPutty {
 	Requirement :: PowerShell 3.0+
 	Version 1.0 :: 27-Dec-2016 :: [Release]
 	Version 1.1 :: 04-Jan-2017 :: [Bugfix]  The `putty` Alias was not created during Module import.
+	
 .LINK
 	http://www.ps1code.com/single-post/2016/12/27/PowerShell-and-putty-%E2%80%93-better-together
 #>
@@ -1878,4 +1816,116 @@ Param (
 	If ($PuttyPwd) {&$PuttyExec -ssh $PuttyLogin@$VMHost -pw $PuttyPwd}
 	
 } #EndFunction Connect-VMHostPutty
+
+Function Set-MaxSnapshotNumber {
+
+<#
+.SYNOPSIS
+	Set maximum allowed snapshots.
+.DESCRIPTION
+	The Set-MaxSnapshotNumber cmdlet sets maximum allowed VM(s) snapshots.
+.PARAMETER VM
+	VM object(s), returnd by `Get-VM` cmdlet.
+.PARAMETER Number
+	Specifies maximum allowed snapshot number.
+	Allowed values are [0 - 496].
+.PARAMETER Report
+	Do not edit anything, report only.
+.EXAMPLE
+	PowerCLI C:\> Get-VM $VMName |Set-MaxSnapshotNumber
+	Set default value.
+.EXAMPLE
+	PowerCLI C:\> Get-VM |Set-MaxSnapshotNumber -Report
+	Get current set value for all VM in the inventory.
+.EXAMPLE
+	PowerCLI C:\> Get-VM |Set-MaxSnapshotNumber -Report |? {$_.MaxSnapshot -eq 0}
+	Get VM with snapshots prohibited.
+.EXAMPLE
+	PowerCLI C:\> Get-VM $VMName |Set-MaxSnapshotNumber -Number 496
+	Set maximum supported value.
+.EXAMPLE
+	PowerCLI C:\> Get-VM |? {$_.Name -like 'win*'} |Set-MaxSnapshotNumber 0 -Confirm:$false
+	Prohibit snapshots for multiple VM without confirmation.
+.NOTES
+      Idea        :: William Lam
+      Author      :: Roman Gelman
+      Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
+      Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
+      Requirement :: PowerShell 3.0+
+      Version 1.0 :: 24-Jan-2017 :: [Release]
+.LINK
+      http://www.ps1code.com/
+#>
+
+[CmdletBinding(DefaultParameterSetName="SET",ConfirmImpact='High',SupportsShouldProcess=$true)]
+[Alias("Set-ViMMaxSnapshotNumber","maxsnap")]
+[OutputType([PSCustomObject])]
+
+Param (
+	[Parameter(Mandatory,ValueFromPipeline)]
+	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VM
+	,
+	[Parameter(Mandatory=$false,Position=0,ParameterSetName='SET')]
+		[ValidateRange(0,496)]
+		[Alias("Quantity")]
+	[uint16]$Number = 31
+	,
+	[Parameter(Mandatory,Position=0,ParameterSetName='GET')]
+		[Alias("ReportOnly")]
+	[switch]$Report
+)
+
+Begin {
+	$ErrorActionPreference = 'Stop'
+	$WarningPreference     = 'SilentlyContinue'
+	$AdvSetting = 'snapshot.maxSnapshots'
+	$NotSetValue = 'NotSet'
+} #EndBegin
+
+Process {
+
+	$ShouldMessage = Switch ($Number) {
+		31      {"Set maximum allowed snapshot number to the default [$Number]"; Break}
+		0       {"Prohibit taking snapshots at all!"; Break}
+		496     {"Set maximum allowed snapshot number to the maximum possible [$Number]"; Break}
+		Default {"Set maximum allowed snapshot number to [$Number]"}
+	}
+
+	If ($PSCmdlet.ParameterSetName -eq 'SET') {
+
+		If ($PSCmdlet.ShouldProcess($VM.Name, $ShouldMessage)) {
+			Try
+			{
+				$AdvancedSettingImplBefore = $VM |Get-AdvancedSetting -Name $AdvSetting
+				$CurrentSetting = If ($AdvancedSettingImplBefore) {$AdvancedSettingImplBefore.Value} Else {$NotSetValue}
+				$AdvancedSettingImplAfter  = $VM |New-AdvancedSetting -Name $AdvSetting -Value $Number -Force -Confirm:$false
+				$Properties = [ordered]@{
+					VM              = $VM.Name
+					AdvancedSetting = $AdvSetting
+					PreviousValue   = $CurrentSetting
+					CurrentValue    = $AdvancedSettingImplAfter.Value
+				}
+				$Object = New-Object PSObject -Property $Properties
+				$Object
+			} Catch {"{0}" -f $Error.Exception.Message}
+		}
+	} Else {
+	
+		Try
+		{
+			$AdvancedSettingImplBefore = $VM |Get-AdvancedSetting -Name $AdvSetting
+			$CurrentSetting = If ($AdvancedSettingImplBefore) {$AdvancedSettingImplBefore.Value} Else {$NotSetValue}
+			$Properties = [ordered]@{
+				VM          = $VM.Name
+				MaxSnapshot = $CurrentSetting
+			}
+			$Object = New-Object PSObject -Property $Properties
+			$Object
+		} Catch {"{0}" -f $Error.Exception.Message}
+	}
+} #EndProcess
+
+End {}
+
+} #EndFunction Set-MaxSnapshotNumber
 
