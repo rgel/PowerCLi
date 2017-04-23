@@ -49,3 +49,4 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |12|[<b>Move-Template2Datastore</b>](http://www.ps1code.com/single-post/2016/12/19/How-to-migrate-VMware-VM-Templates-to-another-Datastore-by-PowerCLi)|Invoke Storage VMotion task for VM Template(s)|
 |13|[<b>Connect-VMHostPutty</b>](http://www.ps1code.com/single-post/2016/12/27/PowerShell-and-putty-%E2%80%93-better-together)|Connect to ESXi host(s) by putty SSH client with no password!|
 |14|[<b>Set-MaxSnapshotNumber</b>](https://www.ps1code.com/single-post/2017/01/24/How-to-control-maximum-number-of-VMware-snapshots-with-PowerCLi)|Set maximum allowed VM snapshot number|
+|15|[<b>Get-VMHostGPU</b>](https://www.ps1code.com/single-post/2017/04/23/How-to-get-ESXi-GPU-info-with-PowerCLi)|Get ESXi host(s) GPU info|
