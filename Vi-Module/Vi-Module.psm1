@@ -1929,3 +1929,140 @@ End {}
 
 } #EndFunction Set-MaxSnapshotNumber
 
+Filter Convert-MoRef2Name {
+	
+<#
+.SYNOPSIS
+	Convert a MoRef number to the Name.
+.DESCRIPTION
+	This filter converts VI object's MoRef number to VI object's Name.
+.PARAMETER MoRef
+	VI [M]anaged [o]bject [ref]erence number.
+.PARAMETER ShortName
+	Truncate the full object name if possible.
+.EXAMPLE
+	PowerCLI C:\> Get-VMHost 'esx1.*' |select Name,@{N='Cluster';E={$_.ParentId |Convert-MoRef2Name}}
+	Get VMHost's parent container name from VMHosts's property `ParentId`.
+	It may be HA/DRS cluster name, Datacenter name or Folder name.
+.EXAMPLE
+	PowerCLI C:\> Get-VDSwitch |select Name,@{N='Portgroups';E={'[ ' + ((($_ |select -expand ExtensionData).Portgroup |Convert-MoRef2Name |sort) -join ' ][ ') + ' ]'}}
+	Expand all! Portgroup names from Distributed VSwitch's property `ExtensionData.Portgroup`.
+.EXAMPLE
+	PowerCLI C:\> Get-Datastore 'test*' |sort Name |select Name,@{N='ConnectedHosts';E={'[' + ((($_ |select -expand ExtensionData).Host.Key |Convert-MoRef2Name -ShortName |sort) -join '] [') + ']' }}
+	Expand all connected VMHost names from Datastore's property `ExtensionData.Host.Key`.
+	Truncate VMHost's hostname from FQDN if it is possible.
+.INPUTS
+	[System.String] VI Object Id/MoRef.
+.OUTPUTS
+	[System.String] VI Object name.
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Version 1.0 :: 09-Sep-2016  :: [Release]
+	Version 1.1 :: 18-Apr-2017  :: [Change] :: Empty string returned on error
+.LINK
+	http://ps1code.com
+#>
+	
+	Param (
+		[string]$MoRef,
+		[switch]$ShortName
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+	}
+	
+	Process
+	{
+		Try
+		{
+			$Name = (Get-View -Id $_).Name
+			If ($ShortName) { $Name = [regex]::Match($Name, '^(.+?)(\.|$)').Groups[1].Value }
+		}
+		Catch { $Name = '' }
+		return $Name
+	}
+	
+} #EndFilter Convert-MoRef2Name
+
+Function Get-VMHostGPU
+{
+	
+<#
+.SYNOPSIS
+	Get ESXi hosts' GPU info.
+.DESCRIPTION
+	The Get-VMHostGPU cmdlet gets GPU info for ESXi host(s).
+.PARAMETER VMHost
+	VMHost object(s), returnd by Get-VMHost cmdlet.
+.EXAMPLE
+	PowerCLI C:\> Get-VMHost $VMHostName |Get-VMHostGPU
+.EXAMPLE
+	PowerCLI C:\> Get-Cluster $vCluster |Get-VMHost |Get-VMHostGPU |ft -au
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
+	Platform    :: Tested on vSphere 5.5/6.5|vCenter 5.5U2/VCSA 6.5a|NVIDIAGRID K2
+	Requirement :: PowerShell 3.0+
+	Version 1.0 :: 23-Apr-2017 :: [Release]
+.LINK
+	http://ps1code.com
+#>
+	
+	[Alias("Get-ViMVMHostGPU", "esxgpu")]
+	[CmdletBinding()]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$VMHost
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+		$rgxSuffix = '^grid_'
+	} #EndBegin
+	
+	Process
+	{
+		$VMHostView = Get-View -Id $VMHost.Id -Verbose:$false
+		
+		$Profiles = $VMHostView.Config.SharedPassthruGpuTypes
+		
+		foreach ($GraphicInfo in $VMHostView.Config.GraphicsInfo)
+		{
+			$VMs = @()
+			$VMs += foreach ($vGpuVm in $GraphicInfo.Vm) { $vGpuVm | Convert-MoRef2Name }
+			
+			if ($VMs)
+			{
+				foreach ($VM in (Get-VM $VMs | ? { $_.PowerState -eq 'PoweredOn' }))
+				{
+					$ProfileActive = ($VM.ExtensionData.Config.Hardware.Device | ? { $_.Backing.Vgpu } |
+						select @{ N = 'Profile'; E = { $_.Backing.Vgpu -replace $rgxSuffix, '' } } | select -First 1).Profile
+				}
+			}
+			else
+			{
+				$ProfileActive = 'N/A'
+			}
+			$returnGraphInfo = [pscustomobject]@{
+				VMHost = [regex]::Match($VMHost.Name, '^(.+?)(\.|$)').Groups[1].Value
+				VideoCard = $GraphicInfo.DeviceName
+				Vendor = $GraphicInfo.VendorName
+				Mode = $GraphicInfo.GraphicsType
+				MemoryGB = [System.Math]::Round($GraphicInfo.MemorySizeInKB/1MB, 0)
+				ProfileSupported = ($Profiles -replace $rgxSuffix, '') -join ','
+				ProfileActive = $ProfileActive
+				VM = $VMs
+			}
+			$returnGraphInfo
+		}
+		
+	} #EndProcess
+	
+	End { }
+	
+} #EndFunction Get-VMHostGPU
