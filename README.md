@@ -50,3 +50,16 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |13|[<b>Connect-VMHostPutty</b>](http://www.ps1code.com/single-post/2016/12/27/PowerShell-and-putty-%E2%80%93-better-together)|Connect to ESXi host(s) by putty SSH client with no password!|
 |14|[<b>Set-MaxSnapshotNumber</b>](https://www.ps1code.com/single-post/2017/01/24/How-to-control-maximum-number-of-VMware-snapshots-with-PowerCLi)|Set maximum allowed VM snapshot number|
 |15|[<b>Get-VMHostGPU</b>](https://www.ps1code.com/single-post/2017/04/23/How-to-get-ESXi-GPU-info-with-PowerCLi)|Get ESXi host(s) GPU info|
+
+### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
+
+#### <b><ins>VSAN Module Cmdlets:</ins></b>
+
+|No|Cmdlet|Description|
+|----|----|----|
+|1|[<b>Get-VSANHealthCheckSupported</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Get all available vSAN Health Checks|
+|2|[<b>Get-VSANHealthCheckSkipped</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Get skipped vSAN Health Checks|
+|3|[<b>Get-VSANHealthCheckGroup</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Get all vSAN Health Check groups|
+|4|[<b>Enable-VSANHealthCheckSkipped</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Enable skipped vSAN Health Check(s)|
+|5|[<b>Disable-VSANHealthCheck</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Disable vSAN Health Check(s)|
+|6|[<b>Get-VSANSmartData</b>](http://www.virtuallyghetto.com/2017/04/smart-drive-data-now-available-using-vsan-management-6-6-api.html)|Get SMART drive data|
