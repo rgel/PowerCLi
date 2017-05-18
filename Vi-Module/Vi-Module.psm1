@@ -2066,3 +2066,208 @@ Function Get-VMHostGPU
 	End { }
 	
 } #EndFunction Get-VMHostGPU
+
+Function Test-VMPing
+{
+	
+<#
+.SYNOPSIS
+	Test VMware VM accessibility.
+.DESCRIPTION
+	This function tests Powered on VMware VM guest accessibility by ping.
+.PARAMETER VM
+	Specifies VM object(s), returned by Get-VM cmdlet.
+.PARAMETER Restart
+	If specified, try to restart not responding VM.
+.EXAMPLE
+	PS C:\> Get-VM vm1,vm2 |Test-VMPing
+.EXAMPLE
+	PS C:\> Get-Cluster PROD |Get-VM |sort Name |Test-VMPing |? {!$_.Responding} |ft -au
+	Get all not responding VM in a cluster.
+.EXAMPLE
+	PS C:\> Get-VM |Test-VMPing -Restart -Confirm:$true
+	Restart all not responding VM with confirmation.
+.EXAMPLE
+	PS C:\> Get-VM |Test-VMPing -Verbose |Export-Csv -NoTypeInformation .\Ping.csv -Encoding UTF8
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5.1
+	Platform    :: Tested on vSphere 5.5/6.5|VCenter 5.5U2/VCSA 6.5
+	Requirement :: PowerShell 3.0
+	Version 1.0 :: 16-May-2017 :: [Release]
+.LINK
+	http://ps1code.com
+#>
+	
+	[Alias("tvmp", "Test-ViMVMPing")]
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine]$VM
+		 ,
+		[Parameter(Mandatory = $false)]
+		[switch]$Restart
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$StatVM = 0
+		$StatPoweredVM = 0
+		$StatNoPingVM = 0
+		Write-Verbose "Test-VMPing started at $(Get-Date)"
+	}
+	Process
+	{
+		$StatVM += 1
+		if ($VM.PowerState -eq 'PoweredOn')
+		{
+			$StatPoweredVM += 1
+			Try
+			{
+				$VMGuestHostname = if ('localhost', $null -notcontains $VM.Guest.HostName) { $VM.Guest.HostName }
+				else { $VM.Name }
+				Write-Progress -Activity 'Test-VMPing' -Status 'In progress ...' -CurrentOperation "VM [$($VM.Name)] - Hostname [$VMGuestHostname]"
+				Test-Connection -ComputerName $VMGuestHostname -Count 1 | Out-Null
+				[pscustomobject] @{
+					VM = $VM.Name
+					Hostname = $VMGuestHostname
+					GuestOS = $VM.Guest.OSFullName
+					Notes = $VM.Notes
+					Responding = $true
+				}
+			}
+			Catch
+			{
+				$StatNoPingVM += 1
+				if ($PSBoundParameters.ContainsKey('Restart'))
+				{
+					if ($VM.Guest.ExtensionData.ToolsRunningStatus -eq 'guestToolsRunning') { $VM | Restart-VMGuest }
+					else { $VM | Restart-VM }
+				}
+				else
+				{
+					[pscustomobject] @{
+						VM = $VM.Name
+						Hostname = $VMGuestHostname
+						GuestOS = $VM.Guest.OSFullName
+						Notes = $VM.Notes
+						Responding = $false
+					}
+				}
+			}
+		}
+	}
+	End
+	{
+		Write-Verbose "Test-VMPing finished at $(Get-Date)"
+		Write-Verbose "Test-VMPing Statistic: Total VM: [$StatVM], Powered On: [$StatPoweredVM], Not Responding: [$StatNoPingVM]"
+	}
+	
+} #EndFunction Test-VMPing
+
+Function Test-VMHotfix
+{
+	
+<#
+.SYNOPSIS
+	Test VMware VM for installed Hotfixes.
+.DESCRIPTION
+	This function tests Powered on Windows based
+	VMware VM guest(s) for installed Hotfix(es)/Patch(es).
+.PARAMETER VM
+	Specifies VM object(s), returned by Get-VM cmdlet.
+.PARAMETER KB
+	Specifies HotfixID pattern.
+	May contain 'kb' suffix, any digits, asterisk '*' or question mark '?' symbol.
+.EXAMPLE
+	PS C:\> Get-VM vm1,vm2 |Test-VMHotfix -KB 'kb4012???'
+.EXAMPLE
+	PS C:\> Get-VM |Test-VMHotfix 'kb40122*'
+.EXAMPLE
+	PS C:\> Get-Cluster PROD |Get-VM |sort Name |Test-VMHotfix -KB 'kb4012???' -Verbose |epcsv .\MS17-010.csv -Encoding UTF8 -notype
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5.1
+	Platform    :: Tested on vSphere 5.5/6.5|VCenter 5.5U2/VCSA 6.5
+	Requirement :: PowerShell 4.0
+	Version 1.0 :: 16-May-2017 :: [Release]
+.LINK
+	http://ps1code.com
+#>
+	
+	[Alias("tvmkb", "Test-ViMVMHotfix")]
+	[CmdletBinding()]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine]$VM
+		 ,
+		[Parameter(Mandatory, Position = 0)]
+		[Alias("Hotfix", "Patch")]
+		[string]$KB
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$StatVM = 0
+		$StatPoweredVM = 0
+		$StatNoHotfix = 0
+		$StatNotRespondVM = 0
+		Write-Verbose "Test-VMHotfix started at $(Get-Date)"
+	}
+	Process
+	{
+		$StatVM += 1
+		if ($VM.PowerState -eq 'PoweredOn' -and $VM.Guest -match 'Microsoft')
+		{
+			$StatPoweredVM += 1
+			Try
+			{
+				$VMGuestHostname = if ('localhost', $null -notcontains $VM.Guest.HostName) { $VM.Guest.HostName }
+				else { $VM.Name }
+				Write-Progress -Activity 'Test-VMHotfix' -Status "Looking for KB like [$KB] ..." -CurrentOperation "VM [$($VM.Name)] - Hostname [$VMGuestHostname]"
+				$KBs = (Get-HotFix -ComputerName $VMGuestHostname).Where{ $_.HotFixID -like $KB }
+				
+				if ($KBs)
+				{
+					foreach ($MatchedKB in $KBs)
+					{
+						[pscustomobject] @{
+							VM = $VM.Name
+							Notes = $VM.Notes
+							GuestOS = $VM.Guest.OSFullName
+							Hotfix = $MatchedKB.HotFixID
+						}
+					}
+				}
+				else
+				{
+					$StatNoHotfix += 1
+					[pscustomobject] @{
+						VM = $VM.Name
+						Notes = $VM.Notes
+						GuestOS = $VM.Guest.OSFullName
+						Hotfix = ''
+					}
+				}
+			}
+			Catch
+			{
+				$StatNotRespondVM += 1
+				[pscustomobject] @{
+					VM = $VM.Name
+					Notes = $VM.Notes
+					GuestOS = $VM.Guest.OSFullName
+					Hotfix = 'Unknown'
+				}
+			}
+		}
+	}
+	End
+	{
+		Write-Verbose "Test-VMHotfix finished at $(Get-Date)"
+		Write-Verbose "Test-VMHotfix Statistic: Total VM: [$StatVM], Powered On: [$StatPoweredVM], No Hotfix: [$StatNoHotfix], Not Responding: [$StatNotRespondVM]"
+	}
+	
+} #EndFunction Test-VMHotfix
