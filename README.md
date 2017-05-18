@@ -31,7 +31,7 @@ To see the commands imported, type `Get-Command -Module Vi-Module`.
 
 For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [-Online][-Examples]`.
 
-#### <b><ins>Vi-Module Cmdlets:</ins></b>
+#### <b><ins>Vi-Module cmdlets:</ins></b>
 
 |No|Cmdlet|Description|
 |----|----|----|
@@ -50,16 +50,21 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |13|[<b>Connect-VMHostPutty</b>](http://www.ps1code.com/single-post/2016/12/27/PowerShell-and-putty-%E2%80%93-better-together)|Connect to ESXi host(s) by putty SSH client with no password!|
 |14|[<b>Set-MaxSnapshotNumber</b>](https://www.ps1code.com/single-post/2017/01/24/How-to-control-maximum-number-of-VMware-snapshots-with-PowerCLi)|Set maximum allowed VM snapshot number|
 |15|[<b>Get-VMHostGPU</b>](https://www.ps1code.com/single-post/2017/04/23/How-to-get-ESXi-GPU-info-with-PowerCLi)|Get ESXi host(s) GPU info|
+|16|[<b>Test-VMHotfix</b>](https://www.ps1code.com/)|Test VM for installed Hotfix(es)|
+|17|[<b>Test-VMPing</b>](https://www.ps1code.com/)|Test VM accessibility|
 
 ### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
 
-#### <b><ins>VSAN Module Cmdlets:</ins></b>
+#### <b><ins>VSAN Module cmdlets:</ins></b>
 
 |No|Cmdlet|Description|
 |----|----|----|
-|1|[<b>Get-VSANHealthCheckSupported</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Get all available vSAN Health Checks|
-|2|[<b>Get-VSANHealthCheckSkipped</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Get skipped vSAN Health Checks|
-|3|[<b>Get-VSANHealthCheckGroup</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Get all vSAN Health Check groups|
-|4|[<b>Enable-VSANHealthCheckSkipped</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Enable skipped vSAN Health Check(s)|
-|5|[<b>Disable-VSANHealthCheck</b>](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754)|Disable vSAN Health Check(s)|
-|6|[<b>Get-VSANSmartData</b>](http://www.virtuallyghetto.com/2017/04/smart-drive-data-now-available-using-vsan-management-6-6-api.html)|Get SMART drive data|
+|1|[<b>Get-VSANHealthCheckSupported</b>](https://ps1code.wordpress.com/2017/05/08/vsan-health-check)|Get all available vSAN Health Checks. [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
+|2|[<b>Get-VSANHealthCheckSkipped</b>](https://ps1code.wordpress.com/2017/05/08/vsan-health-check)|Get skipped vSAN Health Checks. [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
+|3|[<b>Get-VSANHealthCheckGroup</b>](https://ps1code.wordpress.com/2017/05/08/vsan-health-check)|Get all vSAN Health Check groups. [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
+|4|[<b>Enable-VSANHealthCheckSkipped</b>](https://ps1code.wordpress.com/2017/05/08/vsan-health-check)|Enable skipped vSAN Health Check(s). [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
+|5|[<b>Disable-VSANHealthCheck</b>](https://ps1code.wordpress.com/2017/05/08/vsan-health-check)|Disable vSAN Health Check(s). [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
+|6|[<b>Get-VSANSmartData</b>](https://ps1code.wordpress.com/2017/05/08/vsan-health-check)|Get SMART drive data. [Idea](http://www.virtuallyghetto.com/2017/04/smart-drive-data-now-available-using-vsan-management-6-6-api.html) by William Lam|
+|7|[<b>Get-VSANVersion</b>](https://ps1code.wordpress.com/2017/05/08/vsan-health-check)|Get vSAN health service version. [Idea](http://www.virtuallyghetto.com/2017/04/getting-started-wthe-new-powercli-6-5-1-get-vsanview-cmdlet.html) by William Lam|
+|8|[<b>Get-VSANHealthSummary</b>](https://ps1code.wordpress.com/2017/05/08/vsan-health-check)|Fetch vSAN Cluster Health status|
+|9|[<b>Invoke-VSANHealthCheck</b>](https://ps1code.wordpress.com/2017/05/08/vsan-health-check)|Run vSAN Cluster Health Test|
