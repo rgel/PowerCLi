@@ -69,3 +69,22 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |8|[<b>Get-VSANHealthSummary</b>](http://ps1code.com/2017/05/08/vsan-health-check)|Fetch VSAN Cluster Health status|
 |9|[<b>Invoke-VSANHealthCheck</b>](http://ps1code.com/2017/05/08/vsan-health-check)|Run VSAN Cluster Health Test|
 
+### [<ins>VAMI</ins>](https://github.com/rgel/PowerCLi/tree/master/VAMI)
+
+#### <b><ins>VAMI (Virtual Appliance Management Interface) Module cmdlets:</ins></b>
+
+|No|Cmdlet|Description|
+|----|----|----|
+|1|[<b>Get-VAMIHealth</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get Appliance health summary|
+|2|[<b>Get-VAMISummary</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get basic Appliance info|
+|3|[<b>Get-VAMIAccess</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get access interfaces|
+|4|[<b>Get-VAMIBackupSize</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get estimated backup size|
+|5|[<b>Get-VAMIDisks</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get VMDK disk number to OS partition mapping|
+|6|[<b>Get-VAMIStorageUsed/Start-VAMIDiskResize</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get OS partition usage & Resize partition|
+|7|[<b>Get-VAMINetwork</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get networking info|
+|8|[<b>Get-VAMIPerformance</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get CPU% & Memory% usage|
+|9|[<b>Get-VAMIService/Restart-VAMIService/Start-VAMIService/Stop-VAMIService</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get & control services' state|
+|10|[<b>Get-VAMIStatsList</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get available monitoring metrics|
+|11|[<b>Get-VAMITime</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Get current Time and NTP info|
+|12|[<b>Get-VAMIUser/New-VAMIUser/Remove-VAMIUser</b>](http://ps1code.com/2017/05/11/vami-powercli-module)|Manipulate local users|
+
