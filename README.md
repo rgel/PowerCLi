@@ -35,23 +35,23 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 
 |No|Cmdlet|Description|
 |----|----|----|
-|1|[<b>Get-RDM</b>](http://www.ps1code.com/single-post/2015/10/16/How-to-get-RDM-Raw-Device-Mappings-disks-using-PowerCLi)|Report all VM with their RDM disks|
-|2|[<b>Convert-VmdkThin2EZThick</b>](http://www.ps1code.com/single-post/2015/11/05/How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi)|Inflate thin virtual disks|
+|1|[<b>Get-RDM</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Report all VM with their RDM disks|
+|2|[<b>Convert-VmdkThin2EZThick</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Inflate thin virtual disks|
 |3|[<b>Find-VcVm</b>](https://cloud.githubusercontent.com/assets/6964549/17361776/d5dff80e-597a-11e6-85a2-a782db875f78.png)|Search VCenter VM throw direct connection to group of ESXi hosts. Thanks to <i>VMGU.ru</i> for the [article](http://www.vmgu.ru/news/vmware-vcenter-how-to-find-powered-off)|
-|4|[<b>Set-PowerCLiTitle</b>](http://www.ps1code.com/single-post/2015/11/17/ConnectVIServer-deep-dive-or-%C2%ABWhere-am-I-connected-%C2%BB)|Write connected VI servers info to PowerCLi window title bar|
-|5|[<b>Get-VMHostFirmwareVersion</b>](http://www.ps1code.com/single-post/2016/1/9/How-to-know-ESXi-servers%E2%80%99-BIOSFirmware-version-using-PowerCLi)|Get a Firmware version and release date of your ESXi hosts|
-|6|[<b>Compare-VMHostSoftwareVib</b>](http://www.ps1code.com/single-post/2016/1/10/How-to-compare-installed-VIB-packages-between-two-or-more-ESXi-hosts)|Compare installed VIB packages between two or more ESXi hosts|
+|4|[<b>Set-PowerCLiTitle</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Write connected VI servers info to PowerCLi window title bar|
+|5|[<b>Get-VMHostFirmwareVersion</b>](http://ps1code.com/2016/01/09/esxi-bios-firmware-version-powercli)|Get a Firmware version and release date of your ESXi hosts|
+|6|[<b>Compare-VMHostSoftwareVib</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Compare installed VIB packages between two or more ESXi hosts|
 |7|[<b>Get-VMHostBirthday</b>](https://cloud.githubusercontent.com/assets/6964549/12399803/c8439dfa-be24-11e5-8141-09199caa301e.png)|Get ESXi hosts' installation date. Thanks to <i>Magnus Andersson</i> for his [idea](http://vcdx56.com/2016/01/05/find-esxi-installation-date/)|
-|8|[<b>Enable-VMHostSSH/Disable-VMHostSSH</b>](http://www.ps1code.com/single-post/2016/02/07/How-to-enabledisable-SSH-on-all-ESXi-hosts-in-a-cluster-using-PowerCLi)|Enable/Disable SSH on all ESXi hosts in a cluster|
-|9|[<b>Set-VMHostNtpServer</b>](http://www.ps1code.com/single-post/2016/03/10/How-to-configure-NTP-servers-setting-on-ESXi-hosts-using-PowerCLi)|Set `NTP Servers` setting on ESXi hosts|
-|10|[<b>Get-Version</b>](http://www.ps1code.com/single-post/2016/05/25/How-to-know-any-VMware-object%E2%80%99s-version-Use-GetVersion)|Get VMware Virtual Infrastructure objects' version info: `VM`, `ESXi Hosts`, `VDSwitches`, `Datastores`, `VCenters`, `PowerCLi`, `License Keys`|
-|11|[<b>Compare-VMHost</b>](http://www.ps1code.com/single-post/2016/09/26/Compare-two-or-more-ESXi-hosts-with-PowerCLi)|Compare two or more ESXi hosts with PowerCLi|
-|12|[<b>Move-Template2Datastore</b>](http://www.ps1code.com/single-post/2016/12/19/How-to-migrate-VMware-VM-Templates-to-another-Datastore-by-PowerCLi)|Invoke Storage VMotion task for VM Template(s)|
-|13|[<b>Connect-VMHostPutty</b>](http://www.ps1code.com/single-post/2016/12/27/PowerShell-and-putty-%E2%80%93-better-together)|Connect to ESXi host(s) by putty SSH client with no password!|
-|14|[<b>Set-MaxSnapshotNumber</b>](https://www.ps1code.com/single-post/2017/01/24/How-to-control-maximum-number-of-VMware-snapshots-with-PowerCLi)|Set maximum allowed VM snapshot number|
-|15|[<b>Get-VMHostGPU</b>](https://www.ps1code.com/single-post/2017/04/23/How-to-get-ESXi-GPU-info-with-PowerCLi)|Get ESXi host(s) GPU info|
-|16|[<b>Test-VMHotfix</b>](https://www.ps1code.com/)|Test VM for installed Hotfix(es)|
-|17|[<b>Test-VMPing</b>](https://www.ps1code.com/)|Test VM accessibility|
+|8|[<b>Enable-VMHostSSH/Disable-VMHostSSH</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Enable/Disable SSH on all ESXi hosts in a cluster|
+|9|[<b>Set-VMHostNtpServer</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Set `NTP Servers` setting on ESXi hosts|
+|10|[<b>Get-Version</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Get VMware Virtual Infrastructure objects' version info: `VM`, `ESXi Hosts`, `VDSwitches`, `Datastores`, `VCenters`, `PowerCLi`, `License Keys`|
+|11|[<b>Compare-VMHost</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Compare two or more ESXi hosts with PowerCLi|
+|12|[<b>Move-Template2Datastore</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Invoke Storage VMotion task for VM Template(s)|
+|13|[<b>Connect-VMHostPutty</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Connect to ESXi host(s) by putty SSH client with no password!|
+|14|[<b>Set-MaxSnapshotNumber</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Set maximum allowed VM snapshot number|
+|15|[<b>Get-VMHostGPU</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Get ESXi host(s) GPU info|
+|16|[<b>Test-VMHotfix</b>](http://ps1code.com/2017/05/23/test-vm-hotfix)|Test VM for installed Hotfix(es)|
+|17|[<b>Test-VMPing</b>](http://ps1code.com/2017/05/23/test-vm-hotfix)|Test VM accessibility|
 
 ### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
 
