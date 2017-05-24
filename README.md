@@ -46,7 +46,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |9|[<b>Set-VMHostNtpServer</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Set `NTP Servers` setting on ESXi hosts|
 |10|[<b>Get-Version</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Get VMware Virtual Infrastructure objects' version info: `VM`, `ESXi Hosts`, `VDSwitches`, `Datastores`, `VCenters`, `PowerCLi`, `License Keys`|
 |11|[<b>Compare-VMHost</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Compare two or more ESXi hosts with PowerCLi|
-|12|[<b>Move-Template2Datastore</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Invoke Storage VMotion task for VM Template(s)|
+|12|[<b>Move-Template2Datastore</b>](http://ps1code.com/2016/12/19/migrate-vm-template-powercli)|Invoke Storage VMotion task for VM Template(s)|
 |13|[<b>Connect-VMHostPutty</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Connect to ESXi host(s) by putty SSH client with no password!|
 |14|[<b>Set-MaxSnapshotNumber</b>](http://ps1code.com/2017/01/24/max-snap-powercli)|Set maximum allowed VM snapshot number|
 |15|[<b>Get-VMHostGPU</b>](http://ps1code.com/2017/04/23/esxi-vgpu-powercli)|Get ESXi host(s) GPU info|
