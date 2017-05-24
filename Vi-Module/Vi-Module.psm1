@@ -1631,7 +1631,7 @@ Function Move-Template2Datastore {
 	Requirement :: ESXi Hosts where Templates are registered must be HA/DRS Cluster members. PowerShell 3.0+
 	Version 1.0 :: 14-Dec-2016 :: [Release]
 .LINK
-	http://www.ps1code.com/single-post/2016/12/19/How-to-migrate-VMware-VM-Templates-to-another-Datastore-by-PowerCLi
+	http://ps1code.com/2016/12/19/migrate-vm-template-powercli
 #>
 
 [CmdletBinding(DefaultParameterSetName='DS')]
