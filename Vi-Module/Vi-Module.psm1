@@ -1854,7 +1854,7 @@ Function Set-MaxSnapshotNumber {
 	Requirement :: PowerShell 3.0+
 	Version 1.0 :: 24-Jan-2017 :: [Release]
 .LINK
-	https://www.ps1code.com/single-post/2017/01/24/How-to-control-maximum-number-of-VMware-snapshots-with-PowerCLi
+	http://ps1code.com/2017/01/24/max-snap-powercli
 #>
 
 [CmdletBinding(DefaultParameterSetName="SET",ConfirmImpact='High',SupportsShouldProcess=$true)]
