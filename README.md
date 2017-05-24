@@ -49,7 +49,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |12|[<b>Move-Template2Datastore</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Invoke Storage VMotion task for VM Template(s)|
 |13|[<b>Connect-VMHostPutty</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Connect to ESXi host(s) by putty SSH client with no password!|
 |14|[<b>Set-MaxSnapshotNumber</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Set maximum allowed VM snapshot number|
-|15|[<b>Get-VMHostGPU</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Get ESXi host(s) GPU info|
+|15|[<b>Get-VMHostGPU</b>](http://ps1code.com/2017/04/23/esxi-vgpu-powercli)|Get ESXi host(s) GPU info|
 |16|[<b>Test-VMHotfix</b>](http://ps1code.com/2017/05/23/test-vm-hotfix)|Test VM for installed Hotfix(es)|
 |17|[<b>Test-VMPing</b>](http://ps1code.com/2017/05/23/test-vm-hotfix)|Test VM accessibility|
 
