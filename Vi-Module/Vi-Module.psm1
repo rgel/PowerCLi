@@ -2007,7 +2007,7 @@ Function Get-VMHostGPU
 	Requirement :: PowerShell 3.0+
 	Version 1.0 :: 23-Apr-2017 :: [Release]
 .LINK
-	https://www.ps1code.com/single-post/2017/04/23/How-to-get-ESXi-GPU-info-with-PowerCLi
+	http://ps1code.com/2017/04/23/esxi-vgpu-powercli
 #>
 	
 	[Alias("Get-ViMVMHostGPU", "esxgpu")]
