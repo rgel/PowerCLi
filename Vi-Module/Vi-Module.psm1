@@ -860,7 +860,7 @@ Function Get-Version {
 	[1] VDSwitch data type changed from [VMware.Vim.VmwareDistributedVirtualSwitch] to [VMware.VimAutomation.Vds.Types.V1.VmwareVDSwitch].
 	[2] Function Get-VersionVDSwitch edited to support data type change.
 .LINK
-	http://ps1code.com/2017/05/25/get-version-powercli
+	http://ps1code.com/2016/05/25/get-version-powercli
 #>
 
 [CmdletBinding(DefaultParameterSetName='VIO')]
