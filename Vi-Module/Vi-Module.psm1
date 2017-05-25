@@ -339,7 +339,7 @@ End {
 } #EndFunction Find-VcVm
 
 Function Set-PowerCLiTitle {
-
+	
 <#
 .SYNOPSIS
 	Write connected VI servers info to PowerCLi window title bar.
@@ -353,7 +353,7 @@ Function Set-PowerCLiTitle {
 	PowerCLI C:\> Connect-SrmServer $SRMServerName
 	PowerCLI C:\> title
 .NOTES
-	Author      :: Roman Gelman
+	Author      :: Roman Gelman @rgelman75
 	Version 1.0 :: 17-Nov-2015 :: [Release]
 	Version 1.1 :: 22-Aug-2016 :: [Improvement]
 	[1] Added support for SRM servers
@@ -361,7 +361,7 @@ Function Set-PowerCLiTitle {
 	[3] Minor visual changes
 	Version 1.2 :: 11-Jan-2017 :: [Change] :: Now this is advanced function, minor code changes
 .LINK
-	http://www.ps1code.com/single-post/2015/11/17/ConnectVIServer-deep-dive-or-%C2%ABWhere-am-I-connected-%C2%BB
+	http://ps1code.com/2015/11/17/set-powercli-title
 #>
 
 [CmdletBinding()]
@@ -815,7 +815,7 @@ Process {
 } #EndFunction Set-VMHostNtpServer
 
 Function Get-Version {
-
+	
 <#
 .SYNOPSIS
 	Get VMware Virtual Infrastructure objects' version info.
@@ -854,13 +854,13 @@ Function Get-Version {
 .OUTPUTS
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
-	Author       ::	Roman Gelman.
+	Author       ::	Roman Gelman @rgelman75
 	Version 1.0  ::	23-May-2016  :: Release.
 	Version 1.1  ::	03-Aug-2016  :: Bugfix ::
 	[1] VDSwitch data type changed from [VMware.Vim.VmwareDistributedVirtualSwitch] to [VMware.VimAutomation.Vds.Types.V1.VmwareVDSwitch].
 	[2] Function Get-VersionVDSwitch edited to support data type change.
 .LINK
-	http://www.ps1code.com/single-post/2016/05/25/How-to-know-any-VMware-object%E2%80%99s-version-Use-GetVersion
+	http://ps1code.com/2017/05/25/get-version-powercli
 #>
 
 [CmdletBinding(DefaultParameterSetName='VIO')]
@@ -1609,7 +1609,7 @@ End {If ($ColorOutput) {"`r"}}
 } #EndFunction Compare-VMHost
 
 Function Move-Template2Datastore {
-
+	
 <#
 .SYNOPSIS
 	Invoke SVMotion for VM Templates.
@@ -1625,7 +1625,7 @@ Function Move-Template2Datastore {
 	PS C:\> (Get-Template).Where{$_.ExtensionData.Guest.GuestId -match '^windows'} |Move-Template2Datastore -DatastoreCluster $DatastoreClusterName
 	Distribute all Windows Guest based templates to randomly choisen Datastores in a DatastoreCluster.
 .NOTES
-	Author      :: Roman Gelman
+	Author      :: Roman Gelman @rgelman75
 	Shell       :: Tested on PowerShell 5.0/5.1|PowerCLi 6.5
 	Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
 	Requirement :: ESXi Hosts where Templates are registered must be HA/DRS Cluster members. PowerShell 3.0+
@@ -1818,7 +1818,7 @@ Param (
 } #EndFunction Connect-VMHostPutty
 
 Function Set-MaxSnapshotNumber {
-
+	
 <#
 .SYNOPSIS
 	Set maximum allowed snapshots.
@@ -1847,8 +1847,8 @@ Function Set-MaxSnapshotNumber {
 	PowerCLI C:\> Get-VM |? {$_.Name -like 'win*'} |Set-MaxSnapshotNumber 0 -Confirm:$false
 	Prohibit snapshots for multiple VM without confirmation.
 .NOTES
-	Idea        :: William Lam
-	Author      :: Roman Gelman
+	Idea        :: William Lam @lamw
+	Author      :: Roman Gelman @rgelman75
 	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
 	Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
 	Requirement :: PowerShell 3.0+
