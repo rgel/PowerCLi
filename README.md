@@ -44,7 +44,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |7|[<b>Get-VMHostBirthday</b>](https://cloud.githubusercontent.com/assets/6964549/12399803/c8439dfa-be24-11e5-8141-09199caa301e.png)|Get ESXi hosts' installation date. Thanks to <i>Magnus Andersson</i> for his [idea](http://vcdx56.com/2016/01/05/find-esxi-installation-date/)|
 |8|[<b>Enable-VMHostSSH/Disable-VMHostSSH</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Enable/Disable SSH on all ESXi hosts in a cluster|
 |9|[<b>Set-VMHostNtpServer</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Set `NTP Servers` setting on ESXi hosts|
-|10|[<b>Get-Version</b>](http://ps1code.com/2017/05/25/get-version-powercli)|Get VMware Virtual Infrastructure objects' version info: `VM`, `ESXi Hosts`, `VDSwitches`, `Datastores`, `VCenters`, `PowerCLi`, `License Keys`|
+|10|[<b>Get-Version</b>](http://ps1code.com/2016/05/25/get-version-powercli)|Get VMware Virtual Infrastructure objects' version info: `VM`, `ESXi Hosts`, `VDSwitches`, `Datastores`, `VCenters`, `PowerCLi`, `License Keys`|
 |11|[<b>Compare-VMHost</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Compare two or more ESXi hosts with PowerCLi|
 |12|[<b>Move-Template2Datastore</b>](http://ps1code.com/2016/12/19/migrate-vm-template-powercli)|Invoke Storage VMotion task for VM Template(s)|
 |13|[<b>Connect-VMHostPutty</b>](http://www.ps1code.com/category/vmware-powercli/vi-module/)|Connect to ESXi host(s) by putty SSH client with no password!|
