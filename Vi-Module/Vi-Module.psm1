@@ -1,5 +1,5 @@
 Function Get-RDM {
-
+	
 <#
 .SYNOPSIS
 	Get all RDMs.
@@ -29,7 +29,7 @@ Function Get-RDM {
 	VMware [KB2097287].
 	Version 1.2 :: 03-Aug-2016 :: Improvement :: GetType() method replaced by -is for type determine.
 .LINK
-	http://www.ps1code.com/single-post/2015/10/16/How-to-get-RDM-Raw-Device-Mappings-disks-using-PowerCLi
+	https://ps1code.com/category/vmware-powercli/vi-module/
 #>
 
 [CmdletBinding()]
@@ -102,7 +102,7 @@ End {
 } #EndFunction Get-RDM
 
 Function Convert-VmdkThin2EZThick {
-
+	
 <#
 .SYNOPSIS
 	Inflate Thin Provision virtual disks.
@@ -126,7 +126,7 @@ Function Convert-VmdkThin2EZThick {
 	Version 1.1 :: 03-Aug-2016 :: [Change] :: Parameter `-VMs` renamed to `-VM`
 	Version 1.2 :: 18-Jan-2017 :: [Change] :: Cofirmation asked on per-disk basis instead of per-VM, added `Write-Warning` and `Write-Verbose` messages, minor code changes
 .LINK
-	http://www.ps1code.com/single-post/2015/11/05/How-to-convert-Thin-Provision-VMDK-disks-to-Eager-Zeroed-Thick-using-PowerCLi
+	https://ps1code.com/category/vmware-powercli/vi-module/
 #>
 
 [CmdletBinding(ConfirmImpact='High',SupportsShouldProcess=$true)]
@@ -225,7 +225,7 @@ End {
 } #EndFunction Convert-VmdkThin2EZThick
 
 Function Find-VcVm {
-
+	
 <#
 .SYNOPSIS
 	Search VC's VM throw direct connection to group of ESXi Hosts.
@@ -259,7 +259,7 @@ Function Find-VcVm {
 .OUTPUTS
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .LINK
-	http://ps1code.com
+	https://ps1code.com/category/vmware-powercli/vi-module/
 #>
 
 [Alias("Find-ViMVcVm")]
@@ -361,7 +361,7 @@ Function Set-PowerCLiTitle {
 	[3] Minor visual changes
 	Version 1.2 :: 11-Jan-2017 :: [Change] :: Now this is advanced function, minor code changes
 .LINK
-	http://ps1code.com/2015/11/17/set-powercli-title
+	https://ps1code.com/2015/11/17/set-powercli-title
 #>
 
 [CmdletBinding()]
@@ -556,7 +556,7 @@ Catch
 New-Alias -Name Get-ViMVMHostBirthday -Value Get-VMHostBirthday -Force:$true
 
 Function Enable-VMHostSSH {
-
+	
 <#
 .SYNOPSIS
 	Enable SSH on all ESXi hosts in a cluster.
@@ -576,7 +576,7 @@ Function Enable-VMHostSSH {
 	Version 1.0 :: 07-Feb-2016 :: Release.
 	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type.
 .LINK
-	http://www.ps1code.com/single-post/2016/02/07/How-to-enabledisable-SSH-on-all-ESXi-hosts-in-a-cluster-using-PowerCLi
+	https://ps1code.com/category/vmware-powercli/vi-module/
 #>
 
 [Alias("Enable-ViMVMHostSSH")]
@@ -629,7 +629,7 @@ Process {
 } #EndFunction Enable-VMHostSSH
 
 Function Disable-VMHostSSH {
-
+	
 <#
 .SYNOPSIS
 	Disable SSH on all ESXi hosts in a cluster.
@@ -652,7 +652,7 @@ Function Disable-VMHostSSH {
 	Version 1.0 :: 07-Feb-2016 :: Release.
 	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type.
 .LINK
-	http://www.ps1code.com/single-post/2016/02/07/How-to-enabledisable-SSH-on-all-ESXi-hosts-in-a-cluster-using-PowerCLi
+	https://ps1code.com/category/vmware-powercli/vi-module/
 #>
 
 [Alias("Disable-ViMVMHostSSH")]
@@ -739,7 +739,7 @@ Function Set-VMHostNtpServer
 	Version 1.0 :: 10-Mar-2016 :: [Release]
 	Version 1.1 :: 29-May-2017 :: [Change] Supported -Confirm & -Verbose parameters, Progress bar added
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2016/03/10/set-esxi-ntp-powercli
 #>
 	
 	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
@@ -864,7 +864,7 @@ Function Get-Version {
 	[1] VDSwitch data type changed from [VMware.Vim.VmwareDistributedVirtualSwitch] to [VMware.VimAutomation.Vds.Types.V1.VmwareVDSwitch].
 	[2] Function Get-VersionVDSwitch edited to support data type change.
 .LINK
-	http://ps1code.com/2016/05/25/get-version-powercli
+	https://ps1code.com/2016/05/25/get-version-powercli
 #>
 
 [CmdletBinding(DefaultParameterSetName='VIO')]
@@ -1225,7 +1225,7 @@ End {}
 } #EndFunction Get-Version
 
 Function Search-Datastore {
-
+	
 <#
 .SYNOPSIS
 	Search files on a VMware Datastore.
@@ -1270,7 +1270,7 @@ Function Search-Datastore {
 	[Bugfix] Some SAN as NetApp return `*-flat.vmdk` files in the search. Such files were recognized as orphaned.
 	[Change] `Changed Block Tracking Disk` file type was renamed to `CBT Disk`.
 .LINK
-	http://www.ps1code.com/single-post/2016/08/21/Browse-VMware-Datastores-with-PowerCLi
+	https://ps1code.com/category/vmware-powercli/vi-module/
 #>
 
 [CmdletBinding()]
@@ -1409,207 +1409,222 @@ End {Write-Progress -Activity "Completed" -Completed}
 
 } #EndFunction Search-Datastore
 
-Function Compare-VMHost {
-
+Function Compare-VMHost
+{
+	
 <#
 .SYNOPSIS
-	Compare two or more ESXi hosts on different properties.
+	Compare two or more ESXi hosts on different criteria.
 .DESCRIPTION
-	This cmdlet can compare two or more ESXi hosts on different criteria.
+	This function compares two or more ESXi hosts on different criteria.
 .PARAMETER ReferenceVMHost
-	Reference ESXi host.
+	Specifies reference ESXi host object, returned by Get-VMHost cmdlet.
 .PARAMETER DifferenceVMHost
-	Difference ESXi host.
+	Specifies difference ESXi host object(s), returned by Get-VMHost cmdlet.
 .PARAMETER Compare
-	What to compare.
+	Specifies what to compare.
 .PARAMETER Truncate
-	Try to truncate ESXi hostname.
-.PARAMETER ColorOutput
-	Redirect color output to the console.
-.EXAMPLE
-	PS C:\> Get-VMHost 'esx2.*' |Compare-VMHost -ReferenceVMHost (Get-VMHost 'esx1.*') -Compare ScsiDevice
+	If specified, try to truncate ESXi hostname.
+.PARAMETER HideReference
+	If specified, filter out reference host related objects from the output.
 .EXAMPLE
 	PS C:\> Get-VMHost 'esx2[78].*' |Compare-VMHost -ReferenceVMHost (Get-VMHost 'esx21.*') -Compare SharedDatastore
-	Compare shared datastores of two VMHosts [esx27],[esx28] with the reference VMHost [esx21].
+	Compare shared datastores of two ESXi hosts (esx27, esx28) with the reference ESXi host (esx21).
 .EXAMPLE
-	PS C:\> Get-VMHost 'esx2.*' |Compare-VMHost -ReferenceVMHost (Get-VMHost 'esx1.*') -Compare Portgroup -Truncate -ColorOutput
-	Compare portgroups between two hosts, truncate hostnames and redirect color output to the console.
-.INPUTS
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost] VMHost objects, returned by `Get-VMHost` cmdlet.
-.OUTPUTS
-	[System.Management.Automation.PSCustomObject] PSObject collection.
+	PS C:\> Get-VMHost 'esx2.*' |Compare-VMHost (Get-VMHost 'esx1.*') VIB -Truncate -HideReference
+	Compare VIBs between two ESXi hosts, truncate hostnames and return difference hosts only.
+.EXAMPLE
+	PS C:\> Get-Cluster DEV |Get-VMHost 'esx2.*' |Compare-VMHost -ref (Get-VMHost 'esx1.*') -Compare LUN -Verbose |epcsv -notype .\LUNID.csv
 .NOTES
-	Author      :: Roman Gelman
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5.1
+	Platform    :: Tested on vSphere 5.5/6.5|VCenter 5.5U2/VCSA 6.5
+	Requirement :: VIB compare (-Compare VIB) supported on ESXi/VC 5.0 and later
 	Version 1.0 :: 26-Sep-2016 :: [Release]
+	Version 1.1 :: 29-May-2017 :: [Change] Added NTP & VIB compare, -HideReference parameter and Progress bar
 .LINK
-	http://www.ps1code.com/single-post/2016/09/26/Compare-two-or-more-ESXi-hosts-with-PowerCLi
+	https://ps1code.com/2016/09/26/compare-esxi-powercli
 #>
-
-[Alias("Compare-ViMVMHost")]
-
-Param (
-
-	[Parameter(Mandatory,Position=1,HelpMessage="Reference VMHost")]
-		[Alias("ReferenceESXi")]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$ReferenceVMHost
-	,
-	[Parameter(Mandatory,Position=2,ValueFromPipeline,HelpMessage="Difference VMHosts collection")]
-		[Alias("DifferenceESXi","DifferenceVMHosts")]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]]$DifferenceVMHost
-	,
-	[Parameter(Mandatory=$false,Position=3,HelpMessage="Compare VMHosts on this property")]
-		[ValidateSet("ScsiDevice","ScsiLun","Datastore","SharedDatastore","Portgroup")]
-	[string]$Compare = 'ScsiLun'
-	,
-	[Parameter(Mandatory=$false,Position=4,HelpMessage="Try to truncate a VMHost name from its FQDN")]
+	
+	[CmdletBinding()]
+	[Alias("Compare-ViMVMHost", "diffesx")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, Position = 1)]
+		[Alias("ref")]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$ReferenceVMHost
+		 ,
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[Alias("diff")]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$DifferenceVMHost
+		 ,
+		[Parameter(Mandatory = $false, Position = 2)]
+		[ValidateSet("NAA", "LUN", "Datastore", "SharedDatastore", "Portgroup", "NTP", "VIB")]
+		[string]$Compare = 'SharedDatastore'
+		 ,
+		[Parameter(Mandatory = $false)]
 		[Alias("TruncateVMHostName")]
-	[switch]$Truncate
-	,
-	[Parameter(Mandatory=$false,Position=5,HelpMessage="Send colorized output to the console")]
-		[Alias("Color")]
-	[switch]$ColorOutput
-)
-
-Begin {
-
-	$ErrorActionPreference = 'Stop'
-	$Width = 3
-
-	Try
+		[switch]$Truncate
+		 ,
+		[Parameter(Mandatory = $false)]
+		[switch]$HideReference
+	)
+	
+	Begin
 	{
-		Switch -exact ($Compare) {
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+		Write-Verbose "$FunctionName started at [$(Get-Date)]"
 		
-			'ScsiLun'
+		if ('Connected', 'Maintenance' -contains $ReferenceVMHost.ConnectionState -and $ReferenceVMHost.PowerState -eq 'PoweredOn')
+		{
+			Try
 			{
-				$RefHost = (Get-ScsiLun -VmHost $ReferenceVMHost -LunType 'disk' |
-				select @{N='LUN';E={([regex]::Match($_.RuntimeName, ':L(\d+)$').Groups[1].Value) -as [int]}} |
-				sort LUN).LUN
-				$Length = 'ScsiLun'.Length
-				Break
+				$RefHost = Switch -exact ($Compare)
+				{
+					'LUN'
+					{
+						(Get-ScsiLun -vb:$false -VmHost $ReferenceVMHost -LunType 'disk' | select @{ N = 'LUN'; E = { ([regex]::Match($_.RuntimeName, ':L(\d+)$').Groups[1].Value) -as [int] } } | sort LUN).LUN
+						Break
+					}
+					'NAA'
+					{
+						(Get-ScsiLun -vb:$false -VmHost $ReferenceVMHost -LunType 'disk' | select CanonicalName | sort CanonicalName).CanonicalName
+						Break
+					}
+					'Datastore'
+					{
+						($ReferenceVMHost | Get-Datastore -vb:$false | select Name | sort Name).Name
+						Break
+					}
+					'SharedDatastore'
+					{
+						($ReferenceVMHost | Get-Datastore -vb:$false | ? { $_.ExtensionData.Summary.MultipleHostAccess } | select Name | sort Name).Name
+						Break
+					}
+					'Portgroup'
+					{
+						(($ReferenceVMHost).NetworkInfo.ExtensionData.Portgroup).Spec.Name + ($ReferenceVMHost | Get-VDSwitch -vb:$false | Get-VDPortgroup -vb:$false | ? { !$_.IsUplink } | select Name | sort Name).Name
+						Break
+					}
+					'NTP'
+					{
+						($ReferenceVMHost | Get-VMHostNtpServer -vb:$false) -join ', '
+						Break
+					}
+					'VIB'
+					{
+						((Get-EsxCli -vb:$false -V2 -VMHost $ReferenceVMHost).software.vib.list.Invoke()).ID
+					}
+				}
 			}
-			'ScsiDevice'
+			Catch
 			{
-				$RefHost = (Get-ScsiLun -VmHost $ReferenceVMHost -LunType 'disk' |
-				select CanonicalName |sort CanonicalName).CanonicalName
-				$Length = 'ScsiDevice'.Length
-				$Width = $Width + 1
-				Break
+				"{0}" -f $Error.Exception.Message
 			}
-			'Datastore'
-			{
-				$RefHost = ($ReferenceVMHost |Get-Datastore |select Name |sort Name).Name
-				$Length = 'Datastore'.Length
-				$Width = $Width - 1
-				Break
-			}
-			'SharedDatastore'
-			{
-				$RefHost = ($ReferenceVMHost |Get-Datastore |? {$_.ExtensionData.Summary.MultipleHostAccess} |select Name |sort Name).Name
-				$Length = 'SharedDatastore'.Length
-				$Width = $Width - 1
-				Break
-			}
-			'Portgroup'
-			{
-				$RefHost = (($ReferenceVMHost).NetworkInfo.ExtensionData.Portgroup).Spec.Name
-				$Length = 'Portgroup'.Length
-				$Width = $Width - 1
-			}
-		} #EndSwitch
-		
-		### Write a header to the console ###
-		If ($ColorOutput) {
-			$Tab = "`t"*$Width
-			$Minus = "-"*$Length
-			Write-Host ("`n$Compare$Tab"+'VMHost') -ForegroundColor Green
-			Write-Host ("$Minus$Tab"+'-'*6) -ForegroundColor Green
+		}
+		else
+		{
+			Write-Verbose "The reference host [$($ReferenceVMHost.Name)] currently is in [$($ReferenceVMHost.ConnectionState)::$($ReferenceVMHost.PowerState)] state. The compare was canceled"
 		}
 	}
-	Catch
+	Process
 	{
-		"{0}" -f $Error.Exception.Message
-	}
-}
-
-Process {
-
-	Try
-	{
-		Switch -exact ($Compare) {
-		
-			'ScsiLun'
-			{
-				$DifHost = (Get-ScsiLun -VmHost $DifferenceVMHost -LunType 'disk' |
-				select @{N='LUN';E={([regex]::Match($_.RuntimeName, ':L(\d+)$').Groups[1].Value) -as [int]}} |
-				sort LUN).LUN
-				Break
-			}
-			'ScsiDevice'
-			{
-				$DifHost = (Get-ScsiLun -VmHost $DifferenceVMHost -LunType 'disk' |
-				select CanonicalName |sort CanonicalName).CanonicalName
-				Break
-			}
-			'Datastore'
-			{
-				$DifHost = ($DifferenceVMHost |Get-Datastore |select Name |sort Name).Name
-				Break
-			}
-			'SharedDatastore'
-			{
-				$DifHost = ($DifferenceVMHost |Get-Datastore |? {$_.ExtensionData.Summary.MultipleHostAccess} |select Name |sort Name).Name
-				Break
-			}
-			'Portgroup'
-			{
-				$DifHost = (($DifferenceVMHost).NetworkInfo.ExtensionData.Portgroup).Spec.Name
-			}
-		} #EndSwitch
-		
-		$diffObj = Compare-Object -ReferenceObject $RefHost -DifferenceObject $DifHost -IncludeEqual:$false -CaseSensitive
-		Foreach ($diff in $diffObj) {
-			If ($diff.SideIndicator -eq '=>') {
-				$diffOwner  = $DifferenceVMHost.Name
-				$Reference  = $false
-				$Difference = ''
-			}
-			Else {
-				$diffOwner  = $ReferenceVMHost.Name
-				$Reference  = $true
-				$Difference = $DifferenceVMHost.Name
-			}
+		if ('Connected', 'Maintenance' -contains $DifferenceVMHost.ConnectionState -and $DifferenceVMHost.PowerState -eq 'PoweredOn')
+		{
+			Write-Progress -Activity $FunctionName -Status "Comparing [$Compare] with Reference VMHost [$($ReferenceVMHost.Name)]" -CurrentOperation "Current VMHost [$($DifferenceVMHost.Name)]"
 			
-			If ($Truncate) {
-				$diffOwner  = [regex]::Match($diffOwner, '^(.+?)(\.|$)').Groups[1].Value
-				$Difference = [regex]::Match($Difference, '^(.+?)(\.|$)').Groups[1].Value
+			Try
+			{
+				$DifHost = Switch -exact ($Compare)
+				{
+					
+					'LUN'
+					{
+						(Get-ScsiLun -vb:$false -VmHost $DifferenceVMHost -LunType 'disk' | select @{ N = 'LUN'; E = { ([regex]::Match($_.RuntimeName, ':L(\d+)$').Groups[1].Value) -as [int] } } | sort LUN).LUN
+						Break
+					}
+					'NAA'
+					{
+						(Get-ScsiLun -vb:$false -VmHost $DifferenceVMHost -LunType 'disk' | select CanonicalName | sort CanonicalName).CanonicalName
+						Break
+					}
+					'Datastore'
+					{
+						($DifferenceVMHost | Get-Datastore -vb:$false | select Name | sort Name).Name
+						Break
+					}
+					'SharedDatastore'
+					{
+						($DifferenceVMHost | Get-Datastore -vb:$false | ? { $_.ExtensionData.Summary.MultipleHostAccess } | select Name | sort Name).Name
+						Break
+					}
+					'Portgroup'
+					{
+						(($DifferenceVMHost).NetworkInfo.ExtensionData.Portgroup).Spec.Name + ($DifferenceVMHost | Get-VDSwitch -vb:$false | Get-VDPortgroup -vb:$false | ? { !$_.IsUplink } | select Name | sort Name).Name
+						Break
+					}
+					'NTP'
+					{
+						($DifferenceVMHost | Get-VMHostNtpServer -vb:$false) -join ', '
+						Break
+					}
+					'VIB'
+					{
+						((Get-EsxCli -vb:$false -V2 -VMHost $DifferenceVMHost).software.vib.list.Invoke()).ID
+					}
+				}
+				
+				$diffObj = Compare-Object -ReferenceObject $RefHost -DifferenceObject $DifHost -IncludeEqual:$false -CaseSensitive
+				
+				foreach ($diff in $diffObj)
+				{
+					if ($diff.SideIndicator -eq '=>')
+					{
+						$diffOwner = $DifferenceVMHost.Name
+						$Reference = $false
+						$Difference = ''
+					}
+					else
+					{
+						$diffOwner = $ReferenceVMHost.Name
+						$Reference = $true
+						$Difference = $DifferenceVMHost.Name
+					}
+					
+					if ($Truncate)
+					{
+						$diffOwner = [regex]::Match($diffOwner, '^(.+?)(\.|$)').Groups[1].Value
+						$Difference = [regex]::Match($Difference, '^(.+?)(\.|$)').Groups[1].Value
+					}
+					
+					$res = [pscustomobject] @{
+						$Compare = $diff.InputObject
+						VMHost = $diffOwner
+						Reference = $Reference
+						Difference = $Difference
+					}
+					
+					if ($HideReference) { if (!$res.Reference) { $res } }
+					else { $res }
+				}
 			}
-			
-			$Properties = [ordered]@{
-				$Compare   = $diff.InputObject
-				VMHost     = $diffOwner
-				Reference  = $Reference
-				Difference = $Difference
+			Catch
+			{
+				"{0}" -f $Error.Exception.Message
 			}
-			$Object = New-Object PSObject -Property $Properties
-			
-			### Return resultant object ###
-			If ($ColorOutput) {
-				If (($Object.$Compare).Length -lt 8) {$Tabs = "`t"*3} ElseIf (8..15 -contains ($Object.$Compare).Length) {$Tabs = "`t"*2} Else {$Tabs = "`t"}
-				$Output = "$($Object.$Compare)$Tabs$diffOwner"
-				If ($Reference) {Write-Host $Output -ForegroundColor Yellow}
-				Else            {Write-Host $Output -ForegroundColor Gray}
-			} Else {$Object}
+		}
+		else
+		{
+			Write-Verbose "The difference host [$($DifferenceVMHost.Name)] currently is in [$($DifferenceVMHost.ConnectionState)::$($DifferenceVMHost.PowerState)] state. The host was skipped"
 		}
 	}
-	Catch
+	End
 	{
-		"{0}" -f $Error.Exception.Message
+		Write-Verbose "$FunctionName finished at [$(Get-Date)]"
 	}
 	
-} #EndProcess
-
-End {If ($ColorOutput) {"`r"}}
-
 } #EndFunction Compare-VMHost
 
 Function Move-Template2Datastore {
@@ -1635,7 +1650,7 @@ Function Move-Template2Datastore {
 	Requirement :: ESXi Hosts where Templates are registered must be HA/DRS Cluster members. PowerShell 3.0+
 	Version 1.0 :: 14-Dec-2016 :: [Release]
 .LINK
-	http://ps1code.com/2016/12/19/migrate-vm-template-powercli
+	https://ps1code.com/2016/12/19/migrate-vm-template-powercli
 #>
 
 [CmdletBinding(DefaultParameterSetName='DS')]
@@ -1777,7 +1792,7 @@ Param (
 } #EndFunction Read-VMHostCredential
 
 Function Connect-VMHostPutty {
-
+	
 <#
 .SYNOPSIS
 	Connect to an ESXi host by putty SSH client.
@@ -1800,7 +1815,7 @@ Function Connect-VMHostPutty {
 	Version 1.1 :: 04-Jan-2017 :: [Bugfix]  The `putty` Alias was not created during Module import.
 	
 .LINK
-	http://www.ps1code.com/single-post/2016/12/27/PowerShell-and-putty-%E2%80%93-better-together
+	https://ps1code.com/category/vmware-powercli/vi-module/
 #>
 
 [Alias("Connect-ViMVMHostPutty","putty")]
@@ -1858,7 +1873,7 @@ Function Set-MaxSnapshotNumber {
 	Requirement :: PowerShell 3.0+
 	Version 1.0 :: 24-Jan-2017 :: [Release]
 .LINK
-	http://ps1code.com/2017/01/24/max-snap-powercli
+	https://ps1code.com/2017/01/24/max-snap-powercli
 #>
 
 [CmdletBinding(DefaultParameterSetName="SET",ConfirmImpact='High',SupportsShouldProcess=$true)]
@@ -2011,7 +2026,7 @@ Function Get-VMHostGPU
 	Requirement :: PowerShell 3.0+
 	Version 1.0 :: 23-Apr-2017 :: [Release]
 .LINK
-	http://ps1code.com/2017/04/23/esxi-vgpu-powercli
+	https://ps1code.com/2017/04/23/esxi-vgpu-powercli
 #>
 	
 	[Alias("Get-ViMVMHostGPU", "esxgpu")]
@@ -2100,7 +2115,7 @@ Function Test-VMPing
 	Requirement :: PowerShell 3.0
 	Version 1.0 :: 16-May-2017 :: [Release]
 .LINK
-	http://ps1code.com
+	https://ps1code.com/2017/05/23/test-vm-hotfix
 #>
 	
 	[Alias("tvmp", "Test-ViMVMPing")]
@@ -2197,7 +2212,7 @@ Function Test-VMHotfix
 	Requirement :: PowerShell 4.0
 	Version 1.0 :: 16-May-2017 :: [Release]
 .LINK
-	http://ps1code.com
+	https://ps1code.com/2017/05/23/test-vm-hotfix
 #>
 	
 	[Alias("tvmkb", "Test-ViMVMHotfix")]
