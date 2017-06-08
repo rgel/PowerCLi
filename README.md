@@ -42,7 +42,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |5|[<b>Get-VMHostFirmwareVersion</b>](https://ps1code.com/2016/01/09/esxi-bios-firmware-version-powercli)|Get a Firmware version and release date of your ESXi hosts|
 |6|[<b>Compare-VMHostSoftwareVib</b>](https://ps1code.com/2016/09/26/compare-esxi-powercli)|Deprecated. Use `Compare-VMHost -Compare VIB` instead|
 |7|[<b>Get-VMHostBirthday</b>](https://cloud.githubusercontent.com/assets/6964549/12399803/c8439dfa-be24-11e5-8141-09199caa301e.png)|Get ESXi hosts' installation date. Thanks to <i>Magnus Andersson</i> for his [idea](http://vcdx56.com/2016/01/05/find-esxi-installation-date/)|
-|8|[<b>Enable-VMHostSSH/Disable-VMHostSSH</b>](https://ps1code.com/category/vmware-powercli/vi-module/)|Enable/Disable SSH on all ESXi hosts in a cluster|
+|8|[<b>Enable-VMHostSSH/Disable-VMHostSSH</b>](https://ps1code.com/2016/02/07/enable-disable-ssh-esxi-powercli)|Enable/Disable SSH on all ESXi hosts in a cluster|
 |9|[<b>Set-VMHostNtpServer</b>](https://ps1code.com/2016/03/10/set-esxi-ntp-powercli)|Set `NTP Servers` setting on ESXi hosts|
 |10|[<b>Get-Version</b>](https://ps1code.com/2016/05/25/get-version-powercli)|Get VMware Virtual Infrastructure objects' version info: `VM`, `ESXi Hosts`, `VDSwitches`, `Datastores`, `VCenters`, `PowerCLi`, `License Keys`|
 |11|[<b>Compare-VMHost</b>](https://ps1code.com/2016/09/26/compare-esxi-powercli)|Compare two or more ESXi hosts with PowerCLi|
