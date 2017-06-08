@@ -555,160 +555,179 @@ Catch
 } #EndFilter Get-VMHostBirthday
 New-Alias -Name Get-ViMVMHostBirthday -Value Get-VMHostBirthday -Force:$true
 
-Function Enable-VMHostSSH {
+Function Enable-VMHostSSH
+{
 	
 <#
 .SYNOPSIS
 	Enable SSH on all ESXi hosts in a cluster.
 .DESCRIPTION
 	This function enables SSH on all ESXi hosts in a cluster.
-	It starts the SSH daemon and opens incoming TCP connections on port 22.
+	It starts the TSM-SSH daemon and opens incoming TCP connections on port 22.
+.PARAMETER Cluster
+	Specifies Cluster object(s), returned by Get-Cluster cmdlet.
 .EXAMPLE
 	PS C:\> Get-Cluster PROD |Enable-VMHostSSH
 .EXAMPLE
 	PS C:\> Get-Cluster DEV,TEST |Enable-VMHostSSH |sort Cluster,VMHost |Format-Table -AutoSize
-.INPUTS
-	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl[]] Clusters collection, returtned by Get-Cluster cmdlet.
-.OUTPUTS
-	[System.Management.Automation.PSCustomObject] PSObject collection.
+.EXAMPLE
+	PS C:\> Get-Datacenter North |Get-Cluster |Enable-VMHostSSH -Confirm:$false
 .NOTES
-	Author      ::	Roman Gelman.
-	Version 1.0 :: 07-Feb-2016 :: Release.
-	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type.
+	Author      :: Roman Gelman @rgelman75
+	Version 1.0 :: 07-Feb-2016 :: Release
+	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type
+	Version 1.2 :: 08-Jun-2017 :: -Confirm parameter supported
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2016/02/07/enable-disable-ssh-esxi-powercli
 #>
-
-[Alias("Enable-ViMVMHostSSH")]
-
-Param (
-
-	[Parameter(Mandatory=$false,Position=0,ValueFromPipeline=$true)]
-		[ValidateNotNullorEmpty()]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster[]]$Cluster = (Get-Cluster)
-)
-
-Process {
-
-	Foreach ($container in $Cluster) {
-		Foreach ($esx in Get-VMHost -Location $container) {
-			
-			If ('Connected','Maintenance' -contains $esx.ConnectionState -and $esx.PowerState -eq 'PoweredOn') {
-			
-				$sshSvc = Get-VMHostService -VMHost $esx |? {$_.Key -eq 'TSM-SSH'} |Start-VMHostService -Confirm:$false -ErrorAction Stop
-				If ($sshSvc.Running) {$sshStatus = 'Running'} Else {$sshStatus = 'NotRunning'}
-				$fwRule = Get-VMHostFirewallException -VMHost $esx -Name 'SSH Server' |Set-VMHostFirewallException -Enabled $true -ErrorAction Stop
-				
-				$Properties = [ordered]@{
-					Cluster    = $container.Name
-					VMHost     = $esx.Name
-					State      = $esx.ConnectionState
-					PowerState = $esx.PowerState
-					SSHDaemon  = $sshStatus
-					SSHEnabled = $fwRule.Enabled
+	
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
+	[Alias("Enable-ViMVMHostSSH", "essh")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster]$Cluster
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+	}
+	Process
+	{
+		foreach ($esx in (Get-VMHost -Location $Cluster))
+		{
+			if ('Connected', 'Maintenance' -contains $esx.ConnectionState -and $esx.PowerState -eq 'PoweredOn')
+			{
+				if ($PSCmdlet.ShouldProcess("VMHost [$($esx.Name)]", "Enable SSH"))
+				{
+					$sshSvc = Get-VMHostService -VMHost $esx | ? { $_.Key -eq 'TSM-SSH' } | Start-VMHostService -Confirm:$false
+					$sshStatus = if ($sshSvc.Running) { 'Running' }
+					else { 'NotRunning' }
+					$fwRule = Get-VMHostFirewallException -VMHost $esx -Name 'SSH Server' | Set-VMHostFirewallException -Enabled $true
+					
+					[pscustomobject] @{
+						Cluster = $Cluster.Name
+						VMHost = $esx.Name
+						State = $esx.ConnectionState
+						PowerState = $esx.PowerState
+						SSHDaemon = $sshStatus
+						SSHEnabled = $fwRule.Enabled
+					}
 				}
 			}
-			Else {
-			
-				$Properties = [ordered]@{
-					Cluster    = $container.Name
-					VMHost     = $esx.Name
-					State      = $esx.ConnectionState
+			else
+			{
+				[pscustomobject] @{
+					Cluster = $Cluster.Name
+					VMHost = $esx.Name
+					State = $esx.ConnectionState
 					PowerState = $esx.PowerState
-					SSHDaemon  = 'Unknown'
+					SSHDaemon = 'Unknown'
 					SSHEnabled = 'Unknown'
 				}
 			}
-			$Object = New-Object PSObject -Property $Properties
-			$Object
 		}
 	}
-
-}
-
+	End
+	{
+		
+	}
+	
 } #EndFunction Enable-VMHostSSH
 
-Function Disable-VMHostSSH {
+Function Disable-VMHostSSH
+{
 	
 <#
 .SYNOPSIS
 	Disable SSH on all ESXi hosts in a cluster.
 .DESCRIPTION
 	This function disables SSH on all ESXi hosts in a cluster.
-	It stops the SSH daemon and (optionally) blocks incoming TCP connections on port 22.
+	It stops the TSM-SSH daemon and optionally blocks incoming TCP connections on port 22.
+.PARAMETER Cluster
+	Specifies Cluster object(s), returned by Get-Cluster cmdlet.
 .PARAMETER BlockFirewall
-	Try to disable "SSH Server" firewall exception rule.
+	If specified, try to disable "SSH Server" firewall exception rule.
 	It might fail if this rule categorized as "Required Services" (VMware KB2037544).
 .EXAMPLE
 	PS C:\> Get-Cluster PROD |Disable-VMHostSSH -BlockFirewall
 .EXAMPLE
 	PS C:\> Get-Cluster DEV,TEST |Disable-VMHostSSH |sort Cluster,VMHost |Format-Table -AutoSize
-.INPUTS
-	[VMware.VimAutomation.ViCore.Impl.V1.Inventory.ClusterImpl[]] Clusters collection, returtned by Get-Cluster cmdlet.
-.OUTPUTS
-	[System.Management.Automation.PSCustomObject] PSObject collection.
+.EXAMPLE
+	PS C:\> Get-Cluster |Disable-VMHostSSH -Confirm:$false
 .NOTES
-	Author      ::	Roman Gelman.
-	Version 1.0 :: 07-Feb-2016 :: Release.
-	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type.
+	Author      :: Roman Gelman @rgelman75
+	Version 1.0 :: 07-Feb-2016 :: Release
+	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type
+	Version 1.2 :: 08-Jun-2017 :: -Confirm parameter supported
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2016/02/07/enable-disable-ssh-esxi-powercli
 #>
-
-[Alias("Disable-ViMVMHostSSH")]
-
-Param (
-
-	[Parameter(Mandatory=$false,Position=0,ValueFromPipeline=$true)]
-		[ValidateNotNullorEmpty()]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster[]]$Cluster = (Get-Cluster)
-	,
-	[Parameter(Mandatory=$false,Position=1)]
-	[Switch]$BlockFirewall
-)
-
-Process {
-
-	Foreach ($container in $Cluster) {
-		Foreach ($esx in Get-VMHost -Location $container) {
-			
-			If ('Connected','Maintenance' -contains $esx.ConnectionState -and $esx.PowerState -eq 'PoweredOn') {
-			
-				$sshSvc = Get-VMHostService -VMHost $esx |? {$_.Key -eq 'TSM-SSH'} |Stop-VMHostService -Confirm:$false -ErrorAction Stop
-				If ($sshSvc.Running) {$sshStatus = 'Running'} Else {$sshStatus = 'NotRunning'}
-				$fwRule = Get-VMHostFirewallException -VMHost $esx -Name 'SSH Server'
-				If ($BlockFirewall) {
-					Try   {$fwRule = Set-VMHostFirewallException -Exception $fwRule -Enabled:$false -Confirm:$false -ErrorAction Stop}
-					Catch {}
-				}
-				
-				$Properties = [ordered]@{
-					Cluster    = $container.Name
-					VMHost     = $esx.Name
-					State      = $esx.ConnectionState
-					PowerState = $esx.PowerState
-					SSHDaemon  = $sshStatus
-					SSHEnabled = $fwRule.Enabled
+	
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
+	[Alias("Disable-ViMVMHostSSH", "dssh")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster]$Cluster
+		 ,
+		[Parameter(Mandatory = $false)]
+		[switch]$BlockFirewall
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+	}
+	Process
+	{
+		foreach ($esx in (Get-VMHost -Location $Cluster))
+		{
+			if ('Connected', 'Maintenance' -contains $esx.ConnectionState -and $esx.PowerState -eq 'PoweredOn')
+			{
+				if ($PSCmdlet.ShouldProcess("VMHost [$($esx.Name)]", "Disable SSH"))
+				{
+					$sshSvc = Get-VMHostService -VMHost $esx | ? { $_.Key -eq 'TSM-SSH' } | Stop-VMHostService -Confirm:$false
+					$sshStatus = if ($sshSvc.Running) { 'Running' }
+					else { 'NotRunning' }
+					$fwRule = Get-VMHostFirewallException -VMHost $esx -Name 'SSH Server'
+					if ($BlockFirewall)
+					{
+						Try { $fwRule = Set-VMHostFirewallException -Exception $fwRule -Enabled:$false -Confirm:$false }
+						Catch { }
+					}
+					
+					[pscustomobject] @{
+						Cluster = $Cluster.Name
+						VMHost = $esx.Name
+						State = $esx.ConnectionState
+						PowerState = $esx.PowerState
+						SSHDaemon = $sshStatus
+						SSHEnabled = $fwRule.Enabled
+					}
 				}
 			}
-			Else {
-			
-				$Properties = [ordered]@{
-					Cluster    = $container.Name
-					VMHost     = $esx.Name
-					State      = $esx.ConnectionState
+			else
+			{
+				[pscustomobject] @{
+					Cluster = $Cluster.Name
+					VMHost = $esx.Name
+					State = $esx.ConnectionState
 					PowerState = $esx.PowerState
-					SSHDaemon  = 'Unknown'
+					SSHDaemon = 'Unknown'
 					SSHEnabled = 'Unknown'
 				}
 			}
-			$Object = New-Object PSObject -Property $Properties
-			$Object
 		}
 	}
-
-}
-
+	End
+	{
+		
+	}
+	
 } #EndFunction Disable-VMHostSSH
 
 Function Set-VMHostNtpServer
