@@ -52,6 +52,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |15|[<b>Get-VMHostGPU</b>](https://ps1code.com/2017/04/23/esxi-vgpu-powercli)|Get ESXi host(s) GPU info|
 |16|[<b>Test-VMHotfix</b>](https://ps1code.com/2017/05/23/test-vm-hotfix)|Test VM for installed Hotfix(es)|
 |17|[<b>Test-VMPing</b>](https://ps1code.com/2017/05/23/test-vm-hotfix)|Test VM accessibility|
+|18|[<b>Search-Datastore</b>](https://ps1code.com/2016/08/21/search-datastores-powercli)|Browse/Search VMware Datastores|
 
 ### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
 
