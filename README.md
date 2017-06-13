@@ -35,7 +35,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 
 |No|Cmdlet|Description|
 |----|----|----|
-|1|[<b>Get-RDM</b>](https://ps1code.com/category/vmware-powercli/vi-module/)|Report all VM with their RDM disks|
+|1|[<b>Get-RDM</b>](https://ps1code.com/2015/10/16/get-rdm-disks-powercli)|Get all VM with their RDM (Raw Device Mappings) disks|
 |2|[<b>Convert-VmdkThin2EZThick</b>](https://ps1code.com/category/vmware-powercli/vi-module/)|Inflate thin virtual disks|
 |3|[<b>Find-VcVm</b>](https://cloud.githubusercontent.com/assets/6964549/17361776/d5dff80e-597a-11e6-85a2-a782db875f78.png)|Search VCenter VM throw direct connection to group of ESXi hosts. Thanks to <i>VMGU.ru</i> for the [article](http://www.vmgu.ru/news/vmware-vcenter-how-to-find-powered-off)|
 |4|[<b>Set-PowerCLiTitle</b>](https://ps1code.com/2015/11/17/set-powercli-title)|Write connected VI servers info to PowerCLi window title bar|
