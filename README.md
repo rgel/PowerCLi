@@ -47,7 +47,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |10|[<b>Get-Version</b>](https://ps1code.com/2016/05/25/get-version-powercli)|Get VMware Virtual Infrastructure objects' version info: `VM`, `ESXi Hosts`, `VDSwitches`, `Datastores`, `VCenters`, `PowerCLi`, `License Keys`|
 |11|[<b>Compare-VMHost</b>](https://ps1code.com/2016/09/26/compare-esxi-powercli)|Compare two or more ESXi hosts with PowerCLi|
 |12|[<b>Move-Template2Datastore</b>](https://ps1code.com/2016/12/19/migrate-vm-template-powercli)|Invoke Storage VMotion task for VM Template(s)|
-|13|[<b>Connect-VMHostPutty</b>](https://ps1code.com/category/vmware-powercli/vi-module/)|Connect to ESXi host(s) by putty SSH client with no password!|
+|13|[<b>Connect-VMHostPutty</b>](https://ps1code.com/2016/12/27/esxi-powershell-and-putty)|Connect to ESXi host(s) by putty SSH client with no password!|
 |14|[<b>Set-MaxSnapshotNumber</b>](https://ps1code.com/2017/01/24/max-snap-powercli)|Set maximum allowed VM snapshot number|
 |15|[<b>Get-VMHostGPU</b>](https://ps1code.com/2017/04/23/esxi-vgpu-powercli)|Get ESXi host(s) GPU info|
 |16|[<b>Test-VMHotfix</b>](https://ps1code.com/2017/05/23/test-vm-hotfix)|Test VM for installed Hotfix(es)|
