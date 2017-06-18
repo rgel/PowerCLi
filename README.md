@@ -1,9 +1,9 @@
 # ![powerclilogo](https://cloud.githubusercontent.com/assets/6964549/17082247/44e1392e-517f-11e6-9cbe-9efa0277deaa.png)
 ## VMware PowerCLi Scripts & Modules
 
-### [<ins>Copy-VMNotes2CompDescr.ps1</ins>](https://github.com/rgel/PowerCLi/blob/master/Copy-VMNotes2CompDescr.ps1)
+### [<ins>Copy-VMNotes2ComputerDescription.ps1</ins>](https://github.com/rgel/PowerCLi/blob/master/Copy-VMNotes2ComputerDescription.ps1)
 
-###### <b>How to copy VMware VM Notes to Computer/AD Computer Account Description</b>
+###### [<b>How to copy VMware VM Notes to Computer/AD Computer Account Description</b>](https://ps1code.com/2015/12/14/copy-vmware-vm-notes-2-comp-descr)
 
 ### [<ins>Kickstart-VMHostIMM.ps1</ins>](https://github.com/rgel/PowerCLi/tree/master/Kickstart)
 
