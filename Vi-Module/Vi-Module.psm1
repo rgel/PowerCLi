@@ -29,7 +29,7 @@ Function Get-RDM {
 	VMware [KB2097287].
 	Version 1.2 :: 03-Aug-2016 :: Improvement :: GetType() method replaced by -is for type determine.
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2015/10/16/get-rdm-disks-powercli
 #>
 
 [CmdletBinding()]
@@ -126,7 +126,7 @@ Function Convert-VmdkThin2EZThick {
 	Version 1.1 :: 03-Aug-2016 :: [Change] :: Parameter `-VMs` renamed to `-VM`
 	Version 1.2 :: 18-Jan-2017 :: [Change] :: Cofirmation asked on per-disk basis instead of per-VM, added `Write-Warning` and `Write-Verbose` messages, minor code changes
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2015/11/05/convert-vmdk-thin2thick-powercli
 #>
 
 [CmdletBinding(ConfirmImpact='High',SupportsShouldProcess=$true)]
@@ -1289,7 +1289,7 @@ Function Search-Datastore {
 	[Bugfix] Some SAN as NetApp return `*-flat.vmdk` files in the search. Such files were recognized as orphaned.
 	[Change] `Changed Block Tracking Disk` file type was renamed to `CBT Disk`.
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2016/08/21/search-datastores-powercli
 #>
 
 [CmdletBinding()]
@@ -1834,7 +1834,7 @@ Function Connect-VMHostPutty {
 	Version 1.1 :: 04-Jan-2017 :: [Bugfix]  The `putty` Alias was not created during Module import.
 	
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2016/12/27/esxi-powershell-and-putty
 #>
 
 [Alias("Connect-ViMVMHostPutty","putty")]
@@ -2309,3 +2309,254 @@ Function Test-VMHotfix
 	}
 	
 } #EndFunction Test-VMHotfix
+
+Function Get-VMHostPnic
+{
+	
+<#
+.SYNOPSIS
+	Get VMHost PNIC(s).
+.DESCRIPTION
+	This function gets VMHost physical NIC (Network Interface Card) info.
+.PARAMETER VMHost
+	Specifies ESXi host object(s), returned by Get-VMHost cmdlet.
+.PARAMETER Nolink
+	If specified, only disconnected vmnics returned.
+.EXAMPLE
+	PS C:\> Get-VMHost |sort Name |Get-VMHostPnic -Verbose |? {$_.SpeedMbps} |epcsv -notype .\NIC.csv
+	Export connected NICs only.
+.EXAMPLE
+	PS C:\> Get-Cluster PROD |Get-VMHost -State Connected |Get-VMHostPnic |? {1..999 -contains $_.SpeedMbps} |ft -au
+	Get all connected VMHost NICs with link speed lower than 1Gb.
+.EXAMPLE
+	PS C:\> Get-VMHost 'esxdmz[1-9].*' |sort Name |Get-VMHostPnic -Nolink |Format-Table -AutoSize
+	Get disconnected NICs only.
+.EXAMPLE
+	PS C:\> Get-Cluster PROD |Get-VMHost |Get-VMHostPnic |? {$_.SpeedMbps -eq 10000} |group VMHost |sort Name |select Name, Count, @{N='vmnic';E={($_ |select -expand Group).PNIC}}
+	Get all 10Gb VMHost NICs in a cluster, group by VMHost.
+.EXAMPLE
+	PS C:\> Get-VMHost |sort Parent, Name |Get-VMHostPnic |? {$_.SpeedMbps} |group VMHost |select Name, Count, @{N='vmnic';E={(($_ |select -expand Group).PNIC) -join ', '}}
+	Get all connected VMHost NICs in an Inventory, group by VMHost and sort by Cluster.
+.EXAMPLE
+	PS C:\> Get-VMHost 'esxprd1.*' |Get-VMHostPnic
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5.1
+	Platform    :: Tested on vSphere 5.5/6.5|VCenter 5.5U2/VCSA 6.5
+	Requirement :: PowerShell 3.0
+	Version 1.0 :: 15-Jun-2017 :: [Release]
+.LINK
+	https://ps1code.com/2017/06/18/esxi-peripheral-devices-powercli
+#>
+	
+	[CmdletBinding()]
+	[Alias("Get-ViMVMHostPnic", "esxnic")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$VMHost
+		 ,
+		[Parameter(Mandatory = $false)]
+		[Alias("Down")]
+		[switch]$Nolink
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+		$StatVMHost = 0
+		$Statvmnic = 0
+		$StatBMC = 0
+		$StatDown = 0
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+		Write-Verbose "$FunctionName started at [$(Get-Date)]"
+	}
+	Process
+	{
+		Try
+		{
+			$StatVMHost += 1
+			$PNICs = ($VMHost | Get-View -Verbose:$false).Config.Network.Pnic
+			
+			foreach ($Pnic in $PNICs)
+			{
+				Write-Progress -Activity $FunctionName -Status "VMHost [$($VMHost.Name)]" -CurrentOperation "PNIC [$($Pnic.Device)]"
+				
+				if ($Pnic.Device -match 'vmnic')
+				{
+					$Statvmnic += 1
+					$Vendor = switch -regex ($Pnic.Driver)
+					{
+						'^(elx|be)' { 'Emulex'; Break }
+						'^(igb|ixgb|e10)' { 'Intel'; Break }
+						'^(bnx|tg|ntg)' { 'Broadcom'; Break }
+						'^nmlx' { 'HPE' }
+						Default { 'Unknown' }
+					}
+					
+					$res = [pscustomobject] @{
+						VMHost = $VMHost.Name
+						PNIC = $Pnic.Device
+						Vendor = $Vendor
+						Driver = $Pnic.Driver
+						MAC = ($Pnic.Mac).ToUpper()
+						SpeedMbps = if ($Pnic.LinkSpeed.SpeedMb) { $Pnic.LinkSpeed.SpeedMb } else { 0 }
+					}
+					
+					if (!$res.SpeedMbps) { $StatDown += 1 }
+					
+					if ($Nolink) { if (!($Pnic.LinkSpeed.SpeedMb)) { $res } }
+					else { $res }
+				}
+				else
+				{
+					$StatBMC += 1
+				}
+			}
+		}
+		Catch
+		{
+			"{0}" -f $Error.Exception.Message
+		}
+	}
+	End
+	{
+		Write-Verbose "$FunctionName finished at [$(Get-Date)]"
+		Write-Verbose "$FunctionName Statistic: Total VMHost: [$StatVMHost], Total vmnic: [$Statvmnic], Down: [$StatDown], BMC: [$StatBMC]"
+	}
+	
+} #EndFunction Get-VMHostPnic
+
+Function Get-VMHostHba
+{
+	
+<#
+.SYNOPSIS
+	Get VMHost Fibre Channel HBA.
+.DESCRIPTION
+	This function gets VMHost Fibre Channel Host Bus Adapter info.
+.PARAMETER VMHost
+	Specifies ESXi host object(s), returned by Get-VMHost cmdlet.
+.PARAMETER Nolink
+	If specified, only disconnected adapters returned.
+.PARAMETER FormatWWN
+	Specifies how to format WWN property.
+.EXAMPLE
+	PS C:\> Get-VMHost |sort Name |Get-VMHostHba -Verbose |? {$_.SpeedGbps} |epcsv -notype .\HBA.csv
+	Export connected HBAs only.
+.EXAMPLE
+	PS C:\> Get-Cluster PROD |Get-VMHost -State Connected |Get-VMHostHba |? {$_.SpeedGbps -gt 4} |ft -au
+	Get all connected VMHost HBAs with link speed greater than 4Gbps.
+.EXAMPLE
+	PS C:\> Get-VMHost 'esxdmz[1-9].*' |sort Name |Get-VMHostHba -Nolink |Format-Table -AutoSize
+	Get disconnected HBAs only.
+.EXAMPLE
+	PS C:\> Get-Cluster PROD |Get-VMHost |Get-VMHostHba |? {$_.SpeedGbps -eq 8} |group VMHost |sort Name |select Name, Count, @{N='vmhba';E={($_ |select -expand Group).HBA}}
+	Get all 8Gb VMHost HBAs in a cluster, group by VMHost.
+.EXAMPLE
+	PS C:\> Get-VMHost |sort Parent, Name |Get-VMHostHba |? {$_.SpeedGbps} |group VMHost |select Name, Count, @{N='vmhba';E={(($_ |select -expand Group).HBA) -join ', '}}
+	Get all connected VMHost HBAs in an Inventory, group by VMHost and sort by Cluster.
+.EXAMPLE
+	PS C:\> Get-VMHost 'esxprd1.*' |Get-VMHostHba
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5.1
+	Platform    :: Tested on vSphere 5.5/6.5|VCenter 5.5U2/VCSA 6.5
+	Requirement :: PowerShell 3.0
+	Version 1.0 :: 15-Jun-2017 :: [Release]
+.LINK
+	https://ps1code.com/2017/06/18/esxi-peripheral-devices-powercli
+#>
+	
+	[CmdletBinding()]
+	[Alias("Get-ViMVMHostHba", "esxhba")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$VMHost
+		 ,
+		[Parameter(Mandatory = $false)]
+		[Alias("Down")]
+		[switch]$Nolink
+		 ,
+		[Parameter(Mandatory = $false, Position = 0)]
+		[ValidateSet('XX:XX:XX:XX:XX:XX:XX:XX', 'xx:xx:xx:xx:xx:xx:xx:xx',
+					 'XXXXXXXXXXXXXXXX', 'xxxxxxxxxxxxxxxx')]
+		[string]$FormatWWN = 'XX:XX:XX:XX:XX:XX:XX:XX'
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+		$StatVMHost = 0
+		$StatHba = 0
+		$StatDown = 0
+		
+		switch -casesensitive -regex ($FormatWWN)
+		{
+			'^xxx' { $WwnCase = 'x'; $WwnColon = $false; Break }
+			'^xx:' { $WwnCase = 'x'; $WwnColon = $true; Break }
+			'^XXX' { $WwnCase = 'X'; $WwnColon = $false; Break }
+			'^XX:' { $WwnCase = 'X'; $WwnColon = $true }
+		}
+		
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+		Write-Verbose "$FunctionName started at [$(Get-Date)]"
+	}
+	Process
+	{
+		Try
+		{
+			$StatVMHost += 1
+			$HBAs = ($VMHost | Get-View -Verbose:$false).Config.StorageDevice.HostBusAdapter
+			
+			foreach ($Hba in $HBAs)
+			{
+				Write-Progress -Activity $FunctionName -Status "VMHost [$($VMHost.Name)]" -CurrentOperation "HBA [$($Hba.Device)]"
+				
+				if ($Hba.PortWorldWideName)
+				{
+					$StatHba += 1
+					### WWN ###
+					$WWN = "{0:$WwnCase}" -f $Hba.PortWorldWideName
+					if ($WwnColon) { $WWN = $WWN -split '(.{2})' -join ':' -replace ('(^:|:$)', '') -replace (':{2}', ':') }
+					### Vendor ###
+					$Vendor = switch -regex ($Hba.Driver)
+					{
+						'^lp' { 'Emulex'; Break }
+						'^ql' { 'QLogic'; Break }
+						'^b(f|n)a' { 'Brocade'; Break }
+						'^aic' { 'Adaptec'; Break }
+						Default { 'Unknown' }
+					}
+					
+					$res = [pscustomobject] @{
+						VMHost = $VMHost.Name
+						HBA = $Hba.Device
+						Vendor = $Vendor
+						Model = [regex]::Match($Hba.Model, '^.+\d+Gb').Value
+						Driver = $Hba.Driver
+						WWN = $WWN
+						SpeedGbps = $Hba.Speed
+					}
+					if (!$res.SpeedGbps) { $StatDown += 1 }
+					
+					if ($Nolink) { if (!($res.SpeedGbps)) { $res } }
+					else { $res }
+				}
+			}
+		}
+		Catch
+		{
+			"{0}" -f $Error.Exception.Message
+		}
+	}
+	End
+	{
+		Write-Verbose "$FunctionName finished at [$(Get-Date)]"
+		Write-Verbose "$FunctionName Statistic: Total VMHost: [$StatVMHost], Total HBA: [$StatHba], Down: [$StatDown]"
+	}
+	
+} #EndFunction Get-VMHostHba
