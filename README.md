@@ -53,6 +53,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |16|[<b>Test-VMHotfix</b>](https://ps1code.com/2017/05/23/test-vm-hotfix)|Test VM for installed Hotfix(es)|
 |17|[<b>Test-VMPing</b>](https://ps1code.com/2017/05/23/test-vm-hotfix)|Test VM accessibility|
 |18|[<b>Search-Datastore</b>](https://ps1code.com/2016/08/21/search-datastores-powercli)|Browse/Search VMware Datastores|
+|19|[<b>Get-VMHostPnic/Get-VMHostHba</b>](https://ps1code.com/2017/06/18/esxi-peripheral-devices-powercli)|Get ESXi hosts Peripheral devices|
 
 ### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
 
