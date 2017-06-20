@@ -1,5 +1,4 @@
-#requires -Version 3.0
-#requires -Modules 'DnsServer', 'VMware.VimAutomation.Core'
+#requires -Version 3.0 -Modules 'DnsServer', 'IMM-Module', 'VMware.VimAutomation.Core'
 
 <#
 .SYNOPSIS
