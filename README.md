@@ -7,7 +7,7 @@
 
 ### [<ins>Kickstart-VMHostIMM.ps1</ins>](https://github.com/rgel/PowerCLi/tree/master/Kickstart)
 
-###### <b>Kickstart ESXi hosts on IBM/Lenovo servers without PXE using PowerShell</b>
+###### [<b>Kickstart ESXi hosts on IBM/Lenovo servers without PXE using PowerShell</b>](https://ps1code.com/2015/08/27/kickstart-esxi-ibm-lenovo-powershell)
 
 ### [<ins>Get-IBMVMHostWarranty.ps1</ins>](https://github.com/rgel/PowerCLi/blob/master/Get-IBMVMHostWarranty.ps1)
 
