@@ -9,10 +9,6 @@
 
 ###### [<b>Kickstart ESXi hosts on IBM/Lenovo servers without PXE using PowerShell</b>](https://ps1code.com/2015/08/27/kickstart-esxi-ibm-lenovo-powershell)
 
-### [<ins>Get-IBMVMHostWarranty.ps1</ins>](https://github.com/rgel/PowerCLi/blob/master/Get-IBMVMHostWarranty.ps1)
-
-###### <b>Create enterprise-wide input file for IBM multiple warranty lookup using PowerShell</b>
-
 ### [<ins>Vi-Module</ins>](https://github.com/rgel/PowerCLi/tree/master/Vi-Module)
 
 To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories.
