@@ -1,13 +1,14 @@
-# ![powerclilogo](https://cloud.githubusercontent.com/assets/6964549/17082247/44e1392e-517f-11e6-9cbe-9efa0277deaa.png)
-## VMware PowerCLi Scripts & Modules
+# ![powerclilogo](https://cloud.githubusercontent.com/assets/6964549/17082247/44e1392e-517f-11e6-9cbe-9efa0277deaa.png)VMware PowerCLi Scripts & Modules
 
-### [<ins>Copy-VMNotes2ComputerDescription.ps1</ins>](https://github.com/rgel/PowerCLi/blob/master/Copy-VMNotes2ComputerDescription.ps1)
+### SCRIPTS
 
-###### [<b>How to copy VMware VM Notes to Computer/AD Computer Account Description</b>](https://ps1code.com/2015/12/14/copy-vmware-vm-notes-2-comp-descr)
+|No|Script|Description|
+|----|----|----|
+|1|[<b>Copy-VMNotes2ComputerDescription.ps1</b>](https://github.com/rgel/PowerCLi/blob/master/Copy-VMNotes2ComputerDescription.ps1)|[Copy](https://ps1code.com/2015/12/14/copy-vmware-vm-notes-2-comp-descr) VMware `VM Notes` to Computer/AD Computer Account `Description`|
+|2|[<b>Kickstart-VMHostIMM.ps1</b>](https://github.com/rgel/PowerCLi/tree/master/Kickstart)|[Kickstart](https://ps1code.com/2015/08/27/kickstart-esxi-ibm-lenovo-powershell) ESXi hosts on IBM/LENOVO servers without PXE using PowerShell|
 
-### [<ins>Kickstart-VMHostIMM.ps1</ins>](https://github.com/rgel/PowerCLi/tree/master/Kickstart)
-
-###### [<b>Kickstart ESXi hosts on IBM/Lenovo servers without PXE using PowerShell</b>](https://ps1code.com/2015/08/27/kickstart-esxi-ibm-lenovo-powershell)
+##
+### MODULES
 
 ### [<ins>Vi-Module</ins>](https://github.com/rgel/PowerCLi/tree/master/Vi-Module)
 
@@ -27,9 +28,7 @@ To see the commands imported, type `Get-Command -Module Vi-Module`.
 
 For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [-Online][-Examples]`.
 
-#### <b><ins>Vi-Module cmdlets:</ins></b>
-
-|No|Cmdlet|Description|
+|No|Function|Description|
 |----|----|----|
 |1|[<b>Get-RDM</b>](https://ps1code.com/2015/10/16/get-rdm-disks-powercli)|Get all VM with their RDM (Raw Device Mappings) disks|
 |2|[<b>Convert-VmdkThin2EZThick</b>](https://ps1code.com/2015/11/05/convert-vmdk-thin2thick-powercli)|Inflate thin virtual disks|
@@ -53,9 +52,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 
 ### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
 
-#### <b><ins>VSAN Module cmdlets:</ins></b>
-
-|No|Cmdlet|Description|
+|No|Function|Description|
 |----|----|----|
 |1|[<b>Get-VSANHealthCheckSupported</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Get all available VSAN Health Checks. [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
 |2|[<b>Get-VSANHealthCheckSkipped</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Get skipped VSAN Health Checks. [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
@@ -67,11 +64,9 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |8|[<b>Get-VSANHealthSummary</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Fetch VSAN Cluster Health status|
 |9|[<b>Invoke-VSANHealthCheck</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Run VSAN Cluster Health Test|
 
-### [<ins>VAMI</ins>](https://github.com/rgel/PowerCLi/tree/master/VAMI)
+### [<ins>VAMI</ins>](https://github.com/rgel/PowerCLi/tree/master/VAMI) Virtual Appliance Management Interface
 
-#### <b><ins>VAMI (Virtual Appliance Management Interface) Module cmdlets:</ins></b>
-
-|No|Cmdlet|Description|
+|No|Function|Description|
 |----|----|----|
 |1|[<b>Get-VAMIHealth</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get Appliance health summary|
 |2|[<b>Get-VAMISummary</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get basic Appliance info|
