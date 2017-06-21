@@ -6,6 +6,7 @@
 |----|----|----|
 |1|[<b>Copy-VMNotes2ComputerDescription.ps1</b>](https://github.com/rgel/PowerCLi/blob/master/Copy-VMNotes2ComputerDescription.ps1)|[Copy](https://ps1code.com/2015/12/14/copy-vmware-vm-notes-2-comp-descr) VMware `VM Notes` to Computer/AD Computer Account `Description`|
 |2|[<b>Kickstart-VMHostIMM.ps1</b>](https://github.com/rgel/PowerCLi/tree/master/Kickstart)|[Kickstart](https://ps1code.com/2015/08/27/kickstart-esxi-ibm-lenovo-powershell) ESXi hosts on IBM/LENOVO servers without PXE using PowerShell|
+|3|[<b>Find-VC.ps1</b>](https://github.com/rgel/PowerCLi/blob/master/Find-VC.ps1)|Search VCenter VM throw direct connection to group of ESXi hosts|
 
 ##
 ### MODULES
