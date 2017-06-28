@@ -1,3 +1,57 @@
+Function Get-VSANVersion
+{
+	
+<#
+.SYNOPSIS
+	Get vSAN health service version.
+.DESCRIPTION
+    This function retreives vSAN health service version at the vCenter Server level as well as for the individual ESXi host(s).
+.PARAMETER VsanCluster
+    Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
+.EXAMPLE
+    PS C:\> Get-Cluster |Get-VSANVersion -Verbose
+.EXAMPLE
+    PS C:\> Get-Cluster VSAN-Cluster |Get-VSANVersion |sort Version
+.NOTES
+	Idea        :: William Lam @lamw
+	Author      :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5.1, VSAN 6.6
+	Version 1.0 :: 26-Apr-2017 :: [Release]
+.LINK
+	http://www.virtuallyghetto.com/2017/04/getting-started-wthe-new-powercli-6-5-1-get-vsanview-cmdlet.html
+#>
+	
+	[CmdletBinding()]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[Alias("Cluster")]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster]$VsanCluster
+	)
+	
+	Begin
+	{
+		$vchs = Get-VsanView -Id "VsanVcClusterHealthSystem-vsan-cluster-health-system" -Verbose:$false
+	}
+	Process
+	{
+		if ($VsanCluster.VsanEnabled)
+		{
+			$result = $vchs.VsanVcClusterQueryVerifyHealthSystemVersions($VsanCluster.Id)
+			$return = $result.HostResults | select Hostname, Version | sort Hostname
+			$VcName = if ($global:DefaultVIServers.Length -eq 1) {$global:DefaultVIServer.Name} else {'VC'}
+			$vc = [pscustomobject] @{ Hostname = $VcName; Version = $result.VcVersion }
+			$return
+			$vc
+		}
+		else
+		{
+			Write-Verbose "The [$($VsanCluster.Name)] cluster is not VSAN Enabled"
+		}
+	}
+	End { }
+	
+} #EndFunction Get-VSANVersion
+
 Function Get-VSANHealthCheckGroup
 {
 	
@@ -76,7 +130,7 @@ Function Get-VSANHealthCheckSkipped
 .EXAMPLE
 	PS C:\> Get-VSANHealthCheckSkipped -Cluster (Get-Cluster VSAN-Cluster) -Verbose
 .EXAMPLE
-    PS C:\> Get-Cluster |Get-VSANHealthCheckSkipped
+    PS C:\> Get-Cluster |Get-VSANHealthCheckSkipped |sort GroupName,TestId
 .NOTES
 	Idea        :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
@@ -99,7 +153,7 @@ Function Get-VSANHealthCheckSkipped
 	}
 	Process
 	{
-		if ($_.VsanEnabled)
+		if ($VsanCluster.VsanEnabled)
 		{
 			$results = $vchs.VsanHealthGetVsanClusterSilentChecks($VsanCluster.Id)
 			foreach ($result in $results)
@@ -115,7 +169,7 @@ Function Get-VSANHealthCheckSkipped
 		}
 		else
 		{
-			Write-Verbose "[$($VsanCluster.Name)] cluster is not VSAN Enabled"
+			Write-Verbose "The [$($VsanCluster.Name)] cluster is not VSAN Enabled"
 		}
 	}
 	End {}
@@ -267,7 +321,7 @@ Function Get-VSANSmartData
 .SYNOPSIS
 	Get SMART drive data.
 .DESCRIPTION
-    This function retreives SMART (Self Monitoring, Analysis & Reporting Technology) drive data.
+    This function retreives S.M.A.R.T. (Self Monitoring, Analysis & Reporting Technology) drive data.
 .PARAMETER VsanCluster
     Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
 .EXAMPLE
@@ -296,7 +350,7 @@ Function Get-VSANSmartData
 	}
 	Process
 	{
-		if ($_.VsanEnabled)
+		if ($VsanCluster.VsanEnabled)
 		{
 			$results = $vchs.VsanQueryVcClusterSmartStatsSummary($VsanCluster.Id)
 			
@@ -321,9 +375,189 @@ Function Get-VSANSmartData
 		}
 		else
 		{
-			Write-Verbose "[$($VsanCluster.Name)] cluster is not VSAN Enabled"
+			Write-Verbose "The [$($VsanCluster.Name)] cluster is not VSAN Enabled"
 		}
 	}
 	End { }
 	
 } #EndFunction Get-VSANSmartData
+
+Function Get-VSANHealthSummary
+{
+	
+<#
+.SYNOPSIS
+	Fetch vSAN Cluster Health Status.
+.DESCRIPTION
+    This function performs a cluster wide health check across all types of Health Checks.
+.PARAMETER VsanCluster
+    Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
+.PARAMETER FetchFromCache
+	If specified the results are returned from cache directly instead of running the full health check.
+.PARAMETER SummaryLevel
+	Specifies Health Check sets. If Strict level selected, the Best Practices Health Checks will be taken.
+.EXAMPLE
+	PS C:\> Get-Cluster VSAN-Cluster |Get-VSANHealthSummary Strict -Verbose
+.EXAMPLE
+    PS C:\> Get-Cluster |Get-VSANHealthSummary -FetchFromCache |ft -Property cluster,*health -au
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5.1, VSAN 6.6
+	Version 1.0 :: 27-Apr-2017 :: [Release]
+.LINK
+	https://ps1code.com/2017/05/08/vsan-health-check
+#>
+	
+	[CmdletBinding()]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[Alias("Cluster")]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster]$VsanCluster
+		 ,
+		[Parameter(Mandatory = $false)]
+		[Alias("Cache")]
+		[switch]$FetchFromCache
+		 ,
+		[Parameter(Mandatory = $false, Position = 0)]
+		[ValidateSet("Default", "Strict")]
+		[Alias("Level")]
+		[string]$SummaryLevel = 'Default'
+	)
+	
+	Begin
+	{
+		$vchs = Get-VsanView -Id "VsanVcClusterHealthSystem-vsan-cluster-health-system" -Verbose:$false
+		$fromCache = if ($FetchFromCache) { $true } else { $false }
+		$perspective = if ($SummaryLevel -eq 'Default') { 'defaultView' } else { 'deployAssist' }
+		$FormatDate = "dd'/'MM'/'yyyy HH':'mm':'ss"
+	}
+	Process
+	{
+		if ($VsanCluster.VsanEnabled)
+		{
+			$result = $vchs.VsanQueryVcClusterHealthSummary($VsanCluster.Id, 2, $null, $true, $null, $fromCache, $perspective)
+			
+			$NetworkHealth = if ($result.NetworkHealth.IssueFound) {'Yellow'} else {'Green'}
+			
+			$summary = [pscustomobject]@{
+				Cluster = $VsanCluster.Name
+				OverallHealth = (Get-Culture).TextInfo.ToTitleCase($result.OverallHealth)
+				OverallHealthDescr = $result.OverallHealthDescription
+				Timestamp = (Get-Date $result.Timestamp).ToLocalTime().ToString($FormatDate)
+				VMHealth = (Get-Culture).TextInfo.ToTitleCase($result.VmHealth.OverallHealthState)
+				NetworkHealth = $NetworkHealth
+				DiskHealth = (Get-Culture).TextInfo.ToTitleCase($result.PhysicalDisksHealth.OverallHealth)
+				DiskSpaceHealth = (Get-Culture).TextInfo.ToTitleCase($result.LimitHealth.DiskFreeSpaceHealth)
+				HclDbHealth = (Get-Culture).TextInfo.ToTitleCase($result.HclInfo.HclDbAgeHealth)
+				HclDbTimestamp = (Get-Date $result.HclInfo.HclDbLastUpdate).ToLocalTime().ToString($FormatDate)
+			}
+			
+			if ($null -ne $result.ClusterStatus.UntrackedHosts) { $summary | Add-Member -MemberType NoteProperty -Name VMHostUntracked -Value $result.ClusterStatus.UntrackedHosts }
+			if ($null -ne $result.PhysicalDisksHealth.ComponentsWithIssues) { $summary | Add-Member -MemberType NoteProperty -Name DiskProblem -Value $result.PhysicalDisksHealth.ComponentsWithIssues }
+			$summary
+		}
+		else
+		{
+			Write-Verbose "The [$($VsanCluster.Name)] cluster is not VSAN Enabled"
+		}
+	}
+	End { }
+	
+} #EndFunction Get-VSANHealthSummary
+
+Function Invoke-VSANHealthCheck
+{
+	
+<#
+.SYNOPSIS
+	Run vSAN Cluster Health Test.
+.DESCRIPTION
+    This function performs a cluster wide health check across all types of Health Checks.
+.PARAMETER VsanCluster
+    Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
+.PARAMETER Level
+	Specifies Health Check tests level. Available levels are Group or Test level.
+.PARAMETER HideGreen
+	If specified, Green or Skipped Health Checks will be removed from the resultant report.
+.EXAMPLE
+	PS C:\> Get-Cluster |Invoke-VSANHealthCheck -Verbose |sort Health
+.EXAMPLE
+    PS C:\> Get-Cluster |Invoke-VSANHealthCheck -Level Test |select * -exclude descr* |sort TestGroup,Test |ft -au
+.EXAMPLE
+    PS C:\> Get-Cluster VSAN-Cluster |Invoke-VSANHealthCheck Test -HideGreen |sort Health
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5.1, VSAN 6.6
+	Version 1.0 :: 30-Apr-2017 :: [Release]
+.LINK
+	https://ps1code.com/2017/05/08/vsan-health-check
+#>
+	
+	[CmdletBinding()]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[Alias("Cluster")]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster]$VsanCluster
+		 ,
+		[Parameter(Mandatory = $false, Position = 0)]
+		[ValidateSet("Group", "Test")]
+		[string]$Level = 'Group'
+		 ,
+		[Parameter(Mandatory = $false)]
+		[switch]$HideGreen
+	)
+	
+	Begin
+	{
+		$vchs = Get-VsanView -Id "VsanVcClusterHealthSystem-vsan-cluster-health-system" -Verbose:$false
+	}
+	Process
+	{
+		if ($VsanCluster.VsanEnabled)
+		{
+			$result = $vchs.VsanQueryVcClusterHealthSummary($VsanCluster.Id, 2, $null, $true, $null, $false, 'defaultView')
+			
+			if ($Level -eq 'Group') {
+				foreach ($Group in $result.Groups) {
+					$obj = [pscustomobject] @{
+						Cluster = $VsanCluster.Name
+						TestGroup = $Group.GroupName
+						Health = (Get-Culture).TextInfo.ToTitleCase($Group.GroupHealth)
+					}
+					if ($PSBoundParameters.ContainsKey('HideGreen'))
+					{
+						if ('green', 'skipped' -notcontains $obj.Health) { $obj }
+					}
+					else { $obj }
+				}
+			}
+			else
+			{
+				foreach ($Group in $result.Groups)
+				{
+					foreach ($Test in $Group.GroupTests)
+					{
+						$obj = [pscustomobject] @{
+							Cluster = $VsanCluster.Name
+							TestGroup = $Group.GroupName
+							Test = $Test.TestName
+							Description = $Test.TestShortDescription
+							Health = (Get-Culture).TextInfo.ToTitleCase($Test.TestHealth)
+						}
+						if ($PSBoundParameters.ContainsKey('HideGreen'))
+						{
+							if ('green', 'skipped' -notcontains $obj.Health) { $obj }
+						}
+						else { $obj }
+					}
+				}
+			}
+		}
+		else
+		{
+			Write-Verbose "The [$($VsanCluster.Name)] cluster is not VSAN Enabled"
+		}
+	}
+	End { }
+	
+} #EndFunction Invoke-VSANHealthCheck
