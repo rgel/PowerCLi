@@ -1,4 +1,4 @@
-# ![powerclilogo](https://cloud.githubusercontent.com/assets/6964549/17082247/44e1392e-517f-11e6-9cbe-9efa0277deaa.png)VMware PowerCLi Scripts & Modules
+# ![powerclilogo](https://cloud.githubusercontent.com/assets/6964549/17082247/44e1392e-517f-11e6-9cbe-9efa0277deaa.png)VMware PowerCLi Repo
 
 ### SCRIPTS
 
@@ -11,7 +11,7 @@
 ##
 ### MODULES
 
-### [<ins>Vi-Module</ins>](https://github.com/rgel/PowerCLi/tree/master/Vi-Module)
+### [<ins>Vi-Module</ins>](https://github.com/rgel/PowerCLi/tree/master/Vi-Module) VMware VI Automation Module
 
 To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories.
 
