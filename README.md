@@ -64,6 +64,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |7|[<b>Get-VSANVersion</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Get VSAN health service version. [Idea](http://www.virtuallyghetto.com/2017/04/getting-started-wthe-new-powercli-6-5-1-get-vsanview-cmdlet.html) by William Lam|
 |8|[<b>Get-VSANHealthSummary</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Fetch VSAN Cluster Health status|
 |9|[<b>Invoke-VSANHealthCheck</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Run VSAN Cluster Health Test|
+|10|[<b>Get-VSANCapability</b>](https://ps1code.com/2017/07/19/vsan-capabilities)|Get VSAN capabilities|
 
 ### [<ins>VAMI</ins>](https://github.com/rgel/PowerCLi/tree/master/VAMI) Virtual Appliance Management Interface
 
