@@ -7,7 +7,7 @@ Function Get-VSANVersion
 .DESCRIPTION
     This function retreives vSAN health service version at the vCenter Server level as well as for the individual ESXi host(s).
 .PARAMETER VsanCluster
-    Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
+    Specifies a vSAN Cluster object(s), returned by Get-Cluster cmdlet.
 .EXAMPLE
     PS C:\> Get-Cluster |Get-VSANVersion -Verbose
 .EXAMPLE
@@ -16,7 +16,7 @@ Function Get-VSANVersion
 	Idea        :: William Lam @lamw
 	Author      :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 26-Apr-2017 :: [Release]
+	Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/04/getting-started-wthe-new-powercli-6-5-1-get-vsanview-cmdlet.html
 #>
@@ -66,7 +66,7 @@ Function Get-VSANHealthCheckGroup
 	Idea        :: William Lam @lamw
 	Author      :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 26-Apr-2017 :: [Release]
+	Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754
 #>
@@ -96,7 +96,7 @@ Function Get-VSANHealthCheckSupported
 	Idea        :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 26-Apr-2017 :: [Release]
+	Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754
 #>
@@ -126,7 +126,7 @@ Function Get-VSANHealthCheckSkipped
 .DESCRIPTION
     This function retreives the list of vSAN Health Checks that have been silenced.
 .PARAMETER VsanCluster
-    Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
+    Specifies a vSAN Cluster object(s), returned by Get-Cluster cmdlet.
 .EXAMPLE
 	PS C:\> Get-VSANHealthCheckSkipped -Cluster (Get-Cluster VSAN-Cluster) -Verbose
 .EXAMPLE
@@ -135,7 +135,7 @@ Function Get-VSANHealthCheckSkipped
 	Idea        :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 26-Apr-2017 :: [Release]
+	Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754
 #>
@@ -200,7 +200,7 @@ Function Enable-VSANHealthCheckSkipped
 	Idea        :: William Lam @lamw
 	Author      :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 26-Apr-2017 :: [Release]
+	Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754
 #>	
@@ -250,7 +250,7 @@ Function Disable-VSANHealthCheck
 .DESCRIPTION
     This function skips (silences) the vSAN Health Checks.
 .PARAMETER VsanCluster
-    Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
+    Specifies a vSAN Cluster object(s), returned by Get-Cluster cmdlet.
 .PARAMETER TestId
 	Specifies the vSAN Health Check Id to disable.
 .EXAMPLE
@@ -267,7 +267,7 @@ Function Disable-VSANHealthCheck
 	Idea        :: William Lam @lamw
 	Author      :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 26-Apr-2017 :: [Release]
+	Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754
 #>	
@@ -323,7 +323,7 @@ Function Get-VSANSmartData
 .DESCRIPTION
     This function retreives S.M.A.R.T. (Self Monitoring, Analysis & Reporting Technology) drive data.
 .PARAMETER VsanCluster
-    Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
+    Specifies a vSAN Cluster object(s), returned by Get-Cluster cmdlet.
 .EXAMPLE
 	PS C:\> Get-Cluster VSAN-Cluster |Get-VSANSmartData -Verbose
 .EXAMPLE
@@ -332,7 +332,7 @@ Function Get-VSANSmartData
 	Idea        :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 26-Apr-2017 :: [Release]
+	Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/04/smart-drive-data-now-available-using-vsan-management-6-6-api.html
 #>
@@ -391,7 +391,7 @@ Function Get-VSANHealthSummary
 .DESCRIPTION
     This function performs a cluster wide health check across all types of Health Checks.
 .PARAMETER VsanCluster
-    Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
+    Specifies a vSAN Cluster object(s), returned by Get-Cluster cmdlet.
 .PARAMETER FetchFromCache
 	If specified the results are returned from cache directly instead of running the full health check.
 .PARAMETER SummaryLevel
@@ -403,7 +403,7 @@ Function Get-VSANHealthSummary
 .NOTES
 	Author      :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 27-Apr-2017 :: [Release]
+	Version 1.0 :: 27-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	https://ps1code.com/2017/05/08/vsan-health-check
 #>
@@ -474,7 +474,7 @@ Function Invoke-VSANHealthCheck
 .DESCRIPTION
     This function performs a cluster wide health check across all types of Health Checks.
 .PARAMETER VsanCluster
-    Specifies a vSAN Cluster object, returned by Get-Cluster cmdlet.
+    Specifies a vSAN Cluster object(s), returned by Get-Cluster cmdlet.
 .PARAMETER Level
 	Specifies Health Check tests level. Available levels are Group or Test level.
 .PARAMETER HideGreen
@@ -488,7 +488,7 @@ Function Invoke-VSANHealthCheck
 .NOTES
 	Author      :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 30-Apr-2017 :: [Release]
+	Version 1.0 :: 30-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	https://ps1code.com/2017/05/08/vsan-health-check
 #>
@@ -561,3 +561,138 @@ Function Invoke-VSANHealthCheck
 	End { }
 	
 } #EndFunction Invoke-VSANHealthCheck
+
+Function Get-VSANCapability
+{
+	
+<#
+.SYNOPSIS
+	Get vSAN capabilities.
+.DESCRIPTION
+    This function retreives vSAN capabilities for VCenter/Cluster(s)/VMHost(s).
+.PARAMETER Cluster
+    Specifies a Cluster object(s), returned by Get-Cluster cmdlet.
+.PARAMETER Capability
+	Specifies capabilities to filter out.
+.EXAMPLE
+    PS C:\> Get-Cluster |Get-VSANCapability
+.EXAMPLE
+    PS C:\> Get-Cluster VSAN-Cluster |Get-VSANCapability
+.EXAMPLE
+    PS C:\> Get-Cluster VSAN-Cluster |Get-VSANCapability -Capability allflash
+.EXAMPLE
+    PS C:\> Get-Cluster |Get-VSANCapability allflash, stretchedcluster, encryption
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5.1 | PowerShell 4.0 | VC 6.0U2
+	Version 1.0 :: 18-Jul-2017 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com
+#>
+	
+	[CmdletBinding()]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster]$Cluster
+		 ,
+		[Parameter(Mandatory = $false, Position = 0)]
+		[ValidateSet('throttleresync', 'allflash', 'upgrade', 'decomwhatif', 'objectidentities',
+			'clusterconfig', 'stretchedcluster', 'configassist', 'unicastmode', 'iscsitargets',
+			'capability', 'witnessmanagement', 'cloudhealth', 'firmwareupdate', 'encryption',
+			'nestedfd', 'dataefficiency', 'perfsvcverbosemode', 'vumintegration', IgnoreCase = $false)]
+		[string[]]$Capability
+	)
+	
+	Begin
+	{
+		$WarningPreference = 'SilentlyContinue'
+		
+		$vccs = Get-VsanView -Id 'VsanCapabilitySystem-vsan-vc-capability-system' -Verbose:$false
+		
+		$VsanCapabilityDef = @{
+			'throttleresync' = 'Throttle Resync Traffic';
+			'allflash' = 'All-Flash Support';
+			'upgrade' = 'Upgrade';
+			'decomwhatif' = 'Decommission WhatIf';
+			'objectidentities' = 'Object Identities';
+			'clusterconfig' = 'Cluster Config';
+			'stretchedcluster' = 'Stretched Cluster';
+			'configassist' = 'Configuration Assist';
+			'unicastmode' = 'Unicast Mode';
+			'iscsitargets' = 'iSCSI Targets';
+			'capability' = 'Capability';
+			'witnessmanagement' = 'Witness';
+			'cloudhealth' = 'Cloud Health Check';
+			'firmwareupdate' = 'Firmware Updates';
+			'encryption' = 'Datastore Level Encryption';
+			'nestedfd' = 'Nested Fault Domains';
+			'dataefficiency' = 'Data Efficiency';
+			'perfsvcverbosemode' = 'Performance Service Verbose Mode';
+			'vumintegration' = 'VUM Integration';
+		}
+		
+		### Filter out Capabilities ###
+		$CapabilityFullName = @()
+		$CapabilityFullName += if ($PSBoundParameters.ContainsKey('Capability')) { $Capability | % { $VsanCapabilityDef.$_ } }
+		
+		### VC Capabilities ###
+		$VcName = if ($global:DefaultVIServers.Length -eq 1) { $global:DefaultVIServers.Name } else { Throw "You are connected to more than one VC, please disconnect first" }
+		$VcType = if ($global:DefaultVIServers.ExtensionData.Content.About.OsType -match '^linux') { 'VCSA' } else { 'VCenter' }
+		
+		$VcCapability = $vccs.VsanGetCapabilities($null).Capabilities
+		foreach ($VcCPB in $VcCapability)
+		{
+			$objVC = [pscustomobject] @{
+				VIObject = $VcName
+				Type = $VcType
+				Capability = if ($VsanCapabilityDef.ContainsKey($VcCPB)) { $VsanCapabilityDef.$VcCPB } else { $VcCPB }
+			}
+			if ($PSBoundParameters.ContainsKey('Capability'))
+			{
+				if ($CapabilityFullName -contains $objVC.Capability) { $objVC }
+			}
+			else { $objVC }
+		}
+	}
+	Process
+	{
+		$ClusterCapability = $vccs.VsanGetCapabilities($Cluster.Id)
+		$ClusterCPB, $VMHostCPB = ($ClusterCapability).Where({ $_.Target -match '^ClusterComputeResource' }, 'Split')
+		
+		### Cluster Capabilities ###
+		foreach ($ClCPB in $ClusterCPB.Capabilities)
+		{
+			$objCluster = [pscustomobject] @{
+				VIObject = $Cluster.Name
+				Type = if ($Cluster.VsanEnabled) { 'VSANCluster' } else { 'Cluster' }
+				Capability = if ($VsanCapabilityDef.ContainsKey($ClCPB)) { $VsanCapabilityDef.$ClCPB } else { $ClCPB }
+			}
+			if ($PSBoundParameters.ContainsKey('Capability'))
+			{
+				if ($CapabilityFullName -contains $objCluster.Capability) { $objCluster }
+			}
+			else { $objCluster }
+		}
+		
+		### VMHost Capabilities ###
+		foreach ($VMHost in $VMHostCPB)
+		{
+			$VMHostName = [regex]::Match((Get-View -Id $VMHost.Target).Name, '^(.+?)(\.|$)').Groups[1].Value
+			foreach ($EsxCPB in $VMHostCPB.Capabilities)
+			{
+				$objVMHost = [pscustomobject] @{
+					VIObject = $VMHostName
+					Type = 'VMHost'
+					Capability = if ($VsanCapabilityDef.ContainsKey($EsxCPB)) { $VsanCapabilityDef.$EsxCPB } else { $EsxCPB }
+				}
+				if ($PSBoundParameters.ContainsKey('Capability'))
+				{
+					if ($CapabilityFullName -contains $objVMHost.Capability) { $objVMHost }
+				}
+				else { $objVMHost }
+			}
+		}
+	}
+	End { }
+	
+} #EndFunction Get-VSANCapability
