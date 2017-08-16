@@ -1,4 +1,5 @@
-Function Get-RDM {
+Function Get-RDM
+{
 	
 <#
 .SYNOPSIS
@@ -22,86 +23,93 @@ Function Get-RDM {
 .OUTPUTS
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
-	Author: Roman Gelman.
-	Version 1.0 :: 16-Oct-2015 :: Release
-	Version 1.1 :: 03-Dec-2015 :: Bugfix :: Error message appear while VML mismatch,
-	when the VML identifier does not match for an RDM on two or more ESXi hosts.
-	VMware [KB2097287].
-	Version 1.2 :: 03-Aug-2016 :: Improvement :: GetType() method replaced by -is for type determine.
+	Author: Roman Gelman @rgelman75
+	Version 1.0 :: 16-Oct-2015 :: [Release] :: Publicly available
+	Version 1.1 :: 03-Dec-2015 :: [Bugfix]  :: Error message appear while VML mismatch, when the VML identifier does not match for an RDM on two or more ESXi hosts. VMware [KB2097287].
+	Version 1.2 :: 03-Aug-2016 :: [Improvement] :: GetType() method replaced by -is to determine data type
 .LINK
 	https://ps1code.com/2015/10/16/get-rdm-disks-powercli
 #>
-
-[CmdletBinding()]
-[Alias("Get-ViMRDM")]
-
-Param (
-
-	[Parameter(Mandatory=$false,Position=1,ValueFromPipeline=$true,HelpMessage="VM's collection, returned by Get-VM cmdlet")]
+	
+	[CmdletBinding()]
+	[Alias("Get-ViMRDM")]
+	Param (
+		
+		[Parameter(Mandatory = $false, Position = 1, ValueFromPipeline = $true, HelpMessage = "VM's collection, returned by Get-VM cmdlet")]
 		[ValidateNotNullorEmpty()]
 		[Alias("VM")]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VMs = (Get-VM)
-
-)
-
-Begin {
-
-	$Object    = @()
-	$regxVMDK  = '^\[(?<Datastore>.+)\]\s(?<Filename>.+)$'
-	$regxLUNID = ':L(?<LUNID>\d+)$'
-}
-
-Process {
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VMs = (Get-VM)
+		
+	)
 	
-	Foreach ($vm in ($VMs |Get-View)) {
-		Foreach ($dev in $vm.Config.Hardware.Device) {
-		    If ($dev -is [VMware.Vim.VirtualDisk]) {
-				If ("physicalMode","virtualMode" -contains $dev.Backing.CompatibilityMode) {
-		         	
-					Write-Progress -Activity "Gathering RDM ..." -CurrentOperation "Hard disk - [$($dev.DeviceInfo.Label)]" -Status "VM - $($vm.Name)"
-					
-					$esx        = Get-View $vm.Runtime.Host
-					$esxScsiLun = $esx.Config.StorageDevice.ScsiLun |? {$_.Uuid -eq $dev.Backing.LunUuid}
-					
-					### Expand 'LUNID' from device runtime name (vmhba2:C0:T0:L12) ###
-					$lunCN = $esxScsiLun.CanonicalName
-					$Matches = $null
-					If ($lunCN) {
-						$null  = (Get-ScsiLun -VmHost $esx.Name -CanonicalName $lunCN -ErrorAction SilentlyContinue).RuntimeName -match $regxLUNID
-						$lunID = $Matches.LUNID
-					} Else {$lunID = ''}
-					
-					### Expand 'Datastore' and 'VMDK' from file path ###
-					$null = $dev.Backing.FileName -match $regxVMDK
-					
-					$Properties = [ordered]@{
-						VM            = $vm.Name
-						VMHost        = $esx.Name
-						Datastore     = $Matches.Datastore
-						VMDK          = $Matches.Filename
-						HDLabel       = $dev.DeviceInfo.Label
-						HDSizeGB      = [math]::Round(($dev.CapacityInKB / 1MB), 3)
-						HDMode        = $dev.Backing.CompatibilityMode
-						DeviceName    = $dev.Backing.DeviceName
-						Vendor        = $esxScsiLun.Vendor
-						CanonicalName = $lunCN
-						LUNID         = $lunID
+	Begin
+	{
+		
+		$Object = @()
+		$regxVMDK = '^\[(?<Datastore>.+)\]\s(?<Filename>.+)$'
+		$regxLUNID = ':L(?<LUNID>\d+)$'
+	}
+	
+	Process
+	{
+		
+		Foreach ($vm in ($VMs | Get-View))
+		{
+			Foreach ($dev in $vm.Config.Hardware.Device)
+			{
+				If ($dev -is [VMware.Vim.VirtualDisk])
+				{
+					If ("physicalMode", "virtualMode" -contains $dev.Backing.CompatibilityMode)
+					{
+						
+						Write-Progress -Activity "Gathering RDM ..." -CurrentOperation "Hard disk - [$($dev.DeviceInfo.Label)]" -Status "VM - $($vm.Name)"
+						
+						$esx = Get-View $vm.Runtime.Host
+						$esxScsiLun = $esx.Config.StorageDevice.ScsiLun | ? { $_.Uuid -eq $dev.Backing.LunUuid }
+						
+						### Expand 'LUNID' from device runtime name (vmhba2:C0:T0:L12) ###
+						$lunCN = $esxScsiLun.CanonicalName
+						$Matches = $null
+						If ($lunCN)
+						{
+							$null = (Get-ScsiLun -VmHost $esx.Name -CanonicalName $lunCN -ErrorAction SilentlyContinue).RuntimeName -match $regxLUNID
+							$lunID = $Matches.LUNID
+						}
+						Else { $lunID = '' }
+						
+						### Expand 'Datastore' and 'VMDK' from file path ###
+						$null = $dev.Backing.FileName -match $regxVMDK
+						
+						$Properties = [ordered]@{
+							VM = $vm.Name
+							VMHost = $esx.Name
+							Datastore = $Matches.Datastore
+							VMDK = $Matches.Filename
+							HDLabel = $dev.DeviceInfo.Label
+							HDSizeGB = [math]::Round(($dev.CapacityInKB / 1MB), 3)
+							HDMode = $dev.Backing.CompatibilityMode
+							DeviceName = $dev.Backing.DeviceName
+							Vendor = $esxScsiLun.Vendor
+							CanonicalName = $lunCN
+							LUNID = $lunID
+						}
+						$Object = New-Object PSObject -Property $Properties
+						$Object
 					}
-					$Object = New-Object PSObject -Property $Properties
-					$Object
 				}
 			}
 		}
 	}
-}
-
-End {
-	Write-Progress -Completed $true -Status "Please wait"
-}
-
+	
+	End
+	{
+		Write-Progress -Completed $true -Status "Please wait"
+	}
+	
 } #EndFunction Get-RDM
 
-Function Convert-VmdkThin2EZThick {
+Function Convert-VmdkThin2EZThick
+{
 	
 <#
 .SYNOPSIS
@@ -112,119 +120,132 @@ Function Convert-VmdkThin2EZThick {
 .PARAMETER VM
 	Object(s), returned by `Get-VM` cmdlet.
 .EXAMPLE
-	PowerCLI C:\> Get-VM VM1 |Convert-VmdkThin2EZThick
+	PS C:\> Get-VM VM1 |Convert-VmdkThin2EZThick
 .EXAMPLE
-	PowerCLI C:\> Get-VM VM1,VM2 |Convert-VmdkThin2EZThick -Confirm:$false |sort VM,Datastore,VMDK |ft -au
+	PS C:\> Get-VM VM1,VM2 |Convert-VmdkThin2EZThick -Confirm:$false |sort VM,Datastore,VMDK |ft -au
 .EXAMPLE
-	PowerCLI C:\> Get-VM 'vm[1-5]' |thin2thick -Verbose
+	PS C:\> Get-VM 'vm[1-5]' |thin2thick -Verbose
 .NOTES
-	Author      :: Roman Gelman
+	Author      :: Roman Gelman @rgelman75
 	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
 	Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
 	Requirement :: PowerShell 3.0+, VM must be PoweredOff
-	Version 1.0 :: 05-Nov-2015 :: [Release]
-	Version 1.1 :: 03-Aug-2016 :: [Change] :: Parameter `-VMs` renamed to `-VM`
-	Version 1.2 :: 18-Jan-2017 :: [Change] :: Cofirmation asked on per-disk basis instead of per-VM, added `Write-Warning` and `Write-Verbose` messages, minor code changes
+	Version 1.0 :: 05-Nov-2015 :: [Release] :: Publicly available
+	Version 1.1 :: 03-Aug-2016 :: [Change]  :: Parameter `-VMs` renamed to `-VM`
+	Version 1.2 :: 18-Jan-2017 :: [Change]  :: Cofirmation asked on per-disk basis instead of per-VM, added `Write-Warning` and `Write-Verbose` messages, minor code changes
 .LINK
 	https://ps1code.com/2015/11/05/convert-vmdk-thin2thick-powercli
 #>
-
-[CmdletBinding(ConfirmImpact='High',SupportsShouldProcess=$true)]
-[Alias("Convert-ViMVmdkThin2EZThick","thin2thick")]
-[OutputType([PSCustomObject])]
-
-Param (
-	[Parameter(Mandatory,Position=0,ValueFromPipeline)]
+	
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess = $true)]
+	[Alias("Convert-ViMVmdkThin2EZThick", "thin2thick")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, Position = 0, ValueFromPipeline)]
 		[Alias("VMs")]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VM
-)
-
-Begin {
-	$Object   = @()
-	$regxVMDK = '^\[(?<Datastore>.+)\]\s(?<Filename>.+)$'
-} #EndBegin
-
-Process {
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VM
+	)
 	
-	Foreach ($vmv in ($VM |Get-View -Verbose:$false)) {
+	Begin
+	{
+		$Object = @()
+		$regxVMDK = '^\[(?<Datastore>.+)\]\s(?<Filename>.+)$'
+	} #EndBegin
 	
-		### Validate VM prerequisites ###
-		If ($vmv.Runtime.PowerState -eq 'poweredOff') {
+	Process
+	{
 		
-			### Get ESXi object where $vmv is registered ###
-			$esx = Get-View $vmv.Runtime.Host -Verbose:$false
+		Foreach ($vmv in ($VM | Get-View -Verbose:$false))
+		{
 			
-			### Get Datacenter object where $vmv is registered ###
-			$parentObj = Get-View $vmv.Parent -Verbose:$false
-		    While ($parentObj -isnot [VMware.Vim.Datacenter]) {$parentObj = Get-View $parentObj.Parent -Verbose:$false}
-		    $datacenter       = New-Object VMware.Vim.ManagedObjectReference
-			$datacenter.Type  = 'Datacenter'
-			$datacenter.Value = $parentObj.MoRef.Value
-		   
-			Foreach ($dev in $vmv.Config.Hardware.Device) {
-			    If ($dev -is [VMware.Vim.VirtualDisk]) {
+			### Validate VM prerequisites ###
+			If ($vmv.Runtime.PowerState -eq 'poweredOff')
+			{
 				
-					$sizeGB = [Math]::Round(($dev.CapacityInKB / 1MB), 1)
-					If ($dev.Backing.ThinProvisioned -and !($dev.Backing.Parent) -and $PSCmdlet.ShouldProcess("VM [$($vmv.Name)]","Convert $sizeGB GiB Thin Provision disk [$($dev.DeviceInfo.Label)] to [Thick Provision Eager Zeroed]")) {
-			
-						### Invoke 'Inflate virtual disk' task ###
-						$ViDM      = Get-View -Id 'VirtualDiskManager-virtualDiskManager' -Verbose:$false
-						$taskMoRef = $ViDM.InflateVirtualDisk_Task($dev.Backing.FileName, $datacenter)
-						$task      = Get-View $taskMoRef -Verbose:$false
+				### Get ESXi object where $vmv is registered ###
+				$esx = Get-View $vmv.Runtime.Host -Verbose:$false
+				
+				### Get Datacenter object where $vmv is registered ###
+				$parentObj = Get-View $vmv.Parent -Verbose:$false
+				While ($parentObj -isnot [VMware.Vim.Datacenter]) { $parentObj = Get-View $parentObj.Parent -Verbose:$false }
+				$datacenter = New-Object VMware.Vim.ManagedObjectReference
+				$datacenter.Type = 'Datacenter'
+				$datacenter.Value = $parentObj.MoRef.Value
+				
+				Foreach ($dev in $vmv.Config.Hardware.Device)
+				{
+					If ($dev -is [VMware.Vim.VirtualDisk])
+					{
 						
-						### Show task progress ###
-						For ($i=1; $i -lt [int32]::MaxValue; $i++) {
-							If ("running","queued" -contains $task.Info.State) {
-								$task.UpdateViewData("Info")
-								If ($task.Info.Progress -ne $null) {
-									Write-Progress -Activity "Inflate virtual disk task is in progress ..." -Status "VM [$($vmv.Name)]" `
-									-CurrentOperation "[$($dev.DeviceInfo.Label)] :: $($dev.Backing.FileName) [$sizeGB GiB]" `
-									-PercentComplete $task.Info.Progress -ErrorAction SilentlyContinue
-									Start-Sleep -Seconds 3
+						$sizeGB = [Math]::Round(($dev.CapacityInKB / 1MB), 1)
+						If ($dev.Backing.ThinProvisioned -and !($dev.Backing.Parent) -and $PSCmdlet.ShouldProcess("VM [$($vmv.Name)]", "Convert $sizeGB GiB Thin Provision disk [$($dev.DeviceInfo.Label)] to [Thick Provision Eager Zeroed]"))
+						{
+							
+							### Invoke 'Inflate virtual disk' task ###
+							$ViDM = Get-View -Id 'VirtualDiskManager-virtualDiskManager' -Verbose:$false
+							$taskMoRef = $ViDM.InflateVirtualDisk_Task($dev.Backing.FileName, $datacenter)
+							$task = Get-View $taskMoRef -Verbose:$false
+							
+							### Show task progress ###
+							For ($i = 1; $i -lt [int32]::MaxValue; $i++)
+							{
+								If ("running", "queued" -contains $task.Info.State)
+								{
+									$task.UpdateViewData("Info")
+									If ($task.Info.Progress -ne $null)
+									{
+										Write-Progress -Activity "Inflate virtual disk task is in progress ..." -Status "VM [$($vmv.Name)]" `
+													   -CurrentOperation "[$($dev.DeviceInfo.Label)] :: $($dev.Backing.FileName) [$sizeGB GiB]" `
+													   -PercentComplete $task.Info.Progress -ErrorAction SilentlyContinue
+										Start-Sleep -Seconds 3
+									}
 								}
+								Else { Break }
 							}
- 							Else {Break}
+							
+							### Get task completion results ###
+							$tResult = $task.Info.State
+							$tStart = $task.Info.StartTime
+							$tEnd = $task.Info.CompleteTime
+							$tCompleteTime = [Math]::Round((New-TimeSpan -Start $tStart -End $tEnd).TotalMinutes, 1)
+							
+							### Expand 'Datastore' and 'VMDK' from file path ###
+							$null = $dev.Backing.FileName -match $regxVMDK
+							
+							$Properties = [ordered]@{
+								VM = $vmv.Name
+								VMHost = $esx.Name
+								Datastore = $Matches.Datastore
+								VMDK = $Matches.Filename
+								HDLabel = $dev.DeviceInfo.Label
+								HDSizeGB = $sizeGB
+								Result = (Get-Culture).TextInfo.ToTitleCase($tResult)
+								StartTime = $tStart
+								CompleteTime = $tEnd
+								TimeMin = $tCompleteTime
+							}
+							$Object = New-Object PSObject -Property $Properties
+							$Object
 						}
-						
-						### Get task completion results ###
-						$tResult       = $task.Info.State
-						$tStart        = $task.Info.StartTime
-						$tEnd          = $task.Info.CompleteTime
-						$tCompleteTime = [Math]::Round((New-TimeSpan -Start $tStart -End $tEnd).TotalMinutes, 1)
-						
-						### Expand 'Datastore' and 'VMDK' from file path ###
-						$null = $dev.Backing.FileName -match $regxVMDK
-						
-						$Properties = [ordered]@{
-							VM           = $vmv.Name
-							VMHost       = $esx.Name
-							Datastore    = $Matches.Datastore
-							VMDK         = $Matches.Filename
-							HDLabel      = $dev.DeviceInfo.Label
-							HDSizeGB     = $sizeGB
-							Result       = (Get-Culture).TextInfo.ToTitleCase($tResult)
-							StartTime    = $tStart
-							CompleteTime = $tEnd
-							TimeMin      = $tCompleteTime
-						}
-						$Object = New-Object PSObject -Property $Properties
-						$Object
-					} Else {Write-Verbose "VM [$($vmv.Name)] :: [$($dev.DeviceInfo.Label)] :: $($dev.Backing.FileName) skipped"}
+						Else { Write-Verbose "VM [$($vmv.Name)] :: [$($dev.DeviceInfo.Label)] :: $($dev.Backing.FileName) skipped" }
+					}
 				}
+				$vmv.Reload()
 			}
-			$vmv.Reload()
-		} Else {Write-Warning "VM [$($vmv.Name)] must be PoweredOff, but currently it is [$($vmv.Runtime.PowerState)]!"}
-	}
-} #EndProcess
-
-End {
-	Write-Progress -Activity "Completed" -Completed
-	#Write-Progress -Completed $true -Status "Please wait"
-} #End
-
+			Else { Write-Warning "VM [$($vmv.Name)] must be PoweredOff, but currently it is [$($vmv.Runtime.PowerState)]!" }
+		}
+	} #EndProcess
+	
+	End
+	{
+		Write-Progress -Activity "Completed" -Completed
+		#Write-Progress -Completed $true -Status "Please wait"
+	} #End
+	
 } #EndFunction Convert-VmdkThin2EZThick
 
-Function Find-VcVm {
+Function Find-VcVm
+{
 	
 <#
 .SYNOPSIS
@@ -250,95 +271,107 @@ Function Find-VcVm {
 .EXAMPLE
 	PS C:\> Find-VcVm vc1 esxprod |fl
 .NOTES
-	Author      :: Roman Gelman.
+	Author      :: Roman Gelman @rgelman75
 	Limitation  :: [1] The function uses common credentials for all ESXi hosts.
 	               [2] The hosts' Lockdown mode should be disabled.
-	Version 1.0 :: 03-Sep-2015 :: Release.
-	Version 1.1 :: 03-Aug-2016 :: Improvement :: Returned object properties changed.
-	Version 1.2 :: 14-Nov-2016 :: Improvement :: Disappear unnecessary error messages while disconnecting VC.
+	Version 1.0 :: 03-Sep-2015 :: [Release] :: Publicly available
+	Version 1.1 :: 03-Aug-2016 :: [Improvement] :: Returned object properties changed
+	Version 1.2 :: 14-Nov-2016 :: [Improvement] :: Disappear unnecessary error messages while disconnecting VC
 .OUTPUTS
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com
 #>
-
-[Alias("Find-ViMVcVm")]
-
-Param (
-
-	[Parameter(Mandatory=$true,Position=1,HelpMessage="vCenter's VM Name")]
-		[Alias("vCenter","VcVm")]
-	[string]$VC
-	,
-	[Parameter(Mandatory=$true,Position=2,HelpMessage="ESXi Hosts' common suffix")]
-		[Alias("VMHostSuffix","ESXiSuffix")]
-	[string]$HostSuffix
-	,
-	[Parameter(Mandatory=$false,Position=3,HelpMessage="ESXi Hosts' postfix number start")]
-		[ValidateRange(1,98)]
-		[Alias("PostfixFirst","Start")]
-	[int]$PostfixStart = 1
-	,
-	[Parameter(Mandatory=$false,Position=4,HelpMessage="ESXi Hosts' postfix number end")]
-		[ValidateRange(2,99)]
-		[Alias("PostfixLast","End")]
-	[int]$PostfixEnd = 9
-	,
-	[Parameter(Mandatory=$false,Position=5,HelpMessage="Add ESXi Hosts' postfix leading zero")]
-	[switch]$AddZero = $false
-)
-
-Begin {
-
-	Set-PowerCLIConfiguration -DefaultVIServerMode Multiple -Scope Session -Confirm:$false |Out-Null
-	If ($PostfixEnd -le $PostfixStart) {Throw "PostfixEnd must be greater than PostfixStart"}
-	Try {Disconnect-VIServer -Server $VC -Force -Confirm:$false -ErrorAction Stop}  Catch {}
-}
-
-Process {
-
-	$cred = Get-Credential -UserName root -Message "Common VMHost Credentials"
-	If ($cred) {
-		$hosts = @()
+	
+	[Alias("Find-ViMVcVm")]
+	Param (
 		
-		For ($i=$PostfixStart; $i -le $PostfixEnd; $i++) {
-			If ($AddZero -and $i -match '^\d{1}$') {
-				$hosts += $HostSuffix + '0' + $i
-			} Else {
-				$hosts += $HostSuffix + $i
+		[Parameter(Mandatory = $true, Position = 1, HelpMessage = "vCenter's VM Name")]
+		[Alias("vCenter", "VcVm")]
+		[string]$VC
+		 ,
+		[Parameter(Mandatory = $true, Position = 2, HelpMessage = "ESXi Hosts' common suffix")]
+		[Alias("VMHostSuffix", "ESXiSuffix")]
+		[string]$HostSuffix
+		 ,
+		[Parameter(Mandatory = $false, Position = 3, HelpMessage = "ESXi Hosts' postfix number start")]
+		[ValidateRange(1, 98)]
+		[Alias("PostfixFirst", "Start")]
+		[int]$PostfixStart = 1
+		 ,
+		[Parameter(Mandatory = $false, Position = 4, HelpMessage = "ESXi Hosts' postfix number end")]
+		[ValidateRange(2, 99)]
+		[Alias("PostfixLast", "End")]
+		[int]$PostfixEnd = 9
+		 ,
+		[Parameter(Mandatory = $false, Position = 5, HelpMessage = "Add ESXi Hosts' postfix leading zero")]
+		[switch]$AddZero = $false
+	)
+	
+	Begin
+	{
+		
+		Set-PowerCLIConfiguration -DefaultVIServerMode Multiple -Scope Session -Confirm:$false | Out-Null
+		If ($PostfixEnd -le $PostfixStart) { Throw "PostfixEnd must be greater than PostfixStart" }
+		Try { Disconnect-VIServer -Server $VC -Force -Confirm:$false -ErrorAction Stop }
+		Catch { }
+	}
+	
+	Process
+	{
+		
+		$cred = Get-Credential -UserName root -Message "Common VMHost Credentials"
+		If ($cred)
+		{
+			$hosts = @()
+			
+			For ($i = $PostfixStart; $i -le $PostfixEnd; $i++)
+			{
+				If ($AddZero -and $i -match '^\d{1}$')
+				{
+					$hosts += $HostSuffix + '0' + $i
+				}
+				Else
+				{
+					$hosts += $HostSuffix + $i
+				}
+			}
+			
+			Connect-VIServer $hosts -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -Credential $cred |
+			select @{ N = 'VMHost'; E = { $_.Name } }, IsConnected | ft -AutoSize
+			
+			If ($global:DefaultVIServers.Length -ne 0)
+			{
+				$TargetVM = Get-VM -ErrorAction SilentlyContinue | ? { $_.Name -eq $VC }
+				$VCHostname = $TargetVM.Guest.HostName
+				$PowerState = $TargetVM.PowerState
+				$VMHostHostname = $TargetVM.VMHost.Name
+				Try { Disconnect-VIServer -Server "$HostSuffix*" -Force -Confirm:$false -ErrorAction Stop }
+				Catch { }
 			}
 		}
+	}
+	
+	End
+	{
 		
-		Connect-VIServer $hosts -WarningAction SilentlyContinue -ErrorAction SilentlyContinue -Credential $cred |
-		select @{N='VMHost';E={$_.Name}},IsConnected |ft -AutoSize
-		
-		If ($global:DefaultVIServers.Length -ne 0) {
-			$TargetVM       = Get-VM -ErrorAction SilentlyContinue |? {$_.Name -eq $VC}
-			$VCHostname     = $TargetVM.Guest.HostName
-			$PowerState     = $TargetVM.PowerState
-			$VMHostHostname = $TargetVM.VMHost.Name
-			Try {Disconnect-VIServer -Server "$HostSuffix*" -Force -Confirm:$false -ErrorAction Stop}  Catch {}
+		If ($TargetVM)
+		{
+			$Properties = [ordered]@{
+				VC = $VC
+				Hostname = $VCHostname
+				PowerState = $PowerState
+				VMHost = $VMHostHostname
+			}
+			$Object = New-Object PSObject -Property $Properties
+			$Object
 		}
 	}
-}
-
-End {
-
-	If ($TargetVM)	{
-		$Properties = [ordered]@{
-			VC         = $VC
-			Hostname   = $VCHostname
-			PowerState = $PowerState
-			VMHost     = $VMHostHostname
-		}
-		$Object = New-Object PSObject -Property $Properties
-		$Object
-	}
-}
-
+	
 } #EndFunction Find-VcVm
 
-Function Set-PowerCLiTitle {
+Function Set-PowerCLiTitle
+{
 	
 <#
 .SYNOPSIS
@@ -347,69 +380,79 @@ Function Set-PowerCLiTitle {
 	This function writes connected VI servers info to PowerCLi window/console title bar
 	in the following format: [VIServerName :: ProductType (VCenter/VCSA/ESXi/SRM)-ProductVersion].
 .EXAMPLE
-	PowerCLI C:\> Connect-VIServer $VCName -WarningAction SilentlyContinue
-	PowerCLI C:\> Set-PowerCLiTitle
+	PS C:\> Connect-VIServer $VCName -WarningAction SilentlyContinue
+	PS C:\> Set-PowerCLiTitle
 .EXAMPLE
-	PowerCLI C:\> Connect-SrmServer $SRMServerName
-	PowerCLI C:\> title
+	PS C:\> Connect-SrmServer $SRMServerName
+	PS C:\> title
 .NOTES
 	Author      :: Roman Gelman @rgelman75
-	Version 1.0 :: 17-Nov-2015 :: [Release]
-	Version 1.1 :: 22-Aug-2016 :: [Improvement]
-	[1] Added support for SRM servers
-	[2] Now the function differs berween VCSA and Windows VCenters
-	[3] Minor visual changes
+	Version 1.0 :: 17-Nov-2015 :: [Release] :: Publicly available
+	Version 1.1 :: 22-Aug-2016 :: [Improvement] :: Added support for SRM servers. Now the function differs berween VCSA and Windows VCenters. Minor visual changes
 	Version 1.2 :: 11-Jan-2017 :: [Change] :: Now this is advanced function, minor code changes
 .LINK
 	https://ps1code.com/2015/11/17/set-powercli-title
 #>
-
-[CmdletBinding()]
-[Alias("Set-ViMPowerCLiTitle","title")]
-Param()
-
-Begin {
-	$VIS = $global:DefaultVIServers |sort -Descending ProductLine,Name
-	$SRM = $global:DefaultSrmServers |sort -Descending ProductLine,Name
-} #EndBegin
-
-Process {
-
-	If ($VIS) {
-		Foreach ($VIObj in $VIS) {
-			If ($VIObj.IsConnected) {
-				$VIProduct = Switch -exact ($VIObj.ProductLine) {
-					vpx     	{If ($VIObj.ExtensionData.Content.About.OsType -match '^linux') {'VCSA'} Else {'VCenter'}; Break}
-					embeddedEsx {'ESXi'; Break}
-					Default     {$VIObj.ProductLine}
+	
+	[CmdletBinding()]
+	[Alias("Set-ViMPowerCLiTitle", "title")]
+	Param ()
+	
+	Begin
+	{
+		$VIS = $global:DefaultVIServers | sort -Descending ProductLine, Name
+		$SRM = $global:DefaultSrmServers | sort -Descending ProductLine, Name
+	} #EndBegin
+	
+	Process
+	{
+		
+		If ($VIS)
+		{
+			Foreach ($VIObj in $VIS)
+			{
+				If ($VIObj.IsConnected)
+				{
+					$VIProduct = Switch -exact ($VIObj.ProductLine)
+					{
+						vpx     	{ If ($VIObj.ExtensionData.Content.About.OsType -match '^linux') { 'VCSA' }
+							Else { 'VCenter' }; Break }
+						embeddedEsx { 'ESXi'; Break }
+						Default { $VIObj.ProductLine }
+					}
+					$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 				}
-				$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 			}
 		}
-	}
-
-	If ($SRM) {
-		Foreach ($VIObj in $SRM) {
-			If ($VIObj.IsConnected) {
-				$VIProduct = Switch -exact ($VIObj.ProductLine) {
-					srm     {'SRM'; Break}
-					Default {$VIObj.ProductLine}
+		
+		If ($SRM)
+		{
+			Foreach ($VIObj in $SRM)
+			{
+				If ($VIObj.IsConnected)
+				{
+					$VIProduct = Switch -exact ($VIObj.ProductLine)
+					{
+						srm     { 'SRM'; Break }
+						Default { $VIObj.ProductLine }
+					}
+					$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 				}
-				$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
 			}
 		}
-	}
-} #EndProcess
-
-End {
-	If (!$VIS -and !$SRM) {$Header = ':: Not connected to any VI Servers ::'}
-	$Host.UI.RawUI.WindowTitle = $Header
-} #End
-
+	} #EndProcess
+	
+	End
+	{
+		If (!$VIS -and !$SRM) { $Header = ':: Not connected to any VI Servers ::' }
+		$Host.UI.RawUI.WindowTitle = $Header
+	} #End
+	
 } #EndFunction Set-PowerCLiTitle
 
-Filter Get-VMHostFirmwareVersion {
-
+Filter Get-VMHostFirmwareVersion
+{
+	
 <#
 .SYNOPSIS
 	Get ESXi host BIOS version.
@@ -435,81 +478,33 @@ Filter Get-VMHostFirmwareVersion {
 .OUTPUTS
 	[System.String[]] BIOS/UEFI version and release date.
 .NOTES
-	Author: Roman Gelman.
-	Version 1.0 :: 09-Jan-2016 :: Release.
-	Version 1.1 :: 03-Aug-2016 :: Improvement :: GetType() method replaced by -is for type determine.
+	Author: Roman Gelman @rgelman75
+	Version 1.0 :: 09-Jan-2016 :: [Release] :: Publicly available
+	Version 1.1 :: 03-Aug-2016 :: [Improvement] :: GetType() method replaced by -is to determine data type
 .LINK
-	http://www.ps1code.com/single-post/2016/1/9/How-to-know-ESXi-servers%E2%80%99-BIOSFirmware-version-using-PowerCLi
+	https://ps1code.com/2016/01/09/esxi-bios-firmware-version-powercli
 #>
-
-Try
+	
+	Try
 	{
-		If     ($_ -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]) {$BiosInfo = ($_ |Get-View).Hardware.BiosInfo}
-		ElseIf ($_ -is [VMware.Vim.HostSystem])                                 {$BiosInfo = $_.Hardware.BiosInfo}
-		ElseIf ($_ -is [string])                                                {$BiosInfo = (Get-View -ViewType HostSystem -Filter @{"Name" = $_}).Hardware.BiosInfo}
-		Else   {Throw "Not supported data type as pipeline"}
-
+		If ($_ -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]) { $BiosInfo = ($_ | Get-View).Hardware.BiosInfo }
+		ElseIf ($_ -is [VMware.Vim.HostSystem]) { $BiosInfo = $_.Hardware.BiosInfo }
+		ElseIf ($_ -is [string]) { $BiosInfo = (Get-View -ViewType HostSystem -Filter @{ "Name" = $_ }).Hardware.BiosInfo }
+		Else { Throw "Not supported data type as pipeline" }
+		
 		$fVersion = $BiosInfo.BiosVersion -replace ('^-\[|\]-$', $null)
-		$fDate    = [Regex]::Match($BiosInfo.ReleaseDate, '(\d{1,2}/){2}\d+').Value
-		If ($fVersion) {return "$fVersion [$fDate]"} Else {return $null}
+		$fDate = [Regex]::Match($BiosInfo.ReleaseDate, '(\d{1,2}/){2}\d+').Value
+		If ($fVersion) { return "$fVersion [$fDate]" }
+		Else { return $null }
 	}
-Catch
-	{}
+	Catch
+	{ }
 } #EndFilter Get-VMHostFirmwareVersion
 New-Alias -Name Get-ViMVMHostFirmwareVersion -Value Get-VMHostFirmwareVersion -Force:$true
 
-Filter Get-VMHostFirmwareVersion {
-
-<#
-.SYNOPSIS
-	Get ESXi host BIOS version.
-.DESCRIPTION
-	This filter returns ESXi host BIOS/UEFI Version and Release Date as a single string.
-.EXAMPLE
-	PS C:\> Get-VMHost 'esxprd1.*' |Get-VMHostFirmwareVersion
-	Get single ESXi host's Firmware version.
-.EXAMPLE
-	PS C:\> Get-Cluster PROD |Get-VMHost |select Name,@{N='BIOS';E={$_ |Get-VMHostFirmwareVersion}}
-	Get ESXi Name and Firmware version for single cluster.
-.EXAMPLE
-	PS C:\> Get-VMHost |sort Name |select Name,Version,Manufacturer,Model,@{N='BIOS';E={$_ |Get-VMHostFirmwareVersion}} |ft -au
-	Add calculated property, that will contain Firmware version for all registered ESXi hosts.
-.EXAMPLE
-	PS C:\> Get-View -ViewType 'HostSystem' |select Name,@{N='BIOS';E={$_ |Get-VMHostFirmwareVersion}}
-.EXAMPLE
-	PS C:\> 'esxprd1.domain.com','esxdev2' |Get-VMHostFirmwareVersion
-.INPUTS
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost[]] Objects, returned by Get-VMHost cmdlet.
-	[VMware.Vim.HostSystem[]] Objects, returned by Get-View cmdlet.
-	[System.String[]] ESXi hostname or FQDN.
-.OUTPUTS
-	[System.String[]] BIOS/UEFI version and release date.
-.NOTES
-	Author: Roman Gelman.
-	Version 1.0 :: 09-Jan-2016 :: Release.
-	Version 1.1 :: 03-Aug-2016 :: Improvement :: GetType() method replaced by -is for type determine.
-.LINK
-	http://www.ps1code.com/single-post/2016/1/9/How-to-know-ESXi-servers%E2%80%99-BIOSFirmware-version-using-PowerCLi
-#>
-
-Try
-	{
-		If     ($_ -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]) {$BiosInfo = ($_ |Get-View).Hardware.BiosInfo}
-		ElseIf ($_ -is [VMware.Vim.HostSystem])                                 {$BiosInfo = $_.Hardware.BiosInfo}
-		ElseIf ($_ -is [string])                                                {$BiosInfo = (Get-View -ViewType HostSystem -Filter @{"Name" = $_}).Hardware.BiosInfo}
-		Else   {Throw "Not supported data type as pipeline"}
-
-		$fVersion = $BiosInfo.BiosVersion -replace ('^-\[|\]-$', $null)
-		$fDate    = [Regex]::Match($BiosInfo.ReleaseDate, '(\d{1,2}/){2}\d+').Value
-		If ($fVersion) {return "$fVersion [$fDate]"} Else {return $null}
-	}
-Catch
-	{}
-} #EndFilter Get-VMHostFirmwareVersion
-New-Alias -Name Get-ViMVMHostFirmwareVersion -Value Get-VMHostFirmwareVersion -Force:$true
-
-Filter Get-VMHostBirthday {
-
+Filter Get-VMHostBirthday
+{
+	
 <#
 .SYNOPSIS
 	Get ESXi host installation date (Birthday).
@@ -534,23 +529,25 @@ Filter Get-VMHostBirthday {
 .OUTPUTS
 	[System.DateTime[]] ESXi installation date/time.
 .NOTES
-	Original idea: Magnus Andersson
-	Author:        Roman Gelman
-	Requirements:  vSphere 5.x or above
+	Original idea :: Magnus Andersson
+	Author        :: Roman Gelman @rgelman75
+	Requirement   :: vSphere 5.x or above
+	Version 1.0   :: 05-Jan-2016 :: [Release] :: Publicly available
 .LINK
 	http://vcdx56.com/2016/01/05/find-esxi-installation-date/
 #>
-
-Try
+	
+	Try
 	{
 		$EsxCli = Get-EsxCli -VMHost $_ -ErrorAction Stop
-		$Uuid   = $EsxCli.system.uuid.get()
+		$Uuid = $EsxCli.system.uuid.get()
 		$bdHexa = [Regex]::Match($Uuid, '^(\w{8,})-').Groups[1].Value
 		$bdDeci = [Convert]::ToInt64($bdHexa, 16)
 		$bdDate = [TimeZone]::CurrentTimeZone.ToLocalTime(([DateTime]'1/1/1970').AddSeconds($bdDeci))
-		If ($bdDate) {return $bdDate} Else {return $null}
+		If ($bdDate) { return $bdDate }
+		Else { return $null }
 	}
-Catch
+	Catch
 	{ }
 } #EndFilter Get-VMHostBirthday
 New-Alias -Name Get-ViMVMHostBirthday -Value Get-VMHostBirthday -Force:$true
@@ -837,7 +834,8 @@ Function Set-VMHostNtpServer
 	}
 } #EndFunction Set-VMHostNtpServer
 
-Function Get-Version {
+Function Get-Version
+{
 	
 <#
 .SYNOPSIS
@@ -877,166 +875,177 @@ Function Get-Version {
 .OUTPUTS
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
-	Author       ::	Roman Gelman @rgelman75
-	Version 1.0  ::	23-May-2016  :: Release.
-	Version 1.1  ::	03-Aug-2016  :: Bugfix ::
-	[1] VDSwitch data type changed from [VMware.Vim.VmwareDistributedVirtualSwitch] to [VMware.VimAutomation.Vds.Types.V1.VmwareVDSwitch].
-	[2] Function Get-VersionVDSwitch edited to support data type change.
+	Author      :: Roman Gelman @rgelman75
+	Version 1.0 :: 23-May-2016 :: Release :: Publicly available
+	Version 1.1 :: 03-Aug-2016 :: Bugfix :: VDSwitch data type changed. Function Get-VersionVDSwitch edited
 .LINK
 	https://ps1code.com/2016/05/25/get-version-powercli
 #>
-
-[CmdletBinding(DefaultParameterSetName='VIO')]
-[Alias("Get-ViMVersion")]
-
-Param (
-
-	[Parameter(Mandatory,Position=1,ValueFromPipeline=$true,ParameterSetName='VIO')]
-	$VIObject
-	,
-	[Parameter(Mandatory,Position=1,ParameterSetName='VC')]
-	[switch]$VCenter
-	,
-	[Parameter(Mandatory,Position=1,ParameterSetName='LIC')]
-	[switch]$LicenseKey
-)
-
-Begin {
-
-	$ErrorActionPreference = 'SilentlyContinue'
 	
-	Function Get-VersionVMHostImpl {
-	Param ([Parameter(Mandatory,Position=1)]$InputObject)
-	$ErrorActionPreference = 'Stop'
-	Try
+	[CmdletBinding(DefaultParameterSetName = 'VIO')]
+	[Alias("Get-ViMVersion")]
+	Param (
+		
+		[Parameter(Mandatory, Position = 1, ValueFromPipeline = $true, ParameterSetName = 'VIO')]
+		$VIObject
+		 ,
+		[Parameter(Mandatory, Position = 1, ParameterSetName = 'VC')]
+		[switch]$VCenter
+		 ,
+		[Parameter(Mandatory, Position = 1, ParameterSetName = 'LIC')]
+		[switch]$LicenseKey
+	)
+	
+	Begin
+	{
+		
+		$ErrorActionPreference = 'SilentlyContinue'
+		
+		Function Get-VersionVMHostImpl
 		{
-			If ('Connected','Maintenance' -contains $InputObject.ConnectionState -and $InputObject.PowerState -eq 'PoweredOn') {
-				$ProductInfo = $InputObject.ExtensionData.Config.Product
-				$ProductVersion = [version]($ProductInfo.Version + '.' + $ProductInfo.Build)
-				
-				$Properties = [ordered]@{
-					ProductName = $InputObject.Name
-					ProductType = $ProductInfo.Name
-					FullVersion = $ProductInfo.FullName
-					Version     = $ProductVersion
+			Param ([Parameter(Mandatory, Position = 1)]
+				$InputObject)
+			$ErrorActionPreference = 'Stop'
+			Try
+			{
+				If ('Connected', 'Maintenance' -contains $InputObject.ConnectionState -and $InputObject.PowerState -eq 'PoweredOn')
+				{
+					$ProductInfo = $InputObject.ExtensionData.Config.Product
+					$ProductVersion = [version]($ProductInfo.Version + '.' + $ProductInfo.Build)
+					
+					$Properties = [ordered]@{
+						ProductName = $InputObject.Name
+						ProductType = $ProductInfo.Name
+						FullVersion = $ProductInfo.FullName
+						Version = $ProductVersion
+					}
+				}
+				Else
+				{
+					$Properties = [ordered]@{
+						ProductName = $InputObject.Name
+						ProductType = 'VMware ESXi'
+						FullVersion = 'Unknown'
+						Version = [version]'0.0.0.0'
+					}
 				}
 			}
-			Else {
+			Catch
+			{
 				$Properties = [ordered]@{
 					ProductName = $InputObject.Name
 					ProductType = 'VMware ESXi'
 					FullVersion = 'Unknown'
-					Version     = [version]'0.0.0.0'
+					Version = [version]'0.0.0.0'
 				}
 			}
-		}
-	Catch
-		{
-			$Properties = [ordered]@{
-				ProductName = $InputObject.Name
-				ProductType = 'VMware ESXi'
-				FullVersion = 'Unknown'
-				Version     = [version]'0.0.0.0'
+			Finally
+			{
+				$Object = New-Object PSObject -Property $Properties
+				$Object
 			}
-		}
-	Finally
-		{
-			$Object = New-Object PSObject -Property $Properties
-			$Object
-		}
+			
+		} #EndFunction Get-VersionVMHostImpl
 		
-	} #EndFunction Get-VersionVMHostImpl
-	
-	Function Get-VersionVMHostView {
-	Param ([Parameter(Mandatory,Position=1)]$InputObject)
-	$ErrorActionPreference = 'Stop'
-	Try
+		Function Get-VersionVMHostView
 		{
-			$ProductRuntime = $InputObject.Runtime
-			If ('connected','maintenance' -contains $ProductRuntime.ConnectionState -and $ProductRuntime.PowerState -eq 'poweredOn') {
-				$ProductInfo = $InputObject.Config.Product
-				$ProductVersion = [version]($ProductInfo.Version + '.' + $ProductInfo.Build)
-				
-				$Properties = [ordered]@{
-					ProductName = $InputObject.Name
-					ProductType = $ProductInfo.Name
-					FullVersion = $ProductInfo.FullName
-					Version     = $ProductVersion
+			Param ([Parameter(Mandatory, Position = 1)]
+				$InputObject)
+			$ErrorActionPreference = 'Stop'
+			Try
+			{
+				$ProductRuntime = $InputObject.Runtime
+				If ('connected', 'maintenance' -contains $ProductRuntime.ConnectionState -and $ProductRuntime.PowerState -eq 'poweredOn')
+				{
+					$ProductInfo = $InputObject.Config.Product
+					$ProductVersion = [version]($ProductInfo.Version + '.' + $ProductInfo.Build)
+					
+					$Properties = [ordered]@{
+						ProductName = $InputObject.Name
+						ProductType = $ProductInfo.Name
+						FullVersion = $ProductInfo.FullName
+						Version = $ProductVersion
+					}
+				}
+				Else
+				{
+					$Properties = [ordered]@{
+						ProductName = $InputObject.Name
+						ProductType = 'VMware ESXi'
+						FullVersion = 'Unknown'
+						Version = [version]'0.0.0.0'
+					}
 				}
 			}
-			Else {
+			Catch
+			{
 				$Properties = [ordered]@{
 					ProductName = $InputObject.Name
 					ProductType = 'VMware ESXi'
 					FullVersion = 'Unknown'
-					Version     = [version]'0.0.0.0'
+					Version = [version]'0.0.0.0'
 				}
 			}
-		}
-	Catch
-		{
-			$Properties = [ordered]@{
-				ProductName = $InputObject.Name
-				ProductType = 'VMware ESXi'
-				FullVersion = 'Unknown'
-				Version     = [version]'0.0.0.0'
+			Finally
+			{
+				$Object = New-Object PSObject -Property $Properties
+				$Object
 			}
-		}
-	Finally
-		{
-			$Object = New-Object PSObject -Property $Properties
-			$Object
-		}
-		
-	} #EndFunction Get-VersionVMHostView
-	
-	Function Get-VersionVM {
-	Param ([Parameter(Mandatory,Position=1)]$InputObject)
-	$ErrorActionPreference = 'Stop'
-	Try
-		{
-			$ProductInfo = $InputObject.Guest
 			
-			If ($InputObject.ExtensionData.Guest.ToolsStatus -ne 'toolsNotInstalled' -and $ProductInfo) {	
-				$ProductVersion = [version]$ProductInfo.ToolsVersion
+		} #EndFunction Get-VersionVMHostView
+		
+		Function Get-VersionVM
+		{
+			Param ([Parameter(Mandatory, Position = 1)]
+				$InputObject)
+			$ErrorActionPreference = 'Stop'
+			Try
+			{
+				$ProductInfo = $InputObject.Guest
 				
-				$Properties = [ordered]@{
-					ProductName = $InputObject.Name
-					ProductType = $InputObject.ExtensionData.Config.GuestFullName  #$ProductInfo.OSFullName
-					FullVersion = "VMware VM " + $InputObject.Version
-					Version     = $ProductVersion
+				If ($InputObject.ExtensionData.Guest.ToolsStatus -ne 'toolsNotInstalled' -and $ProductInfo)
+				{
+					$ProductVersion = [version]$ProductInfo.ToolsVersion
+					
+					$Properties = [ordered]@{
+						ProductName = $InputObject.Name
+						ProductType = $InputObject.ExtensionData.Config.GuestFullName #$ProductInfo.OSFullName
+						FullVersion = "VMware VM " + $InputObject.Version
+						Version = $ProductVersion
+					}
+				}
+				Else
+				{
+					
+					$Properties = [ordered]@{
+						ProductName = $InputObject.Name
+						ProductType = $InputObject.ExtensionData.Config.GuestFullName
+						FullVersion = "VMware VM " + $InputObject.Version
+						Version = [version]'0.0.0'
+					}
 				}
 			}
-			Else {
+			Catch
+			{
+				$Properties = [ordered]@{
+					ProductName = $InputObject.Name
+					ProductType = 'Unknown'
+					FullVersion = 'VMware VM'
+					Version = [version]'0.0.0'
+				}
+			}
+			Finally
+			{
+				$Object = New-Object PSObject -Property $Properties
+				$Object
+			}
 			
-				$Properties = [ordered]@{
-					ProductName = $InputObject.Name
-					ProductType = $InputObject.ExtensionData.Config.GuestFullName
-					FullVersion = "VMware VM " + $InputObject.Version
-					Version     = [version]'0.0.0'
-				}
-			}
-		}
-	Catch
-		{
-			$Properties = [ordered]@{
-				ProductName = $InputObject.Name
-				ProductType = 'Unknown'
-				FullVersion = 'VMware VM'
-				Version     = [version]'0.0.0'
-			}
-		}
-	Finally
-		{
-			$Object = New-Object PSObject -Property $Properties
-			$Object
-		}
+		} #EndFunction Get-VersionVM
 		
-	} #EndFunction Get-VersionVM
-	
-	Function Get-VersionPowerCLi {
-	$ErrorActionPreference = 'Stop'
-		Try
+		Function Get-VersionPowerCLi
+		{
+			$ErrorActionPreference = 'Stop'
+			Try
 			{
 				$PCLi = Get-PowerCLIVersion
 				$PCLiVer = [string]$PCLi.Major + '.' + [string]$PCLi.Minor + '.' + [string]$PCLi.Revision + '.' + [string]$PCLi.Build
@@ -1045,205 +1054,224 @@ Begin {
 					ProductName = $env:COMPUTERNAME
 					ProductType = 'VMware vSphere PowerCLi'
 					FullVersion = $PCLi.UserFriendlyVersion
-					Version     = [version]$PCLiVer
+					Version = [version]$PCLiVer
 				}
 				$Object = New-Object PSObject -Property $Properties
 				$Object
 			}
-		Catch {}	
-	} #EndFunction Get-VersionPowerCLi
-	
-	Function Get-VersionVCenter {
-	Param ([Parameter(Mandatory,Position=1)]$InputObject)
-	$ErrorActionPreference = 'Stop'
-	Try
+			Catch { }
+		} #EndFunction Get-VersionPowerCLi
+		
+		Function Get-VersionVCenter
 		{
-			If ($obj.IsConnected) {
-				$ProductInfo = $InputObject.ExtensionData.Content.About
-				$ProductVersion = [version]($ProductInfo.Version + '.' + $ProductInfo.Build)
-				Switch -regex ($ProductInfo.OsType) {
-					'^win'   {$ProductFullName = $ProductInfo.Name + ' Windows'   ;Break}
-					'^linux' {$ProductFullName = $ProductInfo.Name + ' Appliance' ;Break}
-					Default  {$ProductFullName = $ProductInfo.Name                ;Break}
+			Param ([Parameter(Mandatory, Position = 1)]
+				$InputObject)
+			$ErrorActionPreference = 'Stop'
+			Try
+			{
+				If ($obj.IsConnected)
+				{
+					$ProductInfo = $InputObject.ExtensionData.Content.About
+					$ProductVersion = [version]($ProductInfo.Version + '.' + $ProductInfo.Build)
+					Switch -regex ($ProductInfo.OsType)
+					{
+						'^win'   { $ProductFullName = $ProductInfo.Name + ' Windows'; Break }
+						'^linux' { $ProductFullName = $ProductInfo.Name + ' Appliance'; Break }
+						Default { $ProductFullName = $ProductInfo.Name; Break }
+					}
+					
+					$Properties = [ordered]@{
+						ProductName = $InputObject.Name
+						ProductType = $ProductFullName
+						FullVersion = $ProductInfo.FullName
+						Version = $ProductVersion
+					}
 				}
-				
-				$Properties = [ordered]@{
-					ProductName = $InputObject.Name
-					ProductType = $ProductFullName
-					FullVersion = $ProductInfo.FullName
-					Version     = $ProductVersion
+				Else
+				{
+					$Properties = [ordered]@{
+						ProductName = $InputObject.Name
+						ProductType = 'VMware vCenter Server'
+						FullVersion = 'Unknown'
+						Version = [version]'0.0.0.0'
+					}
 				}
 			}
-			Else {
+			Catch
+			{
 				$Properties = [ordered]@{
 					ProductName = $InputObject.Name
 					ProductType = 'VMware vCenter Server'
 					FullVersion = 'Unknown'
-					Version     = [version]'0.0.0.0'
+					Version = [version]'0.0.0.0'
 				}
 			}
-		}
-	Catch
-		{
-			$Properties = [ordered]@{
-				ProductName = $InputObject.Name
-				ProductType = 'VMware vCenter Server'
-				FullVersion = 'Unknown'
-				Version     = [version]'0.0.0.0'
+			Finally
+			{
+				$Object = New-Object PSObject -Property $Properties
+				$Object
 			}
-		}
-	Finally
-		{
-			$Object = New-Object PSObject -Property $Properties
-			$Object
-		}
+			
+		} #EndFunction Get-VersionVCenter
 		
-	} #EndFunction Get-VersionVCenter
-	
-	Function Get-VersionVDSwitch {
-	Param ([Parameter(Mandatory,Position=1)]$InputObject)
-	$ErrorActionPreference = 'Stop'
-	$ProductTypeName = 'VMware DVSwitch'
-	Try
+		Function Get-VersionVDSwitch
 		{
-			$ProductInfo = $InputObject.ExtensionData.Summary.ProductInfo
-			$ProductFullVersion = 'VMware Distributed Virtual Switch ' + $ProductInfo.Version + ' build-' + $ProductInfo.Build
-			$ProductVersion = [version]($ProductInfo.Version + '.' + $ProductInfo.Build)
+			Param ([Parameter(Mandatory, Position = 1)]
+				$InputObject)
+			$ErrorActionPreference = 'Stop'
+			$ProductTypeName = 'VMware DVSwitch'
+			Try
+			{
+				$ProductInfo = $InputObject.ExtensionData.Summary.ProductInfo
+				$ProductFullVersion = 'VMware Distributed Virtual Switch ' + $ProductInfo.Version + ' build-' + $ProductInfo.Build
+				$ProductVersion = [version]($ProductInfo.Version + '.' + $ProductInfo.Build)
+				
+				$Properties = [ordered]@{
+					ProductName = $InputObject.Name
+					ProductType = $ProductTypeName
+					FullVersion = $ProductFullVersion
+					Version = $ProductVersion
+				}
+			}
+			Catch
+			{
+				$Properties = [ordered]@{
+					ProductName = $InputObject.Name
+					ProductType = $ProductTypeName
+					FullVersion = 'Unknown'
+					Version = [version]'0.0.0.0'
+				}
+			}
+			Finally
+			{
+				$Object = New-Object PSObject -Property $Properties
+				$Object
+			}
 			
-			$Properties = [ordered]@{
-				ProductName = $InputObject.Name
-				ProductType = $ProductTypeName
-				FullVersion = $ProductFullVersion
-				Version     = $ProductVersion
-			}
-		}
-	Catch
-		{
-			$Properties = [ordered]@{
-				ProductName = $InputObject.Name
-				ProductType = $ProductTypeName
-				FullVersion = 'Unknown'
-				Version     = [version]'0.0.0.0'
-			}
-		}
-	Finally
-		{
-			$Object = New-Object PSObject -Property $Properties
-			$Object
-		}
+		} #EndFunction Get-VersionVDSwitch
 		
-	} #EndFunction Get-VersionVDSwitch
-	
-	Function Get-VersionDatastore {
-	Param ([Parameter(Mandatory,Position=1)]$InputObject)
-	$ErrorActionPreference = 'Stop'
-	$ProductTypeName = 'VMware VMFS Datastore'
-	Try
+		Function Get-VersionDatastore
 		{
-			$ProductVersionNumber = $InputObject.FileSystemVersion
-			$ProductFullVersion = 'VMware Datastore VMFS v' + $ProductVersionNumber
-			$ProductVersion = [version]$ProductVersionNumber
+			Param ([Parameter(Mandatory, Position = 1)]
+				$InputObject)
+			$ErrorActionPreference = 'Stop'
+			$ProductTypeName = 'VMware VMFS Datastore'
+			Try
+			{
+				$ProductVersionNumber = $InputObject.FileSystemVersion
+				$ProductFullVersion = 'VMware Datastore VMFS v' + $ProductVersionNumber
+				$ProductVersion = [version]$ProductVersionNumber
+				
+				$Properties = [ordered]@{
+					ProductName = $InputObject.Name
+					ProductType = $ProductTypeName
+					FullVersion = $ProductFullVersion
+					Version = $ProductVersion
+				}
+			}
+			Catch
+			{
+				$Properties = [ordered]@{
+					ProductName = $InputObject.Name
+					ProductType = $ProductTypeName
+					FullVersion = 'Unknown'
+					Version = [version]'0.0'
+				}
+			}
+			Finally
+			{
+				$Object = New-Object PSObject -Property $Properties
+				$Object
+			}
 			
-			$Properties = [ordered]@{
-				ProductName = $InputObject.Name
-				ProductType = $ProductTypeName
-				FullVersion = $ProductFullVersion
-				Version     = $ProductVersion
-			}
-		}
-	Catch
-		{
-			$Properties = [ordered]@{
-				ProductName = $InputObject.Name
-				ProductType = $ProductTypeName
-				FullVersion = 'Unknown'
-				Version     = [version]'0.0'
-			}
-		}
-	Finally
-		{
-			$Object = New-Object PSObject -Property $Properties
-			$Object
-		}
+		} #EndFunction Get-VersionDatastore
 		
-	} #EndFunction Get-VersionDatastore
-	
-	Function Get-VersionLicenseKey {
-	Param ([Parameter(Mandatory,Position=1)]$InputObject)
-	$ErrorActionPreference = 'Stop'
-	$ProductTypeName = 'License Key'
-	Try
+		Function Get-VersionLicenseKey
 		{
-			$InputObjectProp = $InputObject |select -ExpandProperty Properties
-			Foreach ($prop in $InputObjectProp) {
-				If ($prop.Key -eq 'ProductName')        {$ProductType    = $prop.Value + ' ' + $ProductTypeName}
-				ElseIf ($prop.Key -eq 'ProductVersion') {$ProductVersion = [version]$prop.Value}
+			Param ([Parameter(Mandatory, Position = 1)]
+				$InputObject)
+			$ErrorActionPreference = 'Stop'
+			$ProductTypeName = 'License Key'
+			Try
+			{
+				$InputObjectProp = $InputObject | select -ExpandProperty Properties
+				Foreach ($prop in $InputObjectProp)
+				{
+					If ($prop.Key -eq 'ProductName') { $ProductType = $prop.Value + ' ' + $ProductTypeName }
+					ElseIf ($prop.Key -eq 'ProductVersion') { $ProductVersion = [version]$prop.Value }
+				}
+				
+				Switch -regex ($InputObject.CostUnit)
+				{
+					'^cpu'     { $LicCostUnit = 'CPU'; Break }
+					'^vm'      { $LicCostUnit = 'VM'; Break }
+					'server'   { $LicCostUnit = 'SRV'; Break }
+					Default { $LicCostUnit = $InputObject.CostUnit }
+					
+				}
+				
+				$ProductFullVersion = $InputObject.Name + ' [' + $InputObject.Used + '/' + $InputObject.Total + $LicCostUnit + ']'
+				
+				$Properties = [ordered]@{
+					ProductName = $InputObject.LicenseKey
+					ProductType = $ProductType
+					FullVersion = $ProductFullVersion
+					Version = $ProductVersion
+				}
+			}
+			Catch
+			{
+				$Properties = [ordered]@{
+					ProductName = $InputObject.LicenseKey
+					ProductType = $ProductTypeName
+					FullVersion = 'Unknown'
+					Version = [version]'0.0'
+				}
+			}
+			Finally
+			{
+				$Object = New-Object PSObject -Property $Properties
+				If ($InputObject.EditionKey -ne 'eval') { $Object }
 			}
 			
-			Switch -regex ($InputObject.CostUnit) {
-				'^cpu'     {$LicCostUnit = 'CPU'; Break}
-				'^vm'      {$LicCostUnit = 'VM'; Break}
-				'server'   {$LicCostUnit = 'SRV'; Break}
-				Default    {$LicCostUnit = $InputObject.CostUnit}
-			
-			}
-			
-			$ProductFullVersion = $InputObject.Name + ' [' + $InputObject.Used + '/' + $InputObject.Total + $LicCostUnit + ']'
-			
-			$Properties = [ordered]@{
-				ProductName = $InputObject.LicenseKey
-				ProductType = $ProductType
-				FullVersion = $ProductFullVersion
-				Version     = $ProductVersion
-			}
-		}
-	Catch
-		{
-			$Properties = [ordered]@{
-				ProductName = $InputObject.LicenseKey
-				ProductType = $ProductTypeName
-				FullVersion = 'Unknown'
-				Version     = [version]'0.0'
-			}
-		}
-	Finally
-		{
-			$Object = New-Object PSObject -Property $Properties
-			If ($InputObject.EditionKey -ne 'eval') {$Object}
-		}
+		} #EndFunction Get-VersionLicenseKey
 		
-	} #EndFunction Get-VersionLicenseKey
+	}
 	
-}
-
-Process {
-
-	If ($PSCmdlet.ParameterSetName -eq 'VIO') {
-		Foreach ($obj in $VIObject) {
-			If     ($obj -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost])                  {Get-VersionVMHostImpl -InputObject $obj}
-			ElseIf ($obj -is [VMware.Vim.HostSystem])                                                  {Get-VersionVMHostView -InputObject $obj}
-			ElseIf ($obj -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine])          {Get-VersionVM -InputObject $obj}
-			ElseIf ($obj -is [VMware.VimAutomation.Vds.Types.V1.VmwareVDSwitch])                       {Get-VersionVDSwitch -InputObject $obj}
-			ElseIf ($obj -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore]) {Get-VersionDatastore -InputObject $obj}
-			Else   {Write-Warning "Not supported object type"}
+	Process
+	{
+		
+		If ($PSCmdlet.ParameterSetName -eq 'VIO')
+		{
+			Foreach ($obj in $VIObject)
+			{
+				If ($obj -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]) { Get-VersionVMHostImpl -InputObject $obj }
+				ElseIf ($obj -is [VMware.Vim.HostSystem]) { Get-VersionVMHostView -InputObject $obj }
+				ElseIf ($obj -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine]) { Get-VersionVM -InputObject $obj }
+				ElseIf ($obj -is [VMware.VimAutomation.Vds.Types.V1.VmwareVDSwitch]) { Get-VersionVDSwitch -InputObject $obj }
+				ElseIf ($obj -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore]) { Get-VersionDatastore -InputObject $obj }
+				Else { Write-Warning "Not supported object type" }
+			}
+		}
+		ElseIf ($PSCmdlet.ParameterSetName -eq 'VC')
+		{
+			If ($global:DefaultVIServers.Length) { Foreach ($obj in $global:DefaultVIServers) { Get-VersionVCenter -InputObject $obj } }
+			Else { Write-Warning "Please use 'Connect-VIServer' cmdlet to connect to VCenter servers or ESXi hosts." }
+			Get-VersionPowerCLi
+		}
+		ElseIf ($PSCmdlet.ParameterSetName -eq 'LIC')
+		{
+			If ($global:DefaultVIServers.Length) { Foreach ($obj in ((Get-View (Get-View ServiceInstance).Content.LicenseManager).Licenses)) { Get-VersionLicenseKey -InputObject $obj } }
+			Else { Write-Warning "Please use 'Connect-VIServer' cmdlet to connect to VCenter servers or ESXi hosts." }
 		}
 	}
-	ElseIf ($PSCmdlet.ParameterSetName -eq 'VC') {
-		If ($global:DefaultVIServers.Length) {Foreach ($obj in $global:DefaultVIServers) {Get-VersionVCenter -InputObject $obj}}
-		Else {Write-Warning "Please use 'Connect-VIServer' cmdlet to connect to VCenter servers or ESXi hosts."}
-		Get-VersionPowerCLi
-	}
-	ElseIf ($PSCmdlet.ParameterSetName -eq 'LIC') {
-		If ($global:DefaultVIServers.Length) {Foreach ($obj in ((Get-View (Get-View ServiceInstance).Content.LicenseManager).Licenses)) {Get-VersionLicenseKey -InputObject $obj}}
-		Else {Write-Warning "Please use 'Connect-VIServer' cmdlet to connect to VCenter servers or ESXi hosts."}
-	}
-}
-
-End {}
-
+	
+	End { }
+	
 } #EndFunction Get-Version
 
-Function Search-Datastore {
+Function Search-Datastore
+{
 	
 <#
 .SYNOPSIS
@@ -1283,149 +1311,157 @@ Function Search-Datastore {
 .OUTPUTS
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
-	Author       ::	Roman Gelman.
-	Version 1.0  ::	09-Aug-2016  :: [Release].
-	Version 1.1  ::	19-Sep-2016  ::
-	[Bugfix] Some SAN as NetApp return `*-flat.vmdk` files in the search. Such files were recognized as orphaned.
-	[Change] `Changed Block Tracking Disk` file type was renamed to `CBT Disk`.
+	Author      :: Roman Gelman @rgelman75
+	Version 1.0 :: 09-Aug-2016 :: [Release] :: Publicly available
+	Version 1.1 :: 19-Sep-2016 :: [Bugfix]  :: Some SAN as NetApp return `*-flat.vmdk` files in the search. Such files were recognized as orphaned. `Changed Block Tracking Disk` file type was renamed to `CBT Disk`
 .LINK
 	https://ps1code.com/2016/08/21/search-datastores-powercli
 #>
-
-[CmdletBinding()]
-[Alias("Search-ViMDatastore")]
-
-Param (
-	[Parameter(Mandatory,Position=0,ValueFromPipeline)]
-	$Datastore
-	,
-	[Parameter(Mandatory=$false,Position=1)]
+	
+	[CmdletBinding()]
+	[Alias("Search-ViMDatastore")]
+	Param (
+		[Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+		$Datastore
+		 ,
+		[Parameter(Mandatory = $false, Position = 1)]
 		[Alias("FileNamePattern")]
-	[string]$FileName = "*"
-	,
-	[Parameter(Mandatory=$false,Position=2)]
-		[ValidateSet("Vmdk&Iso","VmdkOnly","IsoOnly","All")]
+		[string]$FileName = "*"
+		 ,
+		[Parameter(Mandatory = $false, Position = 2)]
+		[ValidateSet("Vmdk&Iso", "VmdkOnly", "IsoOnly", "All")]
 		[Alias("FileExtension")]
-	[string]$FileType = 'Vmdk&Iso'
-	,
-	[Parameter(Mandatory=$false,Position=3)]
-	[switch]$VerboseDatastoreName
+		[string]$FileType = 'Vmdk&Iso'
+		 ,
+		[Parameter(Mandatory = $false, Position = 3)]
+		[switch]$VerboseDatastoreName
+		
+	)
 	
-)
-
-Begin {
-
-	$i = 0
-	$Now = [datetime]::Now
-	$rgxFileExt = '^(?<FileName>.+)\.(?<Ext>.+)$'
-	
-	Write-Progress -Activity "Generating Used Disks list" -Status "In progress ..."
-	$UsedDisks = Get-View -ViewType VirtualMachine |% {$_.Layout} |% {$_.Disk} |% {$_.DiskFile}
-	Write-Progress -Activity "Completed" -Completed
-	
-	$FileTypes = @{
-		'dumpfile'='ESXi Coredump';
-		'iso'='CD/DVD Image';
-		'vmdk'='Virtual Disk';
-		'vmtx'='Template';
-		'vmx'='VM Config';
-		'lck'='Config Lock';
-		'vmx~'='Config Backup';
-		'vmxf'='Supplemental Config';
-		'vmsd'='Snapshot Metadata';
-		'vmsn'='Snapshot Memory';
-		'vmss'='Suspended State';
-		'vmem'='Paging';
-		'vswp'='Swap'
-		'nvram'='BIOS State';
-		'log'='VM Log';
-		''='Unknown'
-	}
-	
-	If ($FileName -notmatch '\*') {$FileName = "*$FileName*"}
-	
-	Switch ($FileType) {
-		'Vmdk&Iso' {$FilePattern = @(($FileName+'.vmdk'),($FileName+'.iso')); Break}
-		'VmdkOnly' {$FilePattern = @(($FileName+'.vmdk')); Break}
-		'IsoOnly'  {$FilePattern = @(($FileName+'.iso')); Break}
-		'All'      {$FilePattern = @(($FileName+'.*'))}
-	}
-	
-} #EndBegin
-
-Process {
-
-	If     ($Datastore -is [string])                                                                 {$DsView = Get-View -ViewType Datastore |? {$_.Name -eq $Datastore}}
-	ElseIf ($Datastore -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore]) {$DsView = Get-View -VIObject $Datastore}
-	ElseIf ($Datastore -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.NasDatastore])  {$DsView = Get-View -VIObject $Datastore}
-	Else                                                                                             {Throw "Not supported object type"}
-
-	If ($DsView) {
-	
-		$i += 1
-	
-		$DsCapacityGB = $DsView.Summary.Capacity/1GB
-
-		Write-Progress -Activity "Datastore Browser is working now ..." `
-		-Status ("Searching for files on Datastore [$($DsView.Name)]") `
-		-CurrentOperation ("Search criteria [" + ($FilePattern -join (', ')) + "]")
-
-		$fileQueryFlags = New-Object VMware.Vim.FileQueryFlags
-		$fileQueryFlags.FileSize     = $true
-		$fileQueryFlags.FileType     = $true
-		$fileQueryFlags.Modification = $true
-
-		$searchSpec = New-Object VMware.Vim.HostDatastoreBrowserSearchSpec
-		$searchSpec.Details          = $fileQueryFlags
-		$searchSpec.MatchPattern     = $FilePattern
-		$searchSpec.SortFoldersFirst = $true
-
-		$DsBrowser    = Get-View $DsView.Browser
-		$rootPath     = "[$($DsView.Name)]"
-		$searchResult = $DsBrowser.SearchDatastoreSubFolders($rootPath, $searchSpec)
-
-		Foreach ($folder in $searchResult) {
-		 	Foreach ($fileResult in $folder.File) {
-				If ($fileResult.Path) {
-					
-					If ($fileResult.FileSize/1GB -lt 1) {$Round = 3} Else {$Round = 0}
-					$SizeGiB = [Math]::Round($fileResult.FileSize/1GB, $Round)
-					
-					$File = [regex]::Match($fileResult.Path, $rgxFileExt)
-					$FileBody = $File.Groups['FileName'].Value
-					$ShortExt = $File.Groups['Ext'].Value
-					
-					If ($FileTypes.ContainsKey($ShortExt)) {$LongExt = $FileTypes.$ShortExt} Else {$LongExt = '.'+$ShortExt.ToUpper()}
-					
-					If ($ShortExt -eq 'vmdk') {
-						If ($FileBody -match '-ctk$') {$LongExt = 'CBT Disk'}
-						Else {
-							If ($FileBody -match '-(\d{6}|delta)$') {$LongExt = 'Snapshot Disk'}
-							If ($UsedDisks -notcontains ($folder.FolderPath + $fileResult.Path) -and $FileBody -notmatch '-flat$') {$LongExt = 'Orphaned '+$LongExt}
-						}
-					}
-					
-				    $Properties = [ordered]@{
-					    Datastore    = $DsView.Name
-					    Folder       = [regex]::Match($folder.FolderPath, '\]\s(?<Folder>.+)/').Groups[1].Value
-					    File         = $fileResult.Path
-						FileType     = $LongExt
-					    SizeGB       = $SizeGiB
-						SizeBar      = New-PercentageBar -Value $SizeGiB -MaxValue $DsCapacityGB
-					    Modified     = ([datetime]$fileResult.Modification).ToString('dd-MMM-yyyy HH:mm')
-						DaysInactive = (New-TimeSpan -Start ($fileResult.Modification) -End $Now).Days
-					}
-					$Object = New-Object PSObject -Property $Properties
-					$Object
-				}
-		 	}
+	Begin
+	{
+		
+		$i = 0
+		$Now = [datetime]::Now
+		$rgxFileExt = '^(?<FileName>.+)\.(?<Ext>.+)$'
+		
+		Write-Progress -Activity "Generating Used Disks list" -Status "In progress ..."
+		$UsedDisks = Get-View -ViewType VirtualMachine | % { $_.Layout } | % { $_.Disk } | % { $_.DiskFile }
+		Write-Progress -Activity "Completed" -Completed
+		
+		$FileTypes = @{
+			'dumpfile' = 'ESXi Coredump';
+			'iso' = 'CD/DVD Image';
+			'vmdk' = 'Virtual Disk';
+			'vmtx' = 'Template';
+			'vmx' = 'VM Config';
+			'lck' = 'Config Lock';
+			'vmx~' = 'Config Backup';
+			'vmxf' = 'Supplemental Config';
+			'vmsd' = 'Snapshot Metadata';
+			'vmsn' = 'Snapshot Memory';
+			'vmss' = 'Suspended State';
+			'vmem' = 'Paging';
+			'vswp' = 'Swap'
+			'nvram' = 'BIOS State';
+			'log' = 'VM Log';
+			'' = 'Unknown'
 		}
-		If ($PSBoundParameters.ContainsKey('VerboseDatastoreName')) {"Datastore N" + [char][byte]186 + "$i [$($DsView.Name)] completed" |Out-Host}
-	}
-} #EndProcess
-
-End {Write-Progress -Activity "Completed" -Completed}
-
+		
+		If ($FileName -notmatch '\*') { $FileName = "*$FileName*" }
+		
+		Switch ($FileType)
+		{
+			'Vmdk&Iso' { $FilePattern = @(($FileName + '.vmdk'), ($FileName + '.iso')); Break }
+			'VmdkOnly' { $FilePattern = @(($FileName + '.vmdk')); Break }
+			'IsoOnly'  { $FilePattern = @(($FileName + '.iso')); Break }
+			'All'      { $FilePattern = @(($FileName + '.*')) }
+		}
+		
+	} #EndBegin
+	
+	Process
+	{
+		
+		If ($Datastore -is [string]) { $DsView = Get-View -ViewType Datastore | ? { $_.Name -eq $Datastore } }
+		ElseIf ($Datastore -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore]) { $DsView = Get-View -VIObject $Datastore }
+		ElseIf ($Datastore -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.NasDatastore]) { $DsView = Get-View -VIObject $Datastore }
+		Else { Throw "Not supported object type" }
+		
+		If ($DsView)
+		{
+			
+			$i += 1
+			
+			$DsCapacityGB = $DsView.Summary.Capacity/1GB
+			
+			Write-Progress -Activity "Datastore Browser is working now ..." `
+						   -Status ("Searching for files on Datastore [$($DsView.Name)]") `
+						   -CurrentOperation ("Search criteria [" + ($FilePattern -join (', ')) + "]")
+			
+			$fileQueryFlags = New-Object VMware.Vim.FileQueryFlags
+			$fileQueryFlags.FileSize = $true
+			$fileQueryFlags.FileType = $true
+			$fileQueryFlags.Modification = $true
+			
+			$searchSpec = New-Object VMware.Vim.HostDatastoreBrowserSearchSpec
+			$searchSpec.Details = $fileQueryFlags
+			$searchSpec.MatchPattern = $FilePattern
+			$searchSpec.SortFoldersFirst = $true
+			
+			$DsBrowser = Get-View $DsView.Browser
+			$rootPath = "[$($DsView.Name)]"
+			$searchResult = $DsBrowser.SearchDatastoreSubFolders($rootPath, $searchSpec)
+			
+			Foreach ($folder in $searchResult)
+			{
+				Foreach ($fileResult in $folder.File)
+				{
+					If ($fileResult.Path)
+					{
+						
+						If ($fileResult.FileSize/1GB -lt 1) { $Round = 3 }
+						Else { $Round = 0 }
+						$SizeGiB = [Math]::Round($fileResult.FileSize/1GB, $Round)
+						
+						$File = [regex]::Match($fileResult.Path, $rgxFileExt)
+						$FileBody = $File.Groups['FileName'].Value
+						$ShortExt = $File.Groups['Ext'].Value
+						
+						If ($FileTypes.ContainsKey($ShortExt)) { $LongExt = $FileTypes.$ShortExt }
+						Else { $LongExt = '.' + $ShortExt.ToUpper() }
+						
+						If ($ShortExt -eq 'vmdk')
+						{
+							If ($FileBody -match '-ctk$') { $LongExt = 'CBT Disk' }
+							Else
+							{
+								If ($FileBody -match '-(\d{6}|delta)$') { $LongExt = 'Snapshot Disk' }
+								If ($UsedDisks -notcontains ($folder.FolderPath + $fileResult.Path) -and $FileBody -notmatch '-flat$') { $LongExt = 'Orphaned ' + $LongExt }
+							}
+						}
+						
+						$Properties = [ordered]@{
+							Datastore = $DsView.Name
+							Folder = [regex]::Match($folder.FolderPath, '\]\s(?<Folder>.+)/').Groups[1].Value
+							File = $fileResult.Path
+							FileType = $LongExt
+							SizeGB = $SizeGiB
+							SizeBar = New-PercentageBar -Value $SizeGiB -MaxValue $DsCapacityGB
+							Modified = ([datetime]$fileResult.Modification).ToString('dd-MMM-yyyy HH:mm')
+							DaysInactive = (New-TimeSpan -Start ($fileResult.Modification) -End $Now).Days
+						}
+						$Object = New-Object PSObject -Property $Properties
+						$Object
+					}
+				}
+			}
+			If ($PSBoundParameters.ContainsKey('VerboseDatastoreName')) { "Datastore N" + [char][byte]186 + "$i [$($DsView.Name)] completed" | Out-Host }
+		}
+	} #EndProcess
+	
+	End { Write-Progress -Activity "Completed" -Completed }
+	
 } #EndFunction Search-Datastore
 
 Function Compare-VMHost
@@ -1646,7 +1682,8 @@ Function Compare-VMHost
 	
 } #EndFunction Compare-VMHost
 
-Function Move-Template2Datastore {
+Function Move-Template2Datastore
+{
 	
 <#
 .SYNOPSIS
@@ -1662,106 +1699,118 @@ Function Move-Template2Datastore {
 .EXAMPLE
 	PS C:\> (Get-Template).Where{$_.ExtensionData.Guest.GuestId -match '^windows'} |Move-Template2Datastore -DatastoreCluster $DatastoreClusterName
 	Distribute all Windows Guest based templates to randomly choisen Datastores in a DatastoreCluster.
+.EXAMPLE
+	PS C:\> Get-Template |? {($_.DatastoreIdList |% {(Get-View -Id ($_)).Name}) -contains $DatastoreNameSource} |Move-Template2Datastore (Get-Datastore $DatastoreNameTarget)
+	Find all templates that reside on particular (source) Datastore and move them to another (target) Datastore.
 .NOTES
 	Author      :: Roman Gelman @rgelman75
 	Shell       :: Tested on PowerShell 5.0/5.1|PowerCLi 6.5
 	Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
 	Requirement :: ESXi Hosts where Templates are registered must be HA/DRS Cluster members. PowerShell 3.0+
-	Version 1.0 :: 14-Dec-2016 :: [Release]
+	Version 1.0 :: 14-Dec-2016 :: [Release] :: Publicly available
 .LINK
 	https://ps1code.com/2016/12/19/migrate-vm-template-powercli
 #>
-
-[CmdletBinding(DefaultParameterSetName='DS')]
-[Alias("Move-ViMTemplate2Datastore")]
-[OutputType([PSCustomObject])]
-
-Param (
-	[Parameter(Mandatory,ValueFromPipeline)]
-		[Alias("VMTemplate","Templates")]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.Template[]]$Template
-	,
-	[Parameter(Mandatory,Position=0,ParameterSetName='DS')]
-	$Datastore
-	,
-	[Parameter(Mandatory,Position=0,ParameterSetName='DSC')]
-	[VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.DatastoreCluster]$DatastoreCluster
-)
-
-Begin {
-	$ErrorActionPreference = 'Stop'
-	If ($PSCmdlet.ParameterSetName -eq 'DS') {
-		If ($Datastore -isnot [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore] `
-		-and $Datastore -isnot [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.NasDatastore]) {Throw "Unsupported Datastore type"}
-	}
-} #EndBegin
-
-Process {
-	Try
+	
+	[CmdletBinding(DefaultParameterSetName = 'DS')]
+	[Alias("Move-ViMTemplate2Datastore")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[Alias("VMTemplate", "Templates")]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Template[]]$Template
+		 ,
+		[Parameter(Mandatory, Position = 0, ParameterSetName = 'DS')]
+		$Datastore
+		 ,
+		[Parameter(Mandatory, Position = 0, ParameterSetName = 'DSC')]
+		[VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.DatastoreCluster]$DatastoreCluster
+	)
+	
+	Begin
 	{
-		$null = . {
-		
-			### Get random Datastore from the DatastoreCluster ###
-			If ($PSCmdlet.ParameterSetName -eq 'DSC') {
-				$Datastore = Get-DatastoreCluster $DatastoreCluster |Get-Datastore |sort {Get-Random} |select -First 1
-			}
-			
-			### Convert the Template to a VM ###
-			$poolMoref = (Get-ResourcePool -Location (Get-VMHost -Id $Template.HostId |Get-Cluster) -Name Resources).Id
-			$hostMoref = $Template.HostId
-			$ViewTemplate = Get-View -VIObject $Template
-			$ViewTemplate.MarkAsVirtualMachine($poolMoref,$hostMoref)
-			$VM = Get-VM -Name $Template.Name
-			
-			### Initialize SVMotion Task ###
-			$ViewVM = Get-View -VIObject $VM
-			$spec = New-Object -TypeName 'VMware.Vim.VirtualMachineRelocateSpec'
-			$spec.Datastore = New-Object -TypeName 'VMware.Vim.ManagedObjectReference'
-			$spec.Datastore = $Datastore.Id
-			$priority = [VMware.Vim.VirtualMachineMovePriority]'defaultPriority'
-			$TaskMoref = $ViewVM.RelocateVM_Task($spec,$priority)
-
-			$ViewTask = Get-View $TaskMoref
-			For ($i=1; $i -lt [int32]::MaxValue; $i++) {
-				If ("running","queued" -contains $ViewTask.Info.State) {
-					$ViewTask.UpdateViewData("Info")
-					If ($ViewTask.Info.Progress -ne $null) {
-						Write-Progress -Activity "Migrating Template ..." -Status "Template [$($VM.Name)]" `
-						-CurrentOperation "Datastore [$($Datastore.Name)]" `
-						-PercentComplete $ViewTask.Info.Progress -ErrorAction SilentlyContinue
-						Start-Sleep -Seconds 3
-					}
-				} Else {Write-Progress -Activity "Completed" -Completed; Break}
-			}
-			If ($ViewTask.Info.State -eq "error") {
-				$ViewTask.UpdateViewData("Info.Error")
-				$ViewTask.Info.Error.Fault.FaultMessage |% {$_.Message}
-			}
-			
-			### Convert the VM back to the Template ###
-			$ViewVM.MarkAsTemplate()
-			
-			$ErrorMsg = $null
+		$ErrorActionPreference = 'Stop'
+		If ($PSCmdlet.ParameterSetName -eq 'DS')
+		{
+			If ($Datastore -isnot [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore] `
+				-and $Datastore -isnot [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.NasDatastore]) { Throw "Unsupported Datastore type" }
 		}
-	}
-	Catch {$ErrorMsg = "{0}" -f $Error.Exception.Message}
+	} #EndBegin
 	
-	$Properties = [ordered]@{
-		Template  = $Template.Name
-		Datastore = $Datastore.Name
-		Error     = $ErrorMsg
-	}
-	$Object = New-Object PSObject -Property $Properties
-	$Object
+	Process
+	{
+		Try
+		{
+			$null = . {
+				
+				### Get random Datastore from the DatastoreCluster ###
+				If ($PSCmdlet.ParameterSetName -eq 'DSC')
+				{
+					$Datastore = Get-DatastoreCluster $DatastoreCluster | Get-Datastore | sort { Get-Random } | select -First 1
+				}
+				
+				### Convert the Template to a VM ###
+				$poolMoref = (Get-ResourcePool -Location (Get-VMHost -Id $Template.HostId | Get-Cluster) -Name Resources).Id
+				$hostMoref = $Template.HostId
+				$ViewTemplate = Get-View -VIObject $Template
+				$ViewTemplate.MarkAsVirtualMachine($poolMoref, $hostMoref)
+				$VM = Get-VM -Name $Template.Name
+				
+				### Initialize SVMotion Task ###
+				$ViewVM = Get-View -VIObject $VM
+				$spec = New-Object -TypeName 'VMware.Vim.VirtualMachineRelocateSpec'
+				$spec.Datastore = New-Object -TypeName 'VMware.Vim.ManagedObjectReference'
+				$spec.Datastore = $Datastore.Id
+				$priority = [VMware.Vim.VirtualMachineMovePriority]'defaultPriority'
+				$TaskMoref = $ViewVM.RelocateVM_Task($spec, $priority)
+				
+				$ViewTask = Get-View $TaskMoref
+				For ($i = 1; $i -lt [int32]::MaxValue; $i++)
+				{
+					If ("running", "queued" -contains $ViewTask.Info.State)
+					{
+						$ViewTask.UpdateViewData("Info")
+						If ($ViewTask.Info.Progress -ne $null)
+						{
+							Write-Progress -Activity "Migrating Template ..." -Status "Template [$($VM.Name)]" `
+										   -CurrentOperation "Datastore [$($Datastore.Name)]" `
+										   -PercentComplete $ViewTask.Info.Progress -ErrorAction SilentlyContinue
+							Start-Sleep -Seconds 3
+						}
+					}
+					Else { Write-Progress -Activity "Completed" -Completed; Break }
+				}
+				If ($ViewTask.Info.State -eq "error")
+				{
+					$ViewTask.UpdateViewData("Info.Error")
+					$ViewTask.Info.Error.Fault.FaultMessage | % { $_.Message }
+				}
+				
+				### Convert the VM back to the Template ###
+				$ViewVM.MarkAsTemplate()
+				
+				$ErrorMsg = $null
+			}
+		}
+		Catch { $ErrorMsg = "{0}" -f $Error.Exception.Message }
+		
+		$Properties = [ordered]@{
+			Template = $Template.Name
+			Datastore = $Datastore.Name
+			Error = $ErrorMsg
+		}
+		$Object = New-Object PSObject -Property $Properties
+		$Object
+		
+	} #EndProcess
 	
-} #EndProcess
-
-End {}
-
+	End { }
+	
 } #EndFunction Move-Template2Datastore
 
-Function Read-VMHostCredential {
-
+Function Read-VMHostCredential
+{
+	
 <#
 .SYNOPSIS
 	Decrypt an encrypted file.
@@ -1778,39 +1827,42 @@ Function Read-VMHostCredential {
 	PS C:\> Read-VMHostCredential -User
 	Returns user name.
 .NOTES
-	Author      :: Roman Gelman
+	Author      :: Roman Gelman @rgelman75
 	Requirement :: PowerShell 3.0+
-	Version 1.0 :: 27-Dec-2016 :: [Release]
+	Version 1.0 :: 27-Dec-2016 :: [Release] :: Publicly available
 .LINK
 	https://github.com/rgel/Azure/blob/master/New-SecureCred.ps1
 #>
-
-Param (
-	[Parameter(Mandatory=$false,Position=0)]
+	
+	Param (
+		[Parameter(Mandatory = $false, Position = 0)]
 		[ValidateNotNullorEmpty()]
-		[ValidateScript({Test-Path $_ -PathType Leaf})]
-	[string]$CredFile = "$(Split-Path $PROFILE)\esx.cred"
-	,
-	[Parameter(Mandatory=$false)]
-	[switch]$User
-)
-
+		[ValidateScript({ Test-Path $_ -PathType Leaf })]
+		[string]$CredFile = "$(Split-Path $PROFILE)\esx.cred"
+		 ,
+		[Parameter(Mandatory = $false)]
+		[switch]$User
+	)
+	
 	$Login = 'root'
-
-	If (Test-Path $CredFile -PathType Leaf) {
-		$SecurePwd = gc $CredFile |ConvertTo-SecureString
+	
+	If (Test-Path $CredFile -PathType Leaf)
+	{
+		$SecurePwd = gc $CredFile | ConvertTo-SecureString
 		Try
 		{
-			$immCred = New-Object -TypeName 'System.Management.Automation.PSCredential'($Login,$SecurePwd) -EA Stop
-			If ($User) {return $Login}
-			Else       {return $immCred.GetNetworkCredential().Password}
+			$immCred = New-Object -TypeName 'System.Management.Automation.PSCredential'($Login, $SecurePwd) -EA Stop
+			If ($User) { return $Login }
+			Else { return $immCred.GetNetworkCredential().Password }
 		}
-		Catch {return $null}
-	} Else {return $null}
-
+		Catch { return $null }
+	}
+	Else { return $null }
+	
 } #EndFunction Read-VMHostCredential
 
-Function Connect-VMHostPutty {
+Function Connect-VMHostPutty
+{
 	
 <#
 .SYNOPSIS
@@ -1828,34 +1880,34 @@ Function Connect-VMHostPutty {
 	PS C:\> 1..9 |% {putty "esx$_"}
 	Open multiple connections, usable to connect to all HA/DRS cluster hosts.
 .NOTES
-	Author      :: Roman Gelman
+	Author      :: Roman Gelman @rgelman75
 	Requirement :: PowerShell 3.0+
-	Version 1.0 :: 27-Dec-2016 :: [Release]
-	Version 1.1 :: 04-Jan-2017 :: [Bugfix]  The `putty` Alias was not created during Module import.
+	Version 1.0 :: 27-Dec-2016 :: [Release] :: Publicly available
+	Version 1.1 :: 04-Jan-2017 :: [Bugfix]  :: The `putty` Alias was not created during Module import
 	
 .LINK
 	https://ps1code.com/2016/12/27/esxi-powershell-and-putty
 #>
-
-[Alias("Connect-ViMVMHostPutty","putty")]
-
-Param (
-	[Parameter(Mandatory,ValueFromPipeline)]
-	[string]$VMHost
-	,
-	[Parameter(Mandatory=$false)]
+	
+	[Alias("Connect-ViMVMHostPutty", "putty")]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[string]$VMHost
+		 ,
+		[Parameter(Mandatory = $false)]
 		[ValidateNotNullorEmpty()]
-		[ValidateScript({Test-Path $_ -PathType Leaf})]
-	[string]$PuttyExec = "$(Split-Path $PROFILE)\putty.exe"
-)
-
-	$PuttyPwd   = Read-VMHostCredential
+		[ValidateScript({ Test-Path $_ -PathType Leaf })]
+		[string]$PuttyExec = "$(Split-Path $PROFILE)\putty.exe"
+	)
+	
+	$PuttyPwd = Read-VMHostCredential
 	$PuttyLogin = Read-VMHostCredential -User
-	If ($PuttyPwd) {&$PuttyExec -ssh $PuttyLogin@$VMHost -pw $PuttyPwd}
+	If ($PuttyPwd) { &$PuttyExec -ssh $PuttyLogin@$VMHost -pw $PuttyPwd }
 	
 } #EndFunction Connect-VMHostPutty
 
-Function Set-MaxSnapshotNumber {
+Function Set-MaxSnapshotNumber
+{
 	
 <#
 .SYNOPSIS
@@ -1870,104 +1922,115 @@ Function Set-MaxSnapshotNumber {
 .PARAMETER Report
 	Do not edit anything, report only.
 .EXAMPLE
-	PowerCLI C:\> Get-VM $VMName |Set-MaxSnapshotNumber
+	PS C:\> Get-VM $VMName |Set-MaxSnapshotNumber
 	Set default value.
 .EXAMPLE
-	PowerCLI C:\> Get-VM |Set-MaxSnapshotNumber -Report
+	PS C:\> Get-VM |Set-MaxSnapshotNumber -Report
 	Get current set value for all VM in the inventory.
 .EXAMPLE
-	PowerCLI C:\> Get-VM |Set-MaxSnapshotNumber -Report |? {$_.MaxSnapshot -eq 0}
+	PS C:\> Get-VM |Set-MaxSnapshotNumber -Report |? {$_.MaxSnapshot -eq 0}
 	Get VM with snapshots prohibited.
 .EXAMPLE
-	PowerCLI C:\> Get-VM $VMName |Set-MaxSnapshotNumber -Number 496
+	PS C:\> Get-VM $VMName |Set-MaxSnapshotNumber -Number 496
 	Set maximum supported value.
 .EXAMPLE
-	PowerCLI C:\> Get-VM |? {$_.Name -like 'win*'} |Set-MaxSnapshotNumber 0 -Confirm:$false
+	PS C:\> Get-VM |? {$_.Name -like 'win*'} |Set-MaxSnapshotNumber 0 -Confirm:$false
 	Prohibit snapshots for multiple VM without confirmation.
 .NOTES
-	Idea        :: William Lam @lamw
+	Idea        :: William Lam
 	Author      :: Roman Gelman @rgelman75
 	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
 	Platform    :: Tested on vSphere 5.5/6.0|VCenter 5.5U2/VCSA 6.0U1
 	Requirement :: PowerShell 3.0+
-	Version 1.0 :: 24-Jan-2017 :: [Release]
+	Version 1.0 :: 24-Jan-2017 :: [Release] :: Publicly available
 .LINK
 	https://ps1code.com/2017/01/24/max-snap-powercli
 #>
-
-[CmdletBinding(DefaultParameterSetName="SET",ConfirmImpact='High',SupportsShouldProcess=$true)]
-[Alias("Set-ViMMaxSnapshotNumber","maxsnap")]
-[OutputType([PSCustomObject])]
-
-Param (
-	[Parameter(Mandatory,ValueFromPipeline)]
-	[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VM
-	,
-	[Parameter(Mandatory=$false,Position=0,ParameterSetName='SET')]
-		[ValidateRange(0,496)]
+	
+	[CmdletBinding(DefaultParameterSetName = "SET", ConfirmImpact = 'High', SupportsShouldProcess = $true)]
+	[Alias("Set-ViMMaxSnapshotNumber", "maxsnap")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine[]]$VM
+		 ,
+		[Parameter(Mandatory = $false, Position = 0, ParameterSetName = 'SET')]
+		[ValidateRange(0, 496)]
 		[Alias("Quantity")]
-	[uint16]$Number = 31
-	,
-	[Parameter(Mandatory,Position=0,ParameterSetName='GET')]
+		[uint16]$Number = 31
+		 ,
+		[Parameter(Mandatory, Position = 0, ParameterSetName = 'GET')]
 		[Alias("ReportOnly")]
-	[switch]$Report
-)
-
-Begin {
-	$ErrorActionPreference = 'Stop'
-	$WarningPreference     = 'SilentlyContinue'
-	$AdvSetting = 'snapshot.maxSnapshots'
-	$NotSetValue = 'NotSet'
-} #EndBegin
-
-Process {
-
-	$ShouldMessage = Switch ($Number) {
-		31      {"Set maximum allowed snapshot number to the default [$Number]"; Break}
-		0       {"Prohibit taking snapshots at all!"; Break}
-		496     {"Set maximum allowed snapshot number to the maximum possible [$Number]"; Break}
-		Default {"Set maximum allowed snapshot number to [$Number]"}
-	}
-
-	If ($PSCmdlet.ParameterSetName -eq 'SET') {
-
-		If ($PSCmdlet.ShouldProcess($VM.Name, $ShouldMessage)) {
+		[switch]$Report
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+		$AdvSetting = 'snapshot.maxSnapshots'
+		$NotSetValue = 'NotSet'
+	} #EndBegin
+	
+	Process
+	{
+		
+		$ShouldMessage = Switch ($Number)
+		{
+			31      { "Set maximum allowed snapshot number to the default [$Number]"; Break }
+			0       { "Prohibit taking snapshots at all!"; Break }
+			496     { "Set maximum allowed snapshot number to the maximum possible [$Number]"; Break }
+			Default { "Set maximum allowed snapshot number to [$Number]" }
+		}
+		
+		If ($PSCmdlet.ParameterSetName -eq 'SET')
+		{
+			
+			If ($PSCmdlet.ShouldProcess($VM.Name, $ShouldMessage))
+			{
+				Try
+				{
+					$AdvancedSettingImplBefore = $VM | Get-AdvancedSetting -Name $AdvSetting
+					$CurrentSetting = If ($AdvancedSettingImplBefore) { $AdvancedSettingImplBefore.Value }
+					Else { $NotSetValue }
+					$AdvancedSettingImplAfter = $VM | New-AdvancedSetting -Name $AdvSetting -Value $Number -Force -Confirm:$false
+					$Properties = [ordered]@{
+						VM = $VM.Name
+						AdvancedSetting = $AdvSetting
+						PreviousValue = $CurrentSetting
+						CurrentValue = $AdvancedSettingImplAfter.Value
+					}
+					$Object = New-Object PSObject -Property $Properties
+					$Object
+				}
+				Catch { "{0}" -f $Error.Exception.Message }
+			}
+		}
+		Else
+		{
+			
 			Try
 			{
-				$AdvancedSettingImplBefore = $VM |Get-AdvancedSetting -Name $AdvSetting
-				$CurrentSetting = If ($AdvancedSettingImplBefore) {$AdvancedSettingImplBefore.Value} Else {$NotSetValue}
-				$AdvancedSettingImplAfter  = $VM |New-AdvancedSetting -Name $AdvSetting -Value $Number -Force -Confirm:$false
+				$AdvancedSettingImplBefore = $VM | Get-AdvancedSetting -Name $AdvSetting
+				$CurrentSetting = If ($AdvancedSettingImplBefore) { $AdvancedSettingImplBefore.Value }
+				Else { $NotSetValue }
 				$Properties = [ordered]@{
-					VM              = $VM.Name
-					AdvancedSetting = $AdvSetting
-					PreviousValue   = $CurrentSetting
-					CurrentValue    = $AdvancedSettingImplAfter.Value
+					VM = $VM.Name
+					MaxSnapshot = $CurrentSetting
 				}
 				$Object = New-Object PSObject -Property $Properties
 				$Object
-			} Catch {"{0}" -f $Error.Exception.Message}
-		}
-	} Else {
-	
-		Try
-		{
-			$AdvancedSettingImplBefore = $VM |Get-AdvancedSetting -Name $AdvSetting
-			$CurrentSetting = If ($AdvancedSettingImplBefore) {$AdvancedSettingImplBefore.Value} Else {$NotSetValue}
-			$Properties = [ordered]@{
-				VM          = $VM.Name
-				MaxSnapshot = $CurrentSetting
 			}
-			$Object = New-Object PSObject -Property $Properties
-			$Object
-		} Catch {"{0}" -f $Error.Exception.Message}
-	}
-} #EndProcess
-
-End {}
-
+			Catch { "{0}" -f $Error.Exception.Message }
+		}
+	} #EndProcess
+	
+	End { }
+	
 } #EndFunction Set-MaxSnapshotNumber
 
-Filter Convert-MoRef2Name {
+Filter Convert-MoRef2Name
+{
 	
 <#
 .SYNOPSIS
@@ -1979,14 +2042,14 @@ Filter Convert-MoRef2Name {
 .PARAMETER ShortName
 	Truncate the full object name if possible.
 .EXAMPLE
-	PowerCLI C:\> Get-VMHost 'esx1.*' |select Name,@{N='Cluster';E={$_.ParentId |Convert-MoRef2Name}}
+	PS C:\> Get-VMHost 'esx1.*' |select Name,@{N='Cluster';E={$_.ParentId |Convert-MoRef2Name}}
 	Get VMHost's parent container name from VMHosts's property `ParentId`.
 	It may be HA/DRS cluster name, Datacenter name or Folder name.
 .EXAMPLE
-	PowerCLI C:\> Get-VDSwitch |select Name,@{N='Portgroups';E={'[ ' + ((($_ |select -expand ExtensionData).Portgroup |Convert-MoRef2Name |sort) -join ' ][ ') + ' ]'}}
+	PS C:\> Get-VDSwitch |select Name,@{N='Portgroups';E={'[ ' + ((($_ |select -expand ExtensionData).Portgroup |Convert-MoRef2Name |sort) -join ' ][ ') + ' ]'}}
 	Expand all! Portgroup names from Distributed VSwitch's property `ExtensionData.Portgroup`.
 .EXAMPLE
-	PowerCLI C:\> Get-Datastore 'test*' |sort Name |select Name,@{N='ConnectedHosts';E={'[' + ((($_ |select -expand ExtensionData).Host.Key |Convert-MoRef2Name -ShortName |sort) -join '] [') + ']' }}
+	PS C:\> Get-Datastore 'test*' |sort Name |select Name,@{N='ConnectedHosts';E={'[' + ((($_ |select -expand ExtensionData).Host.Key |Convert-MoRef2Name -ShortName |sort) -join '] [') + ']' }}
 	Expand all connected VMHost names from Datastore's property `ExtensionData.Host.Key`.
 	Truncate VMHost's hostname from FQDN if it is possible.
 .INPUTS
@@ -1995,10 +2058,10 @@ Filter Convert-MoRef2Name {
 	[System.String] VI Object name.
 .NOTES
 	Author      :: Roman Gelman @rgelman75
-	Version 1.0 :: 09-Sep-2016  :: [Release]
-	Version 1.1 :: 18-Apr-2017  :: [Change] :: Empty string returned on error
+	Version 1.0 :: 09-Sep-2016 :: [Release] :: Publicly available
+	Version 1.1 :: 18-Apr-2017 :: [Change]  :: Empty string returned on error
 .LINK
-	http://ps1code.com
+	https://ps1code.com
 #>
 	
 	Param (
@@ -2560,3 +2623,365 @@ Function Get-VMHostHba
 	}
 	
 } #EndFunction Get-VMHostHba
+
+Function Get-SdrsCluster
+{
+	
+<#
+.SYNOPSIS
+	Get SDRS Cluster settings.
+.DESCRIPTION
+	This function retrieves Storage DRS Cluster settings.
+.PARAMETER DatastoreCluster
+	Specifies Datastore Cluster object(s), returned by Get-DatastoreCluster cmdlet.
+.PARAMETER VMOverrides
+	If specified, only Virtual Machine overrided settings of SDRS cluster returned.
+.EXAMPLE
+	PS C:\> Get-DatastoreCluster PROD |Get-SdrsCluster
+	Get single SDRS cluster settings.
+.EXAMPLE
+	PS C:\> Get-DatastoreCluster |Get-SdrsCluster |ft -au
+	Get all available SDRS clusters' settings.
+.EXAMPLE
+	PS C:\> Get-DatastoreCluster LAB* |Get-SdrsCluster -VMSettings |sort AutomationLevel |ft -au
+	Get VMSettings for matched SDRS clusters.
+.EXAMPLE
+	PS C:\> Get-DatastoreCluster DEV |Get-SdrsCluster -VMSettings |? {!$_.KeepVMDKsTogether}
+	Get VMs allowed to distribute their HardDisks across Datastores within SRDS cluster.
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.1
+	Platform    :: Tested on vSphere 5.5 | VCenter 5.5U2
+	Requirement :: PowerShell 3.0 | PowerCLi 5.0
+	Version 1.0 :: 13-Aug-2017 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/2017/08/16/sdrs-powercli-part1
+#>
+	
+	[CmdletBinding()]
+	[Alias("Get-ViMSdrsCluster")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.DatastoreCluster]$DatastoreCluster
+		 ,
+		[Parameter(Mandatory = $false)]
+		[Alias("VMSettings")]
+		[switch]$VMOverrides
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+	}
+	Process
+	{
+		Try
+		{
+			$DscView = Get-View -VIObject $DatastoreCluster
+			$DscViewConfig = $DscView.PodStorageDrsEntry.StorageDrsConfig.PodConfig
+			
+			### Cluster Default AutomationLevel ###
+			$Automation = switch ($DscViewConfig.DefaultVmBehavior)
+			{
+				'automated' { 'Fully Automated'; Break }
+				'manual' { 'Manual Mode'; Break }
+				default { $DscViewConfig.DefaultVmBehavior }
+			}
+			
+			### Cluster Default Intra-Vm Affinity ###
+			$DefaultAffinity = if ($DscViewConfig.DefaultIntraVmAffinity) { 'KeepTogether' }
+			else { 'DistributeAcrossDatastores' }
+			
+			if ($VMOverrides)
+			{
+				foreach ($VMConfig in $DscView.PodStorageDrsEntry.StorageDrsConfig.VmConfig)
+				{
+					$VmAutomation = switch ($VMConfig.Behavior)
+					{
+						'automated' { 'Fully Automated'; Break }
+						'manual' { 'Manual Mode'; Break }
+						'' { "Default ($Automation)" }
+						default { $VMConfig.Behavior }
+					}
+					
+					$Enabled = if ($VMConfig.IntraVmAntiAffinity) { $VMConfig.IntraVmAntiAffinity.Enabled }
+					else { $null; if ($VMConfig.Enabled -eq $false) { $VmAutomation = 'Disabled' } }
+					
+					$Source = switch ($Enabled)
+					{
+						$true { 'Active Rule'; Break }
+						$false { 'Disabled Rule'; Break }
+						$null { 'Override' }
+					}
+					
+					$IntraVmAffinity = if ($VMConfig.IntraVmAffinity -eq $null) { "Default ($($DscViewConfig.DefaultIntraVmAffinity))" }
+					else { $VMConfig.IntraVmAffinity }
+					
+					$return = [pscustomobject] @{
+						DatastoreCluster = $DscView.Name
+						VM = (Get-View -Id $VMConfig.Vm).Name
+						Source = $Source
+						AutomationLevel = $VmAutomation
+						KeepVMDKsTogether = $IntraVmAffinity
+					}
+					if ($return.AutomationLevel -imatch '^default' -and $return.KeepVMDKsTogether -imatch '^default') { }
+					else { $return }
+				}
+			}
+			else
+			{
+				### AdvancedOptions ###
+				$AdvOpt = if ($DscViewConfig.Option)
+				{
+					$Options = $DscViewConfig.Option.GetEnumerator() | % { [string]$_.Key + ' = ' + [string]$_.Value }
+					$Options -join '; '
+				}
+				else
+				{
+					$null
+				}
+				
+				### Usage% ###
+				$UsagePercent = [math]::Round(($DscView.Summary.Capacity - $DscView.Summary.FreeSpace)/$DscView.Summary.Capacity * 100, 0)
+				
+				### CheckImbalanceEvery ###
+				$CheckImbalancePeriod = $DscViewConfig.LoadBalanceInterval / 60
+				$CheckImbalanceUnits = if ($CheckImbalancePeriod -eq 1)
+				{
+					'Hour'
+				}
+				elseif (2 .. 23 -contains $CheckImbalancePeriod)
+				{
+					'Hours'
+				}
+				else
+				{
+					'Days'
+					$CheckImbalancePeriod = [math]::Round($CheckImbalancePeriod / 24, 1)
+				}
+				
+				[pscustomobject] @{
+					DatastoreCluster = $DscView.Name
+					CapacityTB = [math]::Round($DscView.Summary.Capacity/1TB, 1)
+					FreeSpaceTB = [math]::Round($DscView.Summary.FreeSpace/1TB, 1)
+					'Usage%' = New-PercentageBar -Percent $UsagePercent
+					TurnOnSDRS = $DscViewConfig.Enabled
+					AutomationLevel = $Automation
+					AdvancedOptions = $AdvOpt
+					EnableIOMetric = $DscViewConfig.IoLoadBalanceEnabled
+					'UtilizedSpace%' = New-PercentageBar -Percent $DscViewConfig.SpaceLoadBalanceConfig.SpaceUtilizationThreshold
+					IOLatency = "$($DscViewConfig.IoLoadBalanceConfig.IoLatencyThreshold)ms " + (New-PercentageBar -Percent $DscViewConfig.IoLoadBalanceConfig.IoLatencyThreshold -NoPercent)
+					'MinSpaceUtilizationDifference%' = New-PercentageBar -Percent $DscViewConfig.SpaceLoadBalanceConfig.MinSpaceUtilizationDifference
+					CheckImbalanceEvery = "$CheckImbalancePeriod $CheckImbalanceUnits"
+					IOImbalanceThreshold = "Aggressive " + (New-PercentageBar -Value $DscViewConfig.IoLoadBalanceConfig.IoLoadImbalanceThreshold -MaxValue 25 -NoPercent) + " Conservative"
+					DefaultIntraVmAffinity = $DefaultAffinity
+				}
+			}
+		}
+		Catch
+		{
+			"{0}" -f $Error.Exception.Message
+		}
+	}
+	End
+	{
+		
+	}
+	
+} #EndFunction Get-SdrsCluster
+
+Function Set-SdrsCluster
+{
+	
+<#
+.SYNOPSIS
+	Set SDRS Cluster settings.
+.DESCRIPTION
+	This function configures Storage DRS Cluster.
+.PARAMETER DatastoreCluster
+	Specifies Datastore Cluster object(s), returned by Get-DatastoreCluster cmdlet.
+.PARAMETER ShowBeforeState
+	If specified, SDRS cluster state will be taken before applying changes.
+.PARAMETER DefaultIntraVmAffinity
+	Specifies Default Intra-Vm Affinity policy (VMDK affinity) for SDRS Cluster.
+.PARAMETER TurnOnSRDS
+	Enable/disable Storage DRS feature.
+.PARAMETER AutomationLevel
+	Specifies SDRS Automation Level.
+.PARAMETER EnableIOMetric
+	If $true will enable I/O Metric for SRDS recommendations.
+.PARAMETER UtilizedSpace
+	Specifies SDRS Runtime Threshold on Utilized Space (%).
+.PARAMETER IOLatency
+	Specifies SRDS Runtime Threshold on I/O Latency (ms).
+.PARAMETER MinSpaceUtilizationDifference
+	Specifies utilization difference between source and destination until which no SDRS recommendations (%).
+.PARAMETER CheckImbalanceEveryMin
+	Specifies how frequently to check imbalance (min).
+.PARAMETER IOImbalanceThreshold
+	Specifies amount of imbalance that SDRS should tolerate.
+	1 - the most Aggressive (correct small imbalance), 25 - the most Conservative.
+.EXAMPLE
+	PS C:\> Get-DatastoreCluster $DatastoreClusterName |Set-SdrsCluster
+	Set Default Intra-Vm Affinity policy to DistributeAcrossDatastores on single DatastoreCluster.
+.EXAMPLE
+	PS C:\> Get-DatastoreCluster -Location $DatacenterName |Set-SdrsCluster -TurnOnSDRS:$false
+	Disable SDRS on all DatastoreClusters in a Datacenter.
+.EXAMPLE
+	PS C:\> Get-DatastoreCluster |Set-SdrsCluster -AutomationLevel FullyAutomated -Confirm:$false
+	Set Automation Level on all SRDS Clusters in Inventory.
+.EXAMPLE
+	PS C:\> Get-DatastoreCluster $DatastoreClusterName |Set-SdrsCluster -EnableIOMetric:$true 
+	Enable I/O Metric for SRDS recommendations and set default Runtime Thresholds.
+.EXAMPLE
+	PS C:\> Get-DatastoreCluster |Set-SdrsCluster -Option IgnoreAffinityRulesForMaintenance -Value 1
+	Set SRDS Automation Advanced Option for all available SDRS Clusters.
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.1
+	Platform    :: Tested on vSphere 5.5 | VCenter 5.5U2
+	Requirement :: PowerShell 3.0 | PowerCLi 5.0
+	Version 1.0 :: 11-Jul-2017 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/2017/08/16/sdrs-powercli-part1
+#>
+	
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess, DefaultParameterSetName = 'VMAFFINITY')]
+	[Alias("Get-ViMSdrsCluster")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.DatastoreCluster]$DatastoreCluster
+		 ,
+		[Parameter(Mandatory = $false)]
+		[switch]$ShowBeforeState
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'VMAFFINITY')]
+		[ValidateSet("KeepTogether", "DistributeAcrossDatastores")]
+		[string]$DefaultIntraVmAffinity = 'DistributeAcrossDatastores'
+		 ,
+		[Parameter(Mandatory, ParameterSetName = 'SDRSONOFF')]
+		[boolean]$TurnOnSDRS
+		 ,
+		[Parameter(Mandatory, ParameterSetName = 'AUTOMATION')]
+		[ValidateSet("FullyAutomated", "ManualMode")]
+		[string]$AutomationLevel
+		 ,
+		[Parameter(Mandatory, ParameterSetName = 'RUNTIMERULES')]
+		[boolean]$EnableIOMetric
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'RUNTIMERULES')]
+		[ValidateRange(50, 100)]
+		[int]$UtilizedSpace = 80
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'RUNTIMERULES')]
+		[ValidateRange(5, 100)]
+		[int]$IOLatency = 15
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'RUNTIMERULES')]
+		[ValidateRange(1, 50)]
+		[int]$MinSpaceUtilizationDifference = 5
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'RUNTIMERULES')]
+		[ValidateRange(60, 43200)]
+		[int]$CheckImbalanceEveryMin = 480
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'RUNTIMERULES')]
+		[ValidateRange(1, 25)]
+		[int]$IOImbalanceThreshold = 5
+		 ,
+		[Parameter(Mandatory, ParameterSetName = 'ADVOPT')]
+		[string]$Option
+		 ,
+		[Parameter(Mandatory, ParameterSetName = 'ADVOPT')]
+		[string]$Value
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+		$SRMan = Get-View StorageResourceManager
+		
+		switch ($PsCmdlet.ParameterSetName)
+		{
+			'VMAFFINITY' { $Enabled = if ($DefaultIntraVmAffinity -eq 'KeepTogether') { $true }
+				else { $false }; Break }
+			'AUTOMATION' { $Automation = if ($AutomationLevel -eq 'FullyAutomated') { 'automated' }
+				else { 'manual' } }
+		}
+	}
+	Process
+	{
+		if ($ShowBeforeState) { Get-SdrsCluster -DatastoreCluster $DatastoreCluster }
+		
+		$spec = New-Object VMware.Vim.StorageDrsConfigSpec
+		$spec.PodConfigSpec = New-Object VMware.Vim.StorageDrsPodConfigSpec
+		
+		$ConfirmMsg = switch ($PsCmdlet.ParameterSetName)
+		{
+			'VMAFFINITY'
+			{
+				"Set DefaultIntraVmAffinity to [$DefaultIntraVmAffinity]"
+				$spec.PodConfigSpec.DefaultIntraVmAffinity = $Enabled
+				Break
+			}
+			'SDRSONOFF'
+			{
+				if ($TurnOnSDRS) { "Enable Storage DRS" }
+				else { "Disable Storage DRS" }
+				$spec.PodConfigSpec.Enabled = $TurnOnSDRS
+				Break
+			}
+			'AUTOMATION'
+			{
+				"Set Automation Level to [$AutomationLevel]"
+				$spec.PodConfigSpec.DefaultVmBehavior = $Automation
+				Break
+			}
+			'RUNTIMERULES'
+			{
+				if ($EnableIOMetric) { "Enable I/O metric and Set Runtime Thresholds" }
+				else { "Disable I/O metric and Set Runtime Thresholds" }
+				$spec.PodConfigSpec.LoadBalanceInterval = $CheckImbalanceEveryMin
+				$spec.PodConfigSpec.IoLoadBalanceConfig = New-Object VMware.Vim.StorageDrsIoLoadBalanceConfig
+				$spec.PodConfigSpec.IoLoadBalanceEnabled = $EnableIOMetric
+				$spec.PodConfigSpec.IoLoadBalanceConfig.IoLatencyThreshold = $IOLatency
+				$spec.PodConfigSpec.IoLoadBalanceConfig.IoLoadImbalanceThreshold = $IOImbalanceThreshold
+				$spec.PodConfigSpec.SpaceLoadBalanceConfig = New-Object VMware.Vim.StorageDrsSpaceLoadBalanceConfig
+				$spec.PodConfigSpec.SpaceLoadBalanceConfig.SpaceUtilizationThreshold = $UtilizedSpace
+				$spec.PodConfigSpec.SpaceLoadBalanceConfig.MinSpaceUtilizationDifference = $MinSpaceUtilizationDifference
+				Break
+			}
+			'ADVOPT'
+			{
+				"Set Advanced Option [$Option] to Value [$Value]"
+				$opSpec = New-Object VMware.Vim.StorageDrsOptionSpec
+				$opSpec.Option = New-Object VMware.Vim.OptionValue
+				$opSpec.Option.Key = $Option
+				$opSpec.Option.Value = $Value
+				$spec.PodConfigSpec.Option = $opSpec
+			}
+		}
+		
+		if ($PSCmdlet.ShouldProcess("DatastoreCluster [$($DatastoreCluster.Name)]", $ConfirmMsg))
+		{
+			Try
+			{
+				$SRMan.ConfigureStorageDrsForPod($DatastoreCluster.Id, $spec, $true)
+				Get-SdrsCluster -DatastoreCluster $DatastoreCluster
+			}
+			Catch
+			{
+				"{0}" -f $Error.Exception.Message
+			}
+		}
+	}
+	End
+	{
+		
+	}
+	
+} #EndFunction Set-SdrsCluster
