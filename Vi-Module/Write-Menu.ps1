@@ -1,5 +1,6 @@
-﻿Function Write-Menu {
-
+Function Write-Menu
+{
+	
 <#
 .SYNOPSIS
 	Display custom menu in the PowerShell console.
@@ -40,101 +41,121 @@
 .OUTPUTS
 	[The same type as input object] Single menu item.
 .NOTES
-	Author      :: Roman Gelman
+	Author      :: Roman Gelman @rgelman75
 	Version 1.0 :: 21-Apr-2016 :: [Release]
-	Version 1.1 :: 03-Nov-2016 ::  [Change] Now the function supports a single item as menu entry.
+	Version 1.1 :: 03-Nov-2016 :: [Change] Supports a single item as menu entry
+	Version 1.2 :: 22-Jun-2017 :: [Change] Throw an error if property, specified by -PropertyToShow does not exist. Code optimization
 .LINK
-	http://www.ps1code.com/single-post/2016/04/21/How-to-create-interactive-dynamic-Menu-in-PowerShell
+	https://ps1code.com/2016/04/21/write-menu-powershell
 #>
-
-[CmdletBinding()]
-
-Param (
-
-	[Parameter(Mandatory,Position=0)]
-		[Alias("MenuEntry","List")]
-	$Menu
-	,
-	[Parameter(Mandatory=$false,Position=1)]
-	[string]$PropertyToShow = 'Name'
-	,
-	[Parameter(Mandatory=$false,Position=2)]
+	
+	[CmdletBinding()]
+	[Alias("menu")]
+	Param (
+		[Parameter(Mandatory, Position = 0)]
+		[Alias("MenuEntry", "List")]
+		$Menu
+		 ,
+		[Parameter(Mandatory = $false, Position = 1)]
+		[string]$PropertyToShow = 'Name'
+		 ,
+		[Parameter(Mandatory = $false, Position = 2)]
 		[ValidateNotNullorEmpty()]
-	[string]$Prompt = 'Pick a choice'
-	,
-	[Parameter(Mandatory=$false,Position=3)]
-		[Alias("MenuHeader")]
-	[string]$Header = ''
-	,
-	[Parameter(Mandatory=$false,Position=4)]
-		[ValidateRange(0,5)]
-		[Alias("Tab","MenuShift")]
-	[int]$Shift = 0
-	,
-	#[Enum]::GetValues([System.ConsoleColor])
-	[Parameter(Mandatory=$false,Position=5)]
-		[ValidateSet("Black","DarkBlue","DarkGreen","DarkCyan","DarkRed","DarkMagenta",
-		"DarkYellow","Gray","DarkGray","Blue","Green","Cyan","Red","Magenta","Yellow","White")]
-		[Alias("Color","MenuColor")]
-	[string]$TextColor = 'White'
-	,
-	[Parameter(Mandatory=$false,Position=6)]
-		[ValidateSet("Black","DarkBlue","DarkGreen","DarkCyan","DarkRed","DarkMagenta",
-		"DarkYellow","Gray","DarkGray","Blue","Green","Cyan","Red","Magenta","Yellow","White")]
-	[string]$HeaderColor = 'Yellow'
-	,
-	[Parameter(Mandatory=$false,Position=7)]
+		[string]$Prompt = 'Pick a choice'
+		 ,
+		[Parameter(Mandatory = $false, Position = 3)]
+		[Alias("Title")]
+		[string]$Header = ''
+		 ,
+		[Parameter(Mandatory = $false, Position = 4)]
+		[ValidateRange(0, 5)]
+		[Alias("Tab", "MenuShift")]
+		[int]$Shift = 0
+		 ,
+		[Parameter(Mandatory = $false, Position = 5)]
+		[Alias("Color", "MenuColor")]
+		[System.ConsoleColor]$TextColor = 'White'
+		 ,
+		[Parameter(Mandatory = $false, Position = 6)]
+		[System.ConsoleColor]$HeaderColor = 'Yellow'
+		 ,
+		[Parameter(Mandatory = $false)]
 		[ValidateNotNullorEmpty()]
-		[Alias("Exit","AllowExit")]
-	[switch]$AddExit
-)
-
-Begin {
-
-	$ErrorActionPreference = 'Stop'
-	If ($Menu -isnot [array]) {$Menu = @($Menu)}
-	If ($AddExit) {$MaxLength=8} Else {$MaxLength=9}
-	If ($Menu.Length -gt $MaxLength) {$AddZero=$true} Else {$AddZero=$false}
-	[hashtable]$htMenu = @{}
-}
-
-Process {
-
-	### Write menu header ###
-	If ($Header -ne '') {Write-Host $Header -ForegroundColor $HeaderColor}
+		[Alias("Exit", "AllowExit")]
+		[switch]$AddExit
+	)
 	
-	### Create shift prefix ###
-	If ($Shift -gt 0) {$Prefix = [string]"`t"*$Shift}
-	
-	### Build menu hash table ###
-	For ($i=1; $i -le $Menu.Length; $i++) {
-		If ($AddZero) {
-			If ($AddExit) {$lz = ([string]($Menu.Length+1)).Length - ([string]$i).Length}
-			Else          {$lz = ([string]$Menu.Length).Length - ([string]$i).Length}
-			$Key = "0"*$lz + "$i"
-		} Else {$Key = "$i"}
-		$htMenu.Add($Key,$Menu[$i-1])
-		If ($Menu[$i] -isnot 'string' -and ($Menu[$i-1].$PropertyToShow)) {
-			Write-Host "$Prefix[$Key] $($Menu[$i-1].$PropertyToShow)" -ForegroundColor $TextColor
-		} Else {Write-Host "$Prefix[$Key] $($Menu[$i-1])" -ForegroundColor $TextColor}
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		if ($Menu -isnot [array]) { $Menu = @($Menu) }
+		if ($Menu[0] -isnot [string])
+		{
+			if (!($Menu | Get-Member -MemberType Property, NoteProperty -Name $PropertyToShow)) { Throw "Property [$PropertyToShow] does not exist" }
+		}
+		$MaxLength = if ($AddExit) { 8 } else { 9 }
+		$AddZero = if ($Menu.Length -gt $MaxLength) { $true } else { $false }
+		[hashtable]$htMenu = @{}
 	}
-	If ($AddExit) {
-		[string]$Key = $Menu.Length+1
-		$htMenu.Add($Key,"Exit")
-		Write-Host "$Prefix[$Key] Exit" -ForegroundColor $TextColor
+	Process
+	{
+		### Write menu header ###
+		if ($Header -ne '') { Write-Host $Header -ForegroundColor $HeaderColor }
+		
+		### Create shift prefix ###
+		if ($Shift -gt 0) { $Prefix = [string]"`t" * $Shift }
+		
+		### Build menu hash table ###
+		for ($i = 1; $i -le $Menu.Length; $i++)
+		{
+			$Key = if ($AddZero)
+			{
+				$lz = if ($AddExit) { ([string]($Menu.Length + 1)).Length - ([string]$i).Length } else { ([string]$Menu.Length).Length - ([string]$i).Length }
+				"0"*$lz + "$i"
+			}
+			else
+			{
+				"$i"
+			}
+			
+			$htMenu.Add($Key, $Menu[$i-1])
+			
+			if ($Menu[$i] -isnot 'string' -and ($Menu[$i - 1].$PropertyToShow))
+			{
+				Write-Host "$Prefix[$Key] $($Menu[$i-1].$PropertyToShow)" -ForegroundColor $TextColor
+			}
+			else
+			{
+				Write-Host "$Prefix[$Key] $($Menu[$i - 1])" -ForegroundColor $TextColor
+			}
+		}
+		
+		### Add 'Exit' row ###
+		if ($AddExit)
+		{
+			[string]$Key = $Menu.Length+1
+			$htMenu.Add($Key, "Exit")
+			Write-Host "$Prefix[$Key] Exit" -ForegroundColor $TextColor
+		}
+		
+		### Pick a choice ###
+		Do {
+			$Choice = Read-Host -Prompt $Prompt
+			$KeyChoice = if ($AddZero)
+			{
+				$lz = if ($AddExit) { ([string]($Menu.Length + 1)).Length - $Choice.Length } else { ([string]$Menu.Length).Length - $Choice.Length }
+				if ($lz -gt 0) { "0" * $lz + "$Choice" } else { $Choice }
+			}
+			else
+			{
+				$Choice
+			}
+		}
+		Until ($htMenu.ContainsKey($KeyChoice))
 	}
-	
-	### Pick a choice ###
-	Do {
-		$Choice = Read-Host -Prompt $Prompt
-		If ($AddZero) {
-			If ($AddExit) {$lz = ([string]($Menu.Length+1)).Length - $Choice.Length}
-			Else          {$lz = ([string]$Menu.Length).Length - $Choice.Length}
-			If ($lz -gt 0) {$KeyChoice = "0"*$lz + "$Choice"} Else {$KeyChoice = $Choice}
-		} Else {$KeyChoice = $Choice}
-	} Until ($htMenu.ContainsKey($KeyChoice))
-}
-
-End {return $htMenu.get_Item($KeyChoice)}
+	End
+	{
+		return $htMenu.get_Item($KeyChoice)
+	}
 
 } #EndFunction Write-Menu
