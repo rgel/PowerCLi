@@ -13,6 +13,8 @@
 
 ### [<ins>Vi-Module</ins>](https://github.com/rgel/PowerCLi/tree/master/Vi-Module) VMware VI Automation Module
 
+<ins>Requirements:</ins> PowerShell 5 or above. To check, type the following command: `$PSVersionTable.PSVersion.Major`.
+
 To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories.
 
 The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable.
