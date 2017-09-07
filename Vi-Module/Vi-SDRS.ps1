@@ -401,7 +401,7 @@ Function Add-SdrsAntiAffinityRule
 	Requirement :: PowerShell 5.0
 	Version 1.0 :: 24-Aug-2017 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2017/09/06/sdrs-powercli-part2
 #>
 	
 	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
@@ -525,7 +525,7 @@ Function Get-SdrsAntiAffinityRule
 	Requirement :: PowerShell 5.0
 	Version 1.0 :: 24-Aug-2017 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2017/09/06/sdrs-powercli-part2
 #>
 	
 	[CmdletBinding()]
@@ -619,7 +619,7 @@ Function Remove-SdrsAntiAffinityRule
 	Requirement :: PowerShell 5.0
 	Version 1.0 :: 24-Aug-2017 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2017/09/06/sdrs-powercli-part2
 #>
 	
 	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
@@ -687,147 +687,6 @@ Function Remove-SdrsAntiAffinityRule
 	
 } #EndFunction Remove-SdrsAntiAffinityRule
 
-Function Set-SdrsAntiAffinityRule
-{
-	
-<#  
-.SYNOPSIS
-	Configure SDRS anti-affinity rules.
-.DESCRIPTION
-	This function edits Storage DRS anti-affinity rule(s):
-	add/remove VM(s) or VMDK(s), rename or enable/disable rules.
-.PARAMETER SdrsRule
-	Specifies SDRS rule, returned by Get-SdrsAntiAffinityRule function.
-.EXAMPLE
-	PS C:\> Get-DatastoreCluster LAB |Get-SdrsAntiAffinityRule InterVM |Set-SdrsAntiAffinityRule -VM vm3 -Action Add
-	Add one VM to inter-VM rule.
-.EXAMPLE
-	PS C:\> Get-DatastoreCluster TEST |Get-SdrsAntiAffinityRule InterVM |Set-SdrsAntiAffinityRule -VM (Get-VM 'vm1[19]') -NewName Rule1 -Enable:$true -Confirm:$false
-	Add nine VM (named vm11 to vm19) to inter-VM rule with no confirmation, rename and enable the rule after that.
-.EXAMPLE
-	PS C:\> Get-DatastoreCluster DEV |Get-SdrsAntiAffinityRule VMDK |Set-SdrsAntiAffinityRule -Enable:$true -HardDisk 2
-	Add one HardDisk to intra-VM rule and enable the rule after that.
-.EXAMPLE
-	PS C:\> Get-DatastoreCluster PROD |Get-SdrsAntiAffinityRule VMDK |Set-SdrsAntiAffinityRule -NewName Rule3 -Enable:$false -Action Remove -HardDisk (2..5 -ne 4)
-	Remove HardDisks 2 to 5 excluding 4 from a VMDK rule, rename and disable the rule after that.
-.NOTES
-	Author      :: Roman Gelman @rgelman75
-	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.2
-	Platform    :: Tested on vSphere 5.5 | VCenter 5.5U2
-	Requirement :: PowerShell 5.0
-	Version 1.0 :: 05-Sep-2017 :: [Release] :: Publicly available
-.LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
-#>
-	
-	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
-	[Alias("Set-ViMSdrsAntiAffinityRule")]
-	[OutputType([SdrsRule])]
-	Param (
-		[Parameter(Mandatory, ValueFromPipeline)]
-		[SdrsRule]$SdrsRule
-		 ,
-		[Parameter(Mandatory = $false)]
-		[string]$NewName
-		 ,
-		[Parameter(Mandatory = $false)]
-		[bool]$Enable
-		 ,
-		[Parameter(Mandatory, ParameterSetName = 'VM')]
-		[PSObject[]]$VM
-		 ,
-		[Parameter(Mandatory = $false, ParameterSetName = 'VMDK')]
-		[ValidateRange(1, 60)]
-		[uint16[]]$HardDisk
-		 ,
-		[Parameter(Mandatory = $false)]
-		[ValidateSet('Add', 'Remove')]
-		[string]$Action = 'Add'
-	)
-	
-	Begin
-	{
-		$storMgr = Get-View StorageResourceManager
-		$spec = New-Object VMware.Vim.StorageDrsConfigSpec
-	}
-	Process
-	{
-		$DatastoreCluster = Get-DatastoreCluster -Name $SdrsRule.DatastoreCluster
-		
-		if ($SdrsRule.RuleType -eq 'Inter-VM')
-		{
-			if ($PSCmdlet.ParameterSetName -eq 'VMDK') { Throw "Oops, [$($SdrsRule.RuleName)] is [$($SdrsRule.RuleType)] rule. There is no possible to $($Action.ToLower()) HardDisks!" }
-			
-			### Regenerate VM Id members list ###
-			$AlreadyVM = { $SdrsRule.VM |% { (Get-VM $_).Id } }.Invoke()
-			$NewMoRef += foreach ($NewVM in $VM)
-			{
-				if ($NewVM -is [string]) { (Get-VM $NewVM -ea SilentlyContinue).Id }
-				elseif ($NewVM -is [VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine]) { $NewVM.Id }
-				else { }
-			}
-			if ($Action -eq 'Add') { $NewMoRef |% { if ($AlreadyVM -notcontains $_) { $AlreadyVM.Add($_) } } }
-			else { $NewMoRef |% { if ($AlreadyVM -contains $_) { $AlreadyVM.Remove($_) | Out-Null } } }
-			
-			if ($AlreadyVM.Count -lt 2) { Throw "Oops, [$($SdrsRule.RuleName)] - At least two VM members must remain in Inter-VM rule!" }
-			
-			if (!$spec.PodConfigSpec) { $spec.PodConfigSpec = New-Object VMware.Vim.StorageDrsPodConfigSpec }
-			$rule = New-Object VMware.Vim.ClusterRuleSpec
-			$rule.Operation = "edit"
-			$rule.Info = New-Object VMware.Vim.ClusterAntiAffinityRuleSpec
-			$rule.Info.Enabled = if ($PSBoundParameters.ContainsKey('Enable')) { $Enable } else { $SdrsRule.Enabled }
-			$rule.Info.Key = $SdrsRule.RuleId
-			$rule.Info.Name = if ($PSBoundParameters.ContainsKey('NewName')) { $NewName } else { $SdrsRule.RuleName }
-			$rule.Info.Vm = $AlreadyVM
-			$spec.PodConfigSpec.Rule = $rule
-		}
-		else
-		{
-			if ($PSCmdlet.ParameterSetName -eq 'VM') { Throw "Oops, [$($SdrsRule.RuleName)] is [$($SdrsRule.RuleType)] rule. There is no possible to $($Action.ToLower()) VM!" }
-			
-			### Get VM's Index-to-DiskId list ###
-			$RuleVM = Get-VM $SdrsRule.VM[0]
-			$HddVM = $RuleVM.ExtensionData.Config.Hardware.Device | ? { $_ -is [VMware.Vim.VirtualDisk] } |
-			select @{ N = 'Index'; E = { [regex]::Match($_.DeviceInfo.Label, '\d+').Value } },
-				   @{ N = 'DiskId'; E = { $_ | select -expand Key } }
-			
-			### Translate HardDisk Indexes to DiskIds ###
-			$Id = @(); foreach ($Index in $HardDisk) { foreach ($Hdd in $HddVM) { if ($Index -eq $Hdd.Index) { $Id += $Hdd.DiskId } } }
-			
-			### Renew DiskId list ###
-			$AlreadyVmdk = { $SdrsRule.HardDisks.DiskId }.Invoke()
-			if ($Action -eq 'Add') { $Id |% { if ($AlreadyVmdk -notcontains $_) { $AlreadyVmdk.Add($_) } } }
-			else { $Id |% { if ($AlreadyVmdk -contains $_) { $AlreadyVmdk.Remove($_) | Out-Null } } }
-			
-			if ($AlreadyVmdk.Count -eq 0) { Throw "Oops, [$($SdrsRule.RuleName)] - there is no possible to remove ALL HardDisks from VMDK rule!" }
-			
-			$vmSpec = New-Object VMware.Vim.StorageDrsVmConfigSpec
-			$vmSpec.Operation = "edit"
-			$vmSpec.Info = New-Object VMware.Vim.StorageDrsVmConfigInfo
-			$vmSpec.Info.Vm = $RuleVM.Id
-			$vmSpec.Info.Enabled = $true
-			$vmSpec.Info.IntraVmAffinity = $false
-			$vmSpec.Info.IntraVmAntiAffinity = New-Object VMware.Vim.VirtualDiskAntiAffinityRuleSpec
-			$vmSpec.Info.IntraVmAntiAffinity.Enabled = if ($PSBoundParameters.ContainsKey('Enable')) { $Enable } else { $SdrsRule.Enabled }
-			$vmSpec.Info.IntraVmAntiAffinity.Name = if ($PSBoundParameters.ContainsKey('NewName')) { $NewName } else { $SdrsRule.RuleName }
-			$vmSpec.Info.IntraVmAntiAffinity.Key = $SdrsRule.RuleId
-			$vmSpec.Info.IntraVmAntiAffinity.DiskId = $AlreadyVmdk
-			$spec.vmConfigSpec = $vmSpec
-		}
-		
-		$EditRule = Get-SdrsAntiAffinityRule -DatastoreCluster $DatastoreCluster | ? { $_.RuleId -eq $SdrsRule.RuleId }
-		
-		if ($PSCmdlet.ShouldProcess("DatastoreCluster [$($DatastoreCluster.Name)]", "Edit $($EditRule.RuleType) SDRS Rule [$($EditRule.RuleName)]"))
-		{
-			$storMgr.ConfigureStorageDrsForPod($DatastoreCluster.ExtensionData.MoRef, $spec, $true)
-			Start-SleepProgress -Second 10
-			Get-SdrsAntiAffinityRule -DatastoreCluster (Get-DatastoreCluster $DatastoreCluster.Name) | ? { $_.RuleId -eq $SdrsRule.RuleId }
-		}
-	}
-	End { }
-	
-} #EndFunction Set-SdrsAntiAffinityRule
-
 Function Invoke-SdrsRecommendation
 {
 	
@@ -848,7 +707,7 @@ Function Invoke-SdrsRecommendation
 	Platform    :: Tested on vSphere 5.5 | VCenter 5.5U2
 	Version 1.0 :: 30-Aug-2017 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2017/09/06/sdrs-powercli-part2
 #>
 	
 	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
