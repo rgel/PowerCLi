@@ -55,6 +55,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |20|[<b>Set-SdrsCluster/Get-SdrsCluster</b>](https://ps1code.com/2017/08/16/sdrs-powercli-part1)|Configure Storage DRS clusters|
 |21|[<b>Add-SdrsAntiAffinityRule/Get-SdrsAntiAffinityRule/Remove-SdrsAntiAffinityRule</b>](https://ps1code.com/2017/09/06/sdrs-powercli-part2)|Create and delete SDRS Anti-Affinity Rules|
 |22|[<b>Invoke-SdrsRecommendation</b>](https://ps1code.com/2017/09/06/sdrs-powercli-part2)|Run Storage DRS recommendations|
+|23|[<b>Set-SdrsAntiAffinityRule</b>](https://ps1code.com/2017/09/10/sdrs-powercli-part3)|Configure SDRS Anti-Affinity Rules|
 
 ### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
 
