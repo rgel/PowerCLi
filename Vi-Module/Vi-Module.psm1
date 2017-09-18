@@ -2623,3 +2623,57 @@ Function Get-VMHostHba
 	}
 	
 } #EndFunction Get-VMHostHba
+
+Function Convert-VI2PSCredential
+{
+	
+<#
+.SYNOPSIS
+	Convert VICredentialStoreItem object to PSCredential.
+.DESCRIPTION
+	This function converts [VICredentialStoreItem] object to [PSCredential] data type
+	for using it as value of [-Credential] parameter in any cmdlets.
+.PARAMETER VICredentialStoreItem
+	Specifies VI Credential Store Item(s), returned by Get-VICredentialStoreItem cmdlet.
+.EXAMPLE
+	PS C:\> Get-VICredentialStoreItem -Host xclarity | Convert-VI2PSCredential
+.EXAMPLE
+	PS C:\> Get-VICredentialStoreItem | Convert-VI2PSCredential | select UserName, @{N='ClearTextPassword'; E={$_.GetNetworkCredential().Password}}
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.2
+	Requirement :: PowerShell 3.0
+	Version 1.0 :: 17-Aug-2017 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/category/vmware-powercli/vi-module/
+#>
+	
+	[CmdletBinding()]
+	[Alias("Convert-ViMVI2PSCredential", "vi2ps")]
+	[OutputType([System.Management.Automation.PSCredential])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.VICredentialStoreItem]$VICredentialStoreItem
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+	}
+	Process
+	{
+		Try
+		{
+			$UserName = $VICredentialStoreItem.User
+			$Password = ConvertTo-SecureString $VICredentialStoreItem.Password -AsPlainText –Force
+			return New-Object System.Management.Automation.PSCredential($UserName, $Password)
+		}
+		Catch
+		{
+			"{0}" -f $Error.Exception.Message
+		}
+	}
+	End { }
+	
+} #EndFunction Convert-VI2PSCredential
