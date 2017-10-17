@@ -57,6 +57,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |22|[<b>Invoke-SdrsRecommendation</b>](https://ps1code.com/2017/09/06/sdrs-powercli-part2)|Run Storage DRS recommendations|
 |23|[<b>Set-SdrsAntiAffinityRule</b>](https://ps1code.com/2017/09/10/sdrs-powercli-part3)|Configure SDRS Anti-Affinity Rules|
 |24|[<b>Convert-VI2PSCredential</b>](https://ps1code.com/2017/09/18/vi2ps-cred-powercli)|Securely save and retrieve credentials|
+|25|[<b>Get-VMGuestPartition/Expand-VMGuestPartition</b>](https://ps1code.com/2017/10/17/extend-vm-guest-part-powercli)|Extend VM Guest Partition|
 
 ### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
 
