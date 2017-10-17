@@ -2666,7 +2666,7 @@ Function Convert-VI2PSCredential
 		Try
 		{
 			$UserName = $VICredentialStoreItem.User
-			$Password = ConvertTo-SecureString $VICredentialStoreItem.Password -AsPlainText –Force
+			$Password = ConvertTo-SecureString $VICredentialStoreItem.Password -AsPlainText -Force
 			return New-Object System.Management.Automation.PSCredential($UserName, $Password)
 		}
 		Catch
@@ -2677,3 +2677,289 @@ Function Convert-VI2PSCredential
 	End { }
 	
 } #EndFunction Convert-VI2PSCredential
+
+Function Get-VMGuestPartition
+{
+	
+<#
+.SYNOPSIS
+	Get VM guest partition usage.
+.DESCRIPTION
+	This function retrieves VM guest partition usage.
+.PARAMETER VM
+	Specifies VM object(s), returned by Get-VM cmdlet.
+.EXAMPLE
+	PS C:\> Get-VM vm1, vm2 |Get-VMGuestPartition
+.EXAMPLE
+	PS C:\> Get-VM |? {$_.Guest.GuestFamily -like 'win*'} |Get-VMGuestPartition |sort VM, Volume |ogv -Title 'Windows VM Partition Usage Report'
+	Get report in a GridView control for Microsoft Windows guests only.
+.EXAMPLE
+	PS C:\> Get-Cluster DEV |Get-VM |Get-VMGuestPartition |? {$_.'Usage%' -gt 90} |sort 'Usage%' -Descending |ft -au
+.EXAMPLE
+	PS C:\> Get-VM |gvmpart |epcsv '.\VMDiskUsage.csv' -notype -Encoding UTF8
+	Export the report to Excel file (have to use UTF8 encoding for the correct UsageBar property representation).
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.2
+	Platform    :: Tested on vSphere 5.5/6.0/6.5 | VCenter 5.5U2/VCSA 6.0U1/VCSA 6.5
+	Dependency  :: The New-PercentageBar function (included in the module)
+	Requirement :: The VM(s) must be PoweredOn and VMTools must be installed and running
+	Version 1.0 :: 17-Oct-2017 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/category/vmware-powercli/vi-module/
+#>
+	
+	[Alias("Get-ViMVMGuestPartition", "gvmpart")]
+	[OutputType([PSCustomObject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine]$VM
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = "SilentlyContinue"
+	}
+	Process
+	{
+		foreach ($Disk in $VM.Guest.Disks)
+		{
+			$DiskUsage = [Math]::Round(($Disk.Capacity - $Disk.FreeSpace)/$Disk.Capacity * 100, 2)
+			
+			[pscustomobject] @{
+				VM = $VM.Name
+				Volume = $Disk.Path
+				CapacityGB = [Math]::Round($Disk.Capacity/1GB)
+				CapacityMB = [Math]::Round($Disk.Capacity/1MB)
+				FreeSpaceMB = [Math]::Round($Disk.FreeSpace/1MB)
+				'Usage%' = $DiskUsage
+				UsageBar = New-PercentageBar -Percent $DiskUsage
+			}
+		}
+	}
+	
+} #EndFunction Get-VMGuestPartition
+
+Function Expand-VMGuestPartition
+{
+	
+<#
+.SYNOPSIS
+	Interactively increase a VM Hard Disk and expand VMGuest partition.
+.DESCRIPTION
+	This function interactively increases a VM's Hard Disk (optionally)
+	and after that extends VMGuest partition.
+.PARAMETER VM
+	Specifies VM object(s), returned by Get-VM cmdlet.
+.PARAMETER GuestUser
+	Specifies VMGuest account with Administrative priviledges.
+.PARAMETER GuestPassword
+	Specifies VMGuest password for the account, specified by -GuestUser parameter.
+.PARAMETER GuestCred
+	Specifies VMGuest credentials.
+.PARAMETER HostCred
+	Specifies VMHost credentials.
+.EXAMPLE
+	PS C:\> Get-VM $VMName |Expand-VMGuestPartition -Confirm:$false -Verbose
+.EXAMPLE
+	PS C:\> Get-VM $VMName |Expand-VMGuestPartition -GuestPassword P@ssw0rd
+.EXAMPLE
+	PS C:\> Get-VM $VMName |Expand-VMGuestPartition -GuestCred (Get-VICredentialStoreItem GuestCred)
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.2
+	Platform    :: Tested on vSphere 5.5/6.0/6.5 | VCenter 5.5U2/VCSA 6.0U1/VCSA 6.5
+	Requirement :: PowerShell 3.0+ | VMGuest NT6+ | VMTools running
+	Dependency  :: Get-VMGuestPartition | Convert-VI2PSCredential | Write-Menu | New-PercentageBar | Start-SleepProgress (ALL included in the Vi-Module)
+	Version 1.0 :: 17-Oct-2017 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/category/vmware-powercli/vi-module/
+#>
+	
+	[CmdletBinding(DefaultParameterSetName = 'CREDFILE', ConfirmImpact = 'High', SupportsShouldProcess = $true)]
+	[Alias("Expand-ViMVMGuestPartition", "exvmpart")]
+	[OutputType([bool])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[ValidateScript({ $_.Guest.RuntimeGuestId -match '^windows[789]' })]
+		[ValidateScript({ $_.Guest.ExtensionData.ToolsRunningStatus -eq 'guestToolsRunning' })]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine]$VM
+		 ,
+		[Parameter(Mandatory = $false)]
+		[ValidateNotNullorEmpty()]
+		[VMware.VimAutomation.ViCore.Types.V1.VICredentialStoreItem]$HostCred = (Write-Menu -Menu (Get-VICredentialStoreItem) -Header "ESXi Host credentials" -Prompt "Select a VICredentialStore Item" -Shift 1 -PropertyToShow Host)
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'CREDFILE')]
+		[ValidateNotNullorEmpty()]
+		[VMware.VimAutomation.ViCore.Types.V1.VICredentialStoreItem]$GuestCred = (Write-Menu -Menu (Get-VICredentialStoreItem) -Header "VM Guest credentials" -Prompt "Select a VICredentialStore Item" -Shift 1 -PropertyToShow Host)
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'PASSWORD')]
+		[ValidateNotNullorEmpty()]
+		[Alias("VMGuestUser")]
+		[string]$GuestUser = "Administrator"
+		 ,
+		[Parameter(Mandatory, ParameterSetName = 'PASSWORD')]
+		[Alias("VMGuestPassword")]
+		[string]$GuestPassword
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$WarningPreference = 'SilentlyContinue'
+		$Steps = 3
+		$MaxHddSize = 2000
+		$SizeJump1 = 10
+		$SizeJump2 = 50
+		$SizeJump3 = 100
+		$LastStep2 = 1000
+	}
+	Process
+	{
+		### Select VM HardDisk ###
+		if (!($VmHdd = Get-HardDisk -VM $VM -Verbose:$false))
+		{
+			Throw "The VM [$($VM.Name)] has no Hard Disks!"
+		}
+		else
+		{
+			### STEP 1 ###
+			$i = 1
+			$SelectedHdd = Write-Menu -Menu $VmHdd -Header "Step [$i..$Steps]" -Prompt "Select VM Hard Disk to increase" -Shift 1 -AddExit
+			$i++
+		}
+		
+		if ($SelectedHdd -ne 'exit')
+		{
+			$Thick = If ($SelectedHdd.StorageFormat -eq 'Thick') { $true }
+			else { $false }
+			$Vmdk = $SelectedHdd.Filename
+			$CapacityGB = [Math]::Round($SelectedHdd.CapacityGB, 0)
+			
+			$DatastoreName = [regex]::Match($Vmdk, '\[(?<DS>.+)\]').Groups[1].Value
+			$Datastore = Get-Datastore $DatastoreName -Verbose:$false
+			$DatastoreCapacityGB = $Datastore.CapacityGB
+			$DatastoreFreeGB = [Math]::Round($Datastore.FreeSpaceGB, 0)
+			$DatastoreUsed = $DatastoreCapacityGB - $DatastoreFreeGB
+			
+			[pscustomobject]@{
+				VM = $VM.Name
+				HardDisk = $SelectedHdd.Name
+				Thick = $Thick
+				CapacityGB = $CapacityGB
+				Vmdk = $Vmdk
+				Datastore = $DatastoreName
+				DatastoreCapacityGB = $DatastoreCapacityGB
+				DatastoreFreeGB = $DatastoreFreeGB
+				DatastoreUsage = New-PercentageBar -MaxValue $DatastoreCapacityGB -Value $DatastoreUsed
+			}
+			
+			### Choice desired capacity ###
+			$Capacities = @()
+			$OriginalCapacityGB = $CapacityGB
+			$CapacityGB = ($CapacityGB/10 -as [int]) * 10
+			$LastStep1 = ([Math]::Truncate(($CapacityGB + 100)/100)) * 100
+			$LastSize = if ($Thick) { $CapacityGB + $DatastoreFreeGB }
+			else { $MaxHddSize }
+			
+			### $LastSize < $LastStep1 ###
+			if ($LastSize -lt $LastStep1)
+			{
+				for ($j = ($CapacityGB + $SizeJump1); $j -le $LastSize; $j += $SizeJump1) { $Capacities += $j }
+			}
+			### $LastStep1 <= $LastSize < $LastStep2 ###
+			elseIf ($LastSize -ge $LastStep1 -and $LastSize -lt $LastStep2)
+			{
+				$LastSizeTruncated = [Math]::Truncate($LastSize/$SizeJump2) * $SizeJump2
+				
+				for ($j = ($CapacityGB + $SizeJump1); $j -le $LastStep1; $j += $SizeJump1) { $Capacities += $j }
+				for ($j = ($LastStep1 + $SizeJump2); $j -le $LastSizeTruncated; $j += $SizeJump2) { $Capacities += $j }
+				if ($LastSize -gt $LastSizeTruncated) { $Capacities += $LastSize }
+			}
+			### $LastStep1 < $LastStep2 < $LastSize ###
+			else
+			{
+				$LastSizeTruncated = [Math]::Truncate($LastSize/$SizeJump3) * $SizeJump3
+				
+				for ($j = ($CapacityGB + $SizeJump1); $j -le $LastStep1; $j += $SizeJump1) { $Capacities += $j }
+				for ($j = ($LastStep1 + $SizeJump2); $j -le $LastStep2; $j += $SizeJump2) { $Capacities += $j }
+				for ($j = ($LastStep2 + $SizeJump3); $j -le $LastSizeTruncated; $j += $SizeJump3) { $Capacities += $j }
+				if ($LastSize -gt $LastSizeTruncated) { $Capacities += $LastSize }
+			}
+			
+			### STEP 2 ###
+			$SelectedCapacityGB = Write-Menu -Menu $Capacities -Header "Step [$i..$Steps]" -Prompt "Select desired Hard Disk capacity [GB]" -Shift 1
+			$i++
+			
+			### Increase VM HardDisk ###
+			if ($PSCmdlet.ShouldProcess("VM [$($VM.Name)]", "Increase VM Hard Disk [$SelectedHdd] from $OriginalCapacityGB to $SelectedCapacityGB GiB"))
+			{
+				Try
+				{
+					$null = . { Set-HardDisk -HardDisk $SelectedHdd -CapacityGB $SelectedCapacityGB -Confirm:$false -Verbose:$false }
+				}
+				Catch
+				{
+					Throw "Failed to increase the [$($SelectedHdd.Name)] Hard Disk!"
+				}
+			}
+		}
+		else { $Steps-- }
+		
+		### Expand VMGuest Partition ###
+		$VMPartition = Get-VMGuestPartition -VM $VM | sort Volume
+		$VMPartition | Format-Table -AutoSize
+		
+		### STEP 3 ###
+		$SelectedPartition = Write-Menu -Menu $VMPartition -Header "Step [$i..$Steps]" -Prompt "Select a partition to extend" -Shift 1 -PropertyToShow Volume
+		$Volume = $SelectedPartition.Volume.Replace(':\', '')
+		$VMScript = "echo rescan > C:\DiskPart.txt && echo sel vol $Volume >> C:\DiskPart.txt && echo extend >> C:\DiskPart.txt && echo exit >> C:\DiskPart.txt && diskpart.exe /s C:\DiskPart.txt && del C:\DiskPart.txt /Q"
+		
+		if ($PSCmdlet.ShouldProcess("VM [$($VM.Name)]", "Extend VM Guest Partition [$($SelectedPartition.Volume)] from $($SelectedPartition.CapacityGB) GiB to a maximum available"))
+		{
+			$VMGuestCred = if ($PSCmdlet.ParameterSetName -eq 'CREDFILE')
+			{
+				Convert-VI2PSCredential -VICredentialStoreItem $GuestCred
+			}
+			else
+			{
+				New-Object System.Management.Automation.PSCredential($GuestUser, (ConvertTo-SecureString $GuestPassword -AsPlainText –Force))
+			}
+			
+			$SelectedPartitionCapacityBefore = ($VMPartition | ? { $_.Volume -eq $SelectedPartition.Volume }).CapacityGB
+			
+			Try
+			{
+				$null = . {
+					Invoke-VMScript -VM $VM -ScriptText $VMScript -ScriptType Bat `
+									-HostCredential (Convert-VI2PSCredential -VICredentialStoreItem $HostCred) `
+									-GuestCredential $VMGuestCred -RunAsync -Verbose:$false
+				}
+				Start-SleepProgress 40
+			}
+			Catch
+			{
+				"{0}" -f $Error.Exception.Message
+			}
+			Finally
+			{
+				$VMPartition = Get-VM $VM.Name -Verbose:$false | Get-VMGuestPartition | sort Volume
+				$VMPartition | Format-Table -AutoSize
+				
+				$SelectedPartitionCapacityAfter = ($VMPartition | ? { $_.Volume -eq $SelectedPartition.Volume }).CapacityGB
+				if ($SelectedPartitionCapacityAfter -gt $SelectedPartitionCapacityBefore)
+				{
+					Write-Verbose "The Partition [$($SelectedPartition.Volume)] successfully extended"
+					$true
+				}
+				else
+				{
+					Write-Verbose "The Partition [$($SelectedPartition.Volume)] failed to extend"
+					$false
+				}
+			}
+		}
+	}
+	End { }
+	
+} #EndFunction Expand-VMGuestPartition
