@@ -42,9 +42,10 @@ Function Write-Menu
 	[The same type as input object] Single menu item.
 .NOTES
 	Author      :: Roman Gelman @rgelman75
-	Version 1.0 :: 21-Apr-2016 :: [Release]
-	Version 1.1 :: 03-Nov-2016 :: [Change] Supports a single item as menu entry
-	Version 1.2 :: 22-Jun-2017 :: [Change] Throw an error if property, specified by -PropertyToShow does not exist. Code optimization
+	Version 1.0 :: 21-Apr-2016 :: [Release] :: Publicly available
+	Version 1.1 :: 03-Nov-2016 :: [Change] :: Supports a single item as menu entry
+	Version 1.2 :: 22-Jun-2017 :: [Change] :: Throws an error if property, specified by -PropertyToShow does not exist. Code optimization
+	Version 1.3 :: 27-Sep-2017 :: [Bugfix] :: Fixed throwing an error while menu entries are numeric values
 .LINK
 	https://ps1code.com/2016/04/21/write-menu-powershell
 #>
@@ -89,7 +90,7 @@ Function Write-Menu
 	{
 		$ErrorActionPreference = 'Stop'
 		if ($Menu -isnot [array]) { $Menu = @($Menu) }
-		if ($Menu[0] -isnot [string])
+		if ($Menu[0] -is [psobject] -and $Menu[0] -isnot [string])
 		{
 			if (!($Menu | Get-Member -MemberType Property, NoteProperty -Name $PropertyToShow)) { Throw "Property [$PropertyToShow] does not exist" }
 		}
