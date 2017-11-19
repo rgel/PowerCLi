@@ -375,21 +375,25 @@ Function Set-PowerCLiTitle
 	
 <#
 .SYNOPSIS
-	Write connected VI servers info to PowerCLi window title bar.
+	Write connected VI servers info to the PowerCLi window title bar.
 .DESCRIPTION
-	This function writes connected VI servers info to PowerCLi window/console title bar
-	in the following format: [VIServerName :: ProductType (VCenter/VCSA/ESXi/SRM)-ProductVersion].
+	This function writes connected VI servers info to the PowerCLi window/console title bar
+	in the following format: [VIServerName :: ProductType (VCenter/VCSA/ESXi/SRM/VAMI)-ProductVersion].
 .EXAMPLE
-	PS C:\> Connect-VIServer $VCName -WarningAction SilentlyContinue
+	PS C:\> Connect-VIServer VC1, VC2 -WarningAction SilentlyContinue
 	PS C:\> Set-PowerCLiTitle
 .EXAMPLE
 	PS C:\> Connect-SrmServer $SRMServerName
 	PS C:\> title
+.EXAMPLE
+	PS C:\> Connect-CisServer VCSA1, VCSA2 -WarningAction SilentlyContinue
+	PS C:\> Set-PowerCLiTitle
 .NOTES
 	Author      :: Roman Gelman @rgelman75
 	Version 1.0 :: 17-Nov-2015 :: [Release] :: Publicly available
 	Version 1.1 :: 22-Aug-2016 :: [Improvement] :: Added support for SRM servers. Now the function differs berween VCSA and Windows VCenters. Minor visual changes
 	Version 1.2 :: 11-Jan-2017 :: [Change] :: Now this is advanced function, minor code changes
+	Version 1.3 :: 25-Oct-2017 :: [Improvement] :: Added support for VAMI servers, some code optimizations
 .LINK
 	https://ps1code.com/2015/11/17/set-powercli-title
 #>
@@ -400,53 +404,42 @@ Function Set-PowerCLiTitle
 	
 	Begin
 	{
-		$VIS = $global:DefaultVIServers | sort -Descending ProductLine, Name
-		$SRM = $global:DefaultSrmServers | sort -Descending ProductLine, Name
-	} #EndBegin
-	
+		$VIS = $global:DefaultVIServers | ? { $_.IsConnected } | sort -Descending ProductLine, Name
+		$SRM = $global:DefaultSrmServers | ? { $_.IsConnected } | sort -Descending ProductLine, Name
+		$CIS = $global:DefaultCisServers | ? { $_.IsConnected } | sort Name
+	}
 	Process
 	{
-		
-		If ($VIS)
+		### VI Servers ###
+		foreach ($ConnectedVIS in $VIS)
 		{
-			Foreach ($VIObj in $VIS)
+			$VIProduct = switch -exact ($ConnectedVIS.ProductLine)
 			{
-				If ($VIObj.IsConnected)
-				{
-					$VIProduct = Switch -exact ($VIObj.ProductLine)
-					{
-						vpx     	{ If ($VIObj.ExtensionData.Content.About.OsType -match '^linux') { 'VCSA' }
-							Else { 'VCenter' }; Break }
-						embeddedEsx { 'ESXi'; Break }
-						Default { $VIObj.ProductLine }
-					}
-					$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
-				}
+				'vpx' { if ($ConnectedVIS.ExtensionData.Content.About.OsType -match '^linux') { 'VCSA' } else { 'VCenter' }; Break }
+				'embeddedEsx' { 'ESXi' }
+				Default { $ConnectedVIS.ProductLine }
 			}
+			$Header += "[$($ConnectedVIS.Name) :: $VIProduct-$($ConnectedVIS.Version)] "
+		}
+		### SRM Servers ###
+		foreach ($ConnectedSRM in $SRM)
+		{
+			$VIProduct = switch -exact ($ConnectedSRM.ProductLine)
+			{
+				'srm' { 'SRM' }
+				Default { $ConnectedSRM.ProductLine }
+			}
+			$Header += "[$($ConnectedSRM.Name) :: $VIProduct-$($ConnectedSRM.Version)] "
 		}
 		
-		If ($SRM)
-		{
-			Foreach ($VIObj in $SRM)
-			{
-				If ($VIObj.IsConnected)
-				{
-					$VIProduct = Switch -exact ($VIObj.ProductLine)
-					{
-						srm     { 'SRM'; Break }
-						Default { $VIObj.ProductLine }
-					}
-					$Header += "[$($VIObj.Name) :: $VIProduct-$($VIObj.Version)] "
-				}
-			}
-		}
-	} #EndProcess
-	
+		### VAMI Servers ###
+		$CIS | % { $Header += "[$($_.Name) :: VAMI] " }
+	}
 	End
 	{
-		If (!$VIS -and !$SRM) { $Header = ':: Not connected to any VI Servers ::' }
+		if (!$VIS -and !$SRM -and !$CIS) { $Header = ':: Not connected to any VI Servers ::' }
 		$Host.UI.RawUI.WindowTitle = $Header
-	} #End
+	}
 	
 } #EndFunction Set-PowerCLiTitle
 
@@ -2383,8 +2376,10 @@ Function Get-VMHostPnic
 	This function gets VMHost physical NIC (Network Interface Card) info.
 .PARAMETER VMHost
 	Specifies ESXi host object(s), returned by Get-VMHost cmdlet.
-.PARAMETER Nolink
-	If specified, only disconnected vmnics returned.
+.PARAMETER SpeedMbps
+	If specified, only vmnics that match this link speed are returned.
+.PARAMETER Vendor
+	If specified, only vmnics from this vendor are returned.
 .EXAMPLE
 	PS C:\> Get-VMHost |sort Name |Get-VMHostPnic -Verbose |? {$_.SpeedMbps} |epcsv -notype .\NIC.csv
 	Export connected NICs only.
@@ -2392,22 +2387,24 @@ Function Get-VMHostPnic
 	PS C:\> Get-Cluster PROD |Get-VMHost -State Connected |Get-VMHostPnic |? {1..999 -contains $_.SpeedMbps} |ft -au
 	Get all connected VMHost NICs with link speed lower than 1Gb.
 .EXAMPLE
-	PS C:\> Get-VMHost 'esxdmz[1-9].*' |sort Name |Get-VMHostPnic -Nolink |Format-Table -AutoSize
-	Get disconnected NICs only.
+	PS C:\> Get-VMHost 'esxdmz[1-9].*' |sort Name |Get-VMHostPnic -Vendor Emulex, HPE |Format-Table -AutoSize
+	Get vendor specific NICs only.
 .EXAMPLE
-	PS C:\> Get-Cluster PROD |Get-VMHost |Get-VMHostPnic |? {$_.SpeedMbps -eq 10000} |group VMHost |sort Name |select Name, Count, @{N='vmnic';E={($_ |select -expand Group).PNIC}}
+	PS C:\> Get-Cluster PROD |Get-VMHost |Get-VMHostPnic -SpeedMbps 10000} |group VMHost |sort Name |select Name, Count, @{N='vmnic';E={($_ |select -expand Group).PNIC}}
 	Get all 10Gb VMHost NICs in a cluster, group by VMHost.
 .EXAMPLE
-	PS C:\> Get-VMHost |sort Parent, Name |Get-VMHostPnic |? {$_.SpeedMbps} |group VMHost |select Name, Count, @{N='vmnic';E={(($_ |select -expand Group).PNIC) -join ', '}}
+	PS C:\> Get-VMHost |sort Parent, Name |Get-VMHostPnic -SpeedMbps 0 |group VMHost |select Name, Count, @{N='vmnic';E={(($_ |select -expand Group).PNIC) -join ', '}}
 	Get all connected VMHost NICs in an Inventory, group by VMHost and sort by Cluster.
 .EXAMPLE
-	PS C:\> Get-VMHost 'esxprd1.*' |Get-VMHostPnic
+	PS C:\> Get-VMHost 'esxprd1.*' |Get-VMHostPnic -Verbose
 .NOTES
 	Author      :: Roman Gelman @rgelman75
-	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5.1
-	Platform    :: Tested on vSphere 5.5/6.5|VCenter 5.5U2/VCSA 6.5
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.2
+	Platform    :: Tested on vSphere 5.5/6.5 | VCenter 5.5U2/VCSA 6.5U1
 	Requirement :: PowerShell 3.0
-	Version 1.0 :: 15-Jun-2017 :: [Release]
+	Version 1.0 :: 15-Jun-2017 :: [Release] :: Publicly available
+	Version 1.1 :: 12-Nov-2017 :: [Improvement] :: Added properties: vSphere, DriverVersion, Firmware
+	Version 1.2 :: 13-Nov-2017 :: [Change] :: The -Nolink parameter replaced with two new parameters -SpeedMbps and -Vendor
 .LINK
 	https://ps1code.com/2017/06/18/esxi-peripheral-devices-powercli
 #>
@@ -2420,8 +2417,11 @@ Function Get-VMHostPnic
 		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$VMHost
 		 ,
 		[Parameter(Mandatory = $false)]
-		[Alias("Down")]
-		[switch]$Nolink
+		[uint32]$SpeedMbps
+		 ,
+		[Parameter(Mandatory = $false)]
+		[ValidateSet('Emulex', 'Intel', 'Broadcom', 'HPE', 'Unknown', IgnoreCase = $true)]
+		[string[]]$Vendor
 	)
 	
 	Begin
@@ -2441,6 +2441,8 @@ Function Get-VMHostPnic
 		{
 			$StatVMHost += 1
 			$PNICs = ($VMHost | Get-View -Verbose:$false).Config.Network.Pnic
+			$esxcli = Get-EsxCli -VMHost $VMHost.Name -V2 -Verbose:$false
+			$vSphere = $esxcli.system.version.get.Invoke()
 			
 			foreach ($Pnic in $PNICs)
 			{
@@ -2449,7 +2451,7 @@ Function Get-VMHostPnic
 				if ($Pnic.Device -match 'vmnic')
 				{
 					$Statvmnic += 1
-					$Vendor = switch -regex ($Pnic.Driver)
+					$NicVendor = switch -regex ($Pnic.Driver)
 					{
 						'^(elx|be)' { 'Emulex'; Break }
 						'^(igb|ixgb|e10)' { 'Intel'; Break }
@@ -2458,19 +2460,28 @@ Function Get-VMHostPnic
 						Default { 'Unknown' }
 					}
 					
+					$NicInfo = $esxcli.network.nic.get.Invoke(@{ nicname = "$($Pnic.Device)" })
+					
 					$res = [pscustomobject] @{
 						VMHost = $VMHost.Name
+						vSphere = "$([regex]::Match($vSphere.Version, '^\d\.\d').Value)U$($vSphere.Update)$([regex]::Match($vSphere.Build, '-\d+').Value)"
 						PNIC = $Pnic.Device
-						Vendor = $Vendor
-						Driver = $Pnic.Driver
 						MAC = ($Pnic.Mac).ToUpper()
 						SpeedMbps = if ($Pnic.LinkSpeed.SpeedMb) { $Pnic.LinkSpeed.SpeedMb } else { 0 }
+						Vendor = $NicVendor
+						Driver = $Pnic.Driver
+						DriverVersion = $NicInfo.DriverInfo.Version
+						Firmware = $NicInfo.DriverInfo.FirmwareVersion
 					}
 					
 					if (!$res.SpeedMbps) { $StatDown += 1 }
 					
-					if ($Nolink) { if (!($Pnic.LinkSpeed.SpeedMb)) { $res } }
-					else { $res }
+					### Return output ###
+					$Next = if ($PSBoundParameters.ContainsKey('SpeedMbps')) { if ($res.SpeedMbps -eq $SpeedMbps) { $true }
+						else { $false } }
+					else { $true }
+					if ($Next) { if ($PSBoundParameters.ContainsKey('Vendor')) { if ($Vendor -icontains $res.Vendor) { $res } }
+						else { $res } }
 				}
 				else
 				{
@@ -2485,6 +2496,7 @@ Function Get-VMHostPnic
 	}
 	End
 	{
+		Write-Progress -Activity "Completed" -Completed
 		Write-Verbose "$FunctionName finished at [$(Get-Date)]"
 		Write-Verbose "$FunctionName Statistic: Total VMHost: [$StatVMHost], Total vmnic: [$Statvmnic], Down: [$StatDown], BMC: [$StatBMC]"
 	}
@@ -2527,7 +2539,8 @@ Function Get-VMHostHba
 	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5.1
 	Platform    :: Tested on vSphere 5.5/6.5|VCenter 5.5U2/VCSA 6.5
 	Requirement :: PowerShell 3.0
-	Version 1.0 :: 15-Jun-2017 :: [Release]
+	Version 1.0 :: 15-Jun-2017 :: [Release] :: Publicly available
+	Version 1.1 :: 13-Nov-2017 :: [Improvement] :: Added property vSphere
 .LINK
 	https://ps1code.com/2017/06/18/esxi-peripheral-devices-powercli
 #>
@@ -2574,6 +2587,8 @@ Function Get-VMHostHba
 		{
 			$StatVMHost += 1
 			$HBAs = ($VMHost | Get-View -Verbose:$false).Config.StorageDevice.HostBusAdapter
+			$esxcli = Get-EsxCli -VMHost $VMHost.Name -V2 -Verbose:$false
+			$vSphere = $esxcli.system.version.get.Invoke()
 			
 			foreach ($Hba in $HBAs)
 			{
@@ -2597,12 +2612,13 @@ Function Get-VMHostHba
 					
 					$res = [pscustomobject] @{
 						VMHost = $VMHost.Name
+						vSphere = "$([regex]::Match($vSphere.Version, '^\d\.\d').Value)U$($vSphere.Update)$([regex]::Match($vSphere.Build, '-\d+').Value)"
 						HBA = $Hba.Device
+						WWN = $WWN
+						SpeedGbps = $Hba.Speed
 						Vendor = $Vendor
 						Model = [regex]::Match($Hba.Model, '^.+\d+Gb').Value
 						Driver = $Hba.Driver
-						WWN = $WWN
-						SpeedGbps = $Hba.Speed
 					}
 					if (!$res.SpeedGbps) { $StatDown += 1 }
 					
@@ -2618,6 +2634,7 @@ Function Get-VMHostHba
 	}
 	End
 	{
+		Write-Progress -Activity "Completed" -Completed
 		Write-Verbose "$FunctionName finished at [$(Get-Date)]"
 		Write-Verbose "$FunctionName Statistic: Total VMHost: [$StatVMHost], Total HBA: [$StatHba], Down: [$StatDown]"
 	}
@@ -2706,7 +2723,7 @@ Function Get-VMGuestPartition
 	Requirement :: The VM(s) must be PoweredOn and VMTools must be installed and running
 	Version 1.0 :: 17-Oct-2017 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2017/10/17/extend-vm-guest-part-powercli
 #>
 	
 	[Alias("Get-ViMVMGuestPartition", "gvmpart")]
@@ -2773,7 +2790,7 @@ Function Expand-VMGuestPartition
 	Dependency  :: Get-VMGuestPartition | Convert-VI2PSCredential | Write-Menu | New-PercentageBar | Start-SleepProgress (ALL included in the Vi-Module)
 	Version 1.0 :: 17-Oct-2017 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/category/vmware-powercli/vi-module/
+	https://ps1code.com/2017/10/17/extend-vm-guest-part-powercli
 #>
 	
 	[CmdletBinding(DefaultParameterSetName = 'CREDFILE', ConfirmImpact = 'High', SupportsShouldProcess = $true)]
