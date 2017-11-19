@@ -23,6 +23,7 @@ Function Get-FunctionVersion
 .NOTES
 	Author      :: Roman Gelman @rgelman75
 	Version 1.0 :: 16-Aug-2017 :: [Release] :: Publicly available
+	Version 1.1 :: 19-Nov-2017 :: [Bugfix] :: Regex edited to prevent false positives while using a variable or cmdlet, containing 'Version' word in the function's code
 .LINK
 	https://ps1code.com
 #>
@@ -42,7 +43,7 @@ Function Get-FunctionVersion
 	{
 		$ErrorActionPreference = 'Stop'
 		$WarningPreference = 'SilentlyContinue'
-		$rgxVersion = 'Version.+:{2}'
+		$rgxVersion = 'Version\s+.+\:{2}'
 		$rgxVersionInfo = 'Version\s(?<Version>[\d|\.]+)\s+:{2}\s(?<Date>.+)\s:{2}\s(?<Info>.+)\s+:{2}\s(?<Descr>.*$)'
 		$Now = [datetime]::Now
 	}
