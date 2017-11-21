@@ -1,3 +1,17 @@
+Class ViSession
+{
+	[ValidateNotNullOrEmpty()][string]$VC
+	[ValidateNotNullOrEmpty()][string]$Key
+	[ValidateNotNullOrEmpty()][string]$UserName
+	[string]$FullName
+	[ValidateNotNullOrEmpty()][string]$Client
+	[ValidateNotNullOrEmpty()][string]$ClientType
+	[ValidateNotNullOrEmpty()][datetime]$LoginTime
+	[ValidateNotNullOrEmpty()][datetime]$LastActiveTime
+	[ValidateSet('_THIS_', 'Foreign')][string]$Session
+	[double]$IdleMinutes
+} #EndClass ViSession
+
 Function Get-RDM
 {
 	
@@ -2980,3 +2994,166 @@ Function Expand-VMGuestPartition
 	End { }
 	
 } #EndFunction Expand-VMGuestPartition
+
+Function Get-ViSession
+{
+	
+<#
+.SYNOPSIS
+	Get VCenter sessions.
+.DESCRIPTION
+	This function retrieves all VCenter sessions.
+.EXAMPLE
+	PS C:\> Get-ViSession
+.EXAMPLE
+	PS C:\> Get-ViSession -Idle 10000
+	Get sessions idled more than one week.
+.EXAMPLE
+	PS C:\> Get-ViSession -User admin |fl
+.EXAMPLE
+	PS C:\> Get-ViSession "^$DomainName\\"
+	List AD users only.
+.EXAMPLE
+	PS C:\> Get-ViSession -ExcludeServiceAccount:$true
+.NOTES
+	Idea        :: Alan Renouf @alanrenouf
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.2
+	Platform    :: Tested on vSphere 5.5/6.5 | VCenter 5.5U2/VCSA 6.5U1
+	Requirement :: PowerShell 5.0
+	Version 1.0 :: 21-Nov-2017 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/2017/11/21/vcenter-sessions-powercli
+#>
+	
+	[CmdletBinding(DefaultParameterSetName = 'USER')]
+	[OutputType([ViSession])]
+	Param (
+		[Parameter(Mandatory = $false, Position = 0, ParameterSetName = 'USER')]
+		[ValidateNotNullorEmpty()]
+		[string]$UserName
+		 ,
+		[Parameter(Mandatory, ParameterSetName = 'SERVICE')]
+		[Alias("exs")]
+		[boolean]$ExcludeServiceAccount
+		 ,
+		[Parameter(Mandatory, ParameterSetName = 'IDLE')]
+		[double]$IdleTime
+	)
+	
+	foreach ($VC in $global:DefaultVIServers)
+	{
+		$SessionMgr = Get-View -Id SessionManager -Server $VC.Name -Verbose:$false
+		$ViSessions = @()
+		
+		$SessionMgr.SessionList | % {
+			
+			### Try to resolve the Client IP ###
+			if ('127.0.0.1', '::1' -notcontains $_.IpAddress)
+			{
+				$Resolve = nslookup $_.IpAddress 2>&1
+				$Client = ([regex]::Match(([string]::Join(';', $Resolve)), '(?i)Name\:\s+(?<Hostname>.+?);')).Groups[1].Value
+			}
+			
+			### The client type ###
+			$ClientType = switch -regex ($_.UserAgent)
+			{
+				'(vim-java)' { 'Internal'; Break }
+				'VI\sClient' { 'Legacy'; Break }
+				'(Mozilla|web-client)' { 'Web Client'; Break }
+				'PowerCLI' { 'PowerCLi' }
+				Default { 'Unknown' }
+			}
+			
+			$Session = [pscustomobject] @{
+				VC = $VC.Name
+				Key = $_.Key
+				UserName = $_.UserName
+				FullName = $_.FullName
+				Client = if ($Client) { $Client } else { $_.IpAddress }
+				ClientType = $ClientType
+				LoginTime = ($_.LoginTime).ToLocalTime()
+				LastActiveTime = ($_.LastActiveTime).ToLocalTime()
+			}
+			
+			### Add session type ###
+			if ($_.Key -eq $SessionMgr.CurrentSession.Key) { $Session | Add-Member -MemberType NoteProperty -Name Session -Value "_THIS_" }
+			else { $Session | Add-Member -MemberType NoteProperty -Name Session -Value "Foreign" }
+			
+			### Add idle time ###
+			$Session | Add-Member -MemberType NoteProperty -Name IdleMinutes -Value ([Math]::Round(((Get-Date) – ($_.LastActiveTime).ToLocalTime()).TotalMinutes))
+			
+			### Filter output out ###
+			$ViSessions += if ($PSCmdlet.ParameterSetName -eq 'USER')
+			{
+				if ($Session.UserName -imatch $UserName) { $Session }
+			}
+			elseif ($PSCmdlet.ParameterSetName -eq 'SERVICE')
+			{
+				if ($ExcludeServiceAccount) { if ($_.UserName -notmatch '\\vpxd-extension') { $Session } }
+				else { $Session }
+			}
+			else
+			{
+				if ($Session.IdleMinutes -gt $IdleTime) { $Session }
+			}
+		}
+		[ViSession[]]$ViSessions | sort Session, IdleMinutes
+	}
+	
+} #EndFunction Get-ViSession
+
+Function Disconnect-ViSession
+{
+	
+<#
+.SYNOPSIS
+	Disconnect opened VCenter sessions.
+.DESCRIPTION
+	This function terminates VCenter sessions.
+.PARAMETER Session
+	Specifies session object(s), returned by Get-VISession function.
+.EXAMPLE
+	PS C:\> Get-ViSession -Idle 10000 |Disconnect-ViSession -vb
+	Close sessions that were being idle for more than one week.
+.EXAMPLE
+	PS C:\> Get-ViSession -UserName $env:USERNAME |Disconnect-ViSession
+	Close all your user account sessions.
+.EXAMPLE
+	PS C:\> Get-ViSession |Disconnect-ViSession -Confirm:$false -Verbose
+	Close all sessions with no confirmation!
+.NOTES
+	Idea        :: Alan Renouf @alanrenouf
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.2
+	Platform    :: Tested on vSphere 5.5/6.5 | VCenter 5.5U2/VCSA 6.5U1
+	Requirement :: PowerShell 5.0
+	Version 1.0 :: 21-Nov-2017 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/2017/11/21/vcenter-sessions-powercli
+#>
+	
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[ViSession]$Session
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$SessionMgr = Get-View -Id SessionManager -Verbose:$false
+	}
+	Process
+	{
+		if ($Session.Status -ne '_THIS_' -and $Session.UserName -notmatch 'vpxd-extension')
+		{
+			if ($PSCmdlet.ShouldProcess("VC [$($Session.VC)]", "Terminate session for [$($Session.UserName)] which was not been active since [$($Session.LastActiveTime)]"))
+			{
+				Try { $SessionMgr.TerminateSession($Session.Key) }
+				Catch { }
+			}
+		}
+	}
+	
+} #EndFunction Disconnect-ViSession
