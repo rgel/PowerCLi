@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Configuration>
+	<ViewDefinitions>
+		<View>
+			<Name>Vi-Module_ViSession</Name>
+			<ViewSelectedBy><TypeName>ViSession</TypeName></ViewSelectedBy>
+			<TableControl>
+        <TableHeaders>
+					<TableColumnHeader><Width>12</Width></TableColumnHeader>
+					<TableColumnHeader><Width>32</Width></TableColumnHeader>
+          <TableColumnHeader><Width>26</Width></TableColumnHeader>
+          <TableColumnHeader><Width>22</Width></TableColumnHeader>
+          <TableColumnHeader><Width>22</Width></TableColumnHeader>
+          <TableColumnHeader><Width>11</Width></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>VC</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>UserName</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>Client</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>LoginTime</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>LastActiveTime</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>IdleMinutes</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+	</ViewDefinitions>
+</Configuration>
