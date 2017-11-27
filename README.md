@@ -59,6 +59,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |24|[<b>Convert-VI2PSCredential</b>](https://ps1code.com/2017/09/18/vi2ps-cred-powercli)|Securely save and retrieve credentials|
 |25|[<b>Get-VMGuestPartition/Expand-VMGuestPartition</b>](https://ps1code.com/2017/10/17/extend-vm-guest-part-powercli)|Extend VM Guest Partition|
 |26|[<b>Get-ViSession/Disconnect-ViSession</b>](https://ps1code.com/2017/11/21/vcenter-sessions-powercli)|List and disconnect VCenter sessions|
+|27|[<b>New-SmartSnapshot</b>](https://ps1code.com/2017/11/26/vmware-smart-snapshot-powercli)|Intellectual VMware snapshots|
 
 ### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
 
