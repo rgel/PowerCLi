@@ -578,9 +578,9 @@ Function Enable-VMHostSSH
 	PS C:\> Get-Datacenter North |Get-Cluster |Enable-VMHostSSH -Confirm:$false
 .NOTES
 	Author      :: Roman Gelman @rgelman75
-	Version 1.0 :: 07-Feb-2016 :: Release
-	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type
-	Version 1.2 :: 08-Jun-2017 :: -Confirm parameter supported
+	Version 1.0 :: 07-Feb-2016 :: [Release] :: Publicly available
+	Version 1.1 :: 02-Aug-2016 :: [Change]  :: -Cluster parameter data type changed to the portable type
+	Version 1.2 :: 08-Jun-2017 :: [Improvement] :: -Confirm parameter supported
 .LINK
 	https://ps1code.com/2016/02/07/enable-disable-ssh-esxi-powercli
 #>
@@ -663,9 +663,9 @@ Function Disable-VMHostSSH
 	PS C:\> Get-Cluster |Disable-VMHostSSH -Confirm:$false
 .NOTES
 	Author      :: Roman Gelman @rgelman75
-	Version 1.0 :: 07-Feb-2016 :: Release
-	Version 1.1 :: 02-Aug-2016 :: -Cluster parameter data type changed to the portable type
-	Version 1.2 :: 08-Jun-2017 :: -Confirm parameter supported
+	Version 1.0 :: 07-Feb-2016 :: [Release] :: Publicly available
+	Version 1.1 :: 02-Aug-2016 :: [Change]  :: -Cluster parameter data type changed to the portable type
+	Version 1.2 :: 08-Jun-2017 :: [Improvement] :: -Confirm parameter supported
 .LINK
 	https://ps1code.com/2016/02/07/enable-disable-ssh-esxi-powercli
 #>
@@ -759,8 +759,8 @@ Function Set-VMHostNtpServer
 	PS C:\> Get-VMHost 'esx[1-9].*' |Set-VMHostNtpServer -NewNtp 'ntp1','ntp2'
 .NOTES
 	Author      :: Roman Gelman @rgelman75
-	Version 1.0 :: 10-Mar-2016 :: [Release]
-	Version 1.1 :: 29-May-2017 :: [Change] Supported -Confirm & -Verbose parameters, Progress bar added
+	Version 1.0 :: 10-Mar-2016 :: [Release] :: Publicly available
+	Version 1.1 :: 29-May-2017 :: [Change]  :: Supported -Confirm & -Verbose parameters. Progress bar added
 .LINK
 	https://ps1code.com/2016/03/10/set-esxi-ntp-powercli
 #>
@@ -2113,7 +2113,7 @@ Function Get-VMHostGPU
 	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
 	Platform    :: Tested on vSphere 5.5/6.5|vCenter 5.5U2/VCSA 6.5a|NVIDIAGRID K2
 	Requirement :: PowerShell 3.0+
-	Version 1.0 :: 23-Apr-2017 :: [Release]
+	Version 1.0 :: 23-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	https://ps1code.com/2017/04/23/esxi-vgpu-powercli
 #>
@@ -2202,7 +2202,7 @@ Function Test-VMPing
 	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5.1
 	Platform    :: Tested on vSphere 5.5/6.5|VCenter 5.5U2/VCSA 6.5
 	Requirement :: PowerShell 3.0
-	Version 1.0 :: 16-May-2017 :: [Release]
+	Version 1.0 :: 16-May-2017 :: [Release] :: Publicly available
 .LINK
 	https://ps1code.com/2017/05/23/test-vm-hotfix
 #>
@@ -2299,7 +2299,7 @@ Function Test-VMHotfix
 	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5.1
 	Platform    :: Tested on vSphere 5.5/6.5|VCenter 5.5U2/VCSA 6.5
 	Requirement :: PowerShell 4.0
-	Version 1.0 :: 16-May-2017 :: [Release]
+	Version 1.0 :: 16-May-2017 :: [Release] :: Publicly available
 .LINK
 	https://ps1code.com/2017/05/23/test-vm-hotfix
 #>
@@ -3022,6 +3022,7 @@ Function Get-ViSession
 	Platform    :: Tested on vSphere 5.5/6.5 | VCenter 5.5U2/VCSA 6.5U1
 	Requirement :: PowerShell 5.0
 	Version 1.0 :: 21-Nov-2017 :: [Release] :: Publicly available
+	Version 1.1 :: 22-Nov-2017 :: [Bugfix] :: Fixed error while connected directly to vSphere host or disconnected sessions saved in the $global:DefaultVIServers variable
 .LINK
 	https://ps1code.com/2017/11/21/vcenter-sessions-powercli
 #>
@@ -3041,7 +3042,7 @@ Function Get-ViSession
 		[double]$IdleTime
 	)
 	
-	foreach ($VC in $global:DefaultVIServers)
+	foreach ($VC in ($global:DefaultVIServers | ? { $_.IsConnected -and $_.ProductLine -eq 'vpx' }))
 	{
 		$SessionMgr = Get-View -Id SessionManager -Server $VC.Name -Verbose:$false
 		$ViSessions = @()
@@ -3157,3 +3158,165 @@ Function Disconnect-ViSession
 	}
 	
 } #EndFunction Disconnect-ViSession
+
+Function New-SmartSnapshot
+{
+	
+<#
+.SYNOPSIS
+	Create a new snapshot with progress bar.
+.DESCRIPTION
+	This function creates a new VMware VM snapshot or
+	retrieves existing snapshots.
+.PARAMETER Requestor
+	Specifies snapshot requestor/owner, will be included in the snapshot name.
+.PARAMETER VM
+	Specifies VM object(s), returnd by Get-VM cmdlet.
+.PARAMETER Description
+	Specifies snapshot description to add to the default description.
+.PARAMETER Force
+	If specified, allows multiple snapshots for a single VM.
+.EXAMPLE
+	PS C:\> Get-VM vm1 |New-SmartSnapshot
+.EXAMPLE
+	PS C:\> Get-VM vm1, vm2 |New-SmartSnapshot -EjectCDDrive:$false
+.EXAMPLE
+	PS C:\> Get-VM vm1 |New-SmartSnapshot -Requestor user1
+	Create a new snapshot with default description.
+.EXAMPLE
+	PS C:\> Get-VM 'vm2[45]' |New-SmartSnapshot user1 'Install Patches' -Force -Verbose
+	Snap two VM, add optional description allowing multiple snapshots.
+.EXAMPLE
+	PS C:\> Get-VM |New-SmartSnapshot -ReportOnly
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.2
+	Platform    :: Tested on vSphere 5.5/6.5 | VCenter 5.5U2/VCSA 6.5U1
+	Requirement :: PowerShell 3.0
+	Dependency  :: Get-ViSession function (included in the module)
+	Version 1.0 :: 22-Nov-2017 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/category/vmware-powercli/vi-module/
+#>
+	
+	[CmdletBinding(DefaultParameterSetName = 'NEW')]
+	[Alias("New-ViMSmartSnapshot", "snap")]
+	[OutputType([VMware.VimAutomation.Types.Snapshot])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine]$VM
+		 ,
+		[Parameter(Mandatory = $false, Position = 0, ParameterSetName = 'NEW')]
+		[ValidateNotNullorEmpty()]
+		[Alias("Owner")]
+		[string]$Requestor = ($env:USERNAME)
+		 ,
+		[Parameter(Mandatory = $false, Position = 1, ParameterSetName = 'NEW')]
+		[string]$Description
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'NEW')]
+		[switch]$Force
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'NEW')]
+		[boolean]$EjectCDDrive = $true
+		 ,
+		[Parameter(Mandatory, ParameterSetName = 'REP')]
+		[switch]$ReportOnly
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'SilentlyContinue'
+		$SnapName = $Requestor + "__" + ([datetime]::Now).ToString('dd-MM-yyyy')
+	}
+	Process
+	{
+		$existSnap = Get-Snapshot -VM $VM -vb:$false
+		
+		if ($PSCmdlet.ParameterSetName -eq 'NEW')
+		{
+			
+			if ($existSnap -and !$Force)
+			{
+				Write-Verbose "[$($VM.Name)]: Use [-Force] parameter to proceed VM with existing snapshots."
+				$existSnap |
+				select VM,
+					   @{ N = 'Snapshot'; E = { $_.Name } },
+					   Description,
+					   @{ N = 'Type'; E = { 'Existing' } },
+					   @{ N = 'Created'; E = { ($_.Created).ToString('dd"/"MM"/"yyyy HH:mm') } },
+					   @{ N = 'SizeGiB'; E = { [Math]::Round($_.SizeMB/1024, 1) } },
+					   @{ N = 'DaysOld'; E = { ([datetime]::Now - $_.Created).Days } } | sort Created
+			}
+			else
+			{
+				Try
+				{
+					if ($EjectCDDrive) { Get-CDDrive -VM $VM -vb:$false | ? { $_.IsoPath } | Set-CDDrive -NoMedia:$true -Confirm:$false -ea SilentlyContinue -vb:$false | Out-Null }
+					
+					$ParentVC = [regex]::Match($VM.Uid, '/VIServer=.+@(.+?):\d+').Groups[1].Value
+					$SnapMaker = (Get-ViSession | ? { $_.VC -eq $ParentVC -and $_.Session -eq '_THIS_' }).UserName
+					$SnapDescr = if ($Description) { "$SnapMaker - $Description" }
+					else { $SnapMaker }
+					
+					### Make desicion regarding VM memory ###
+					$Disks = ($VM | Get-HardDisk).Persistence
+					$Memory = if ($Disks -contains 'IndependentPersistent' -or $Disks -contains 'IndependentNotPersistent') { $false }
+					else { $true }
+					
+					$TaskMoRef = New-Snapshot -VM $VM -Name $SnapName -Description $SnapDescr -Memory:$Memory -Quiesce:$true -Confirm:$false -RunAsync -wa SilentlyContinue -vb:$false -Server $ParentVC
+					$Task = Get-View $TaskMoRef -vb:$false
+					
+					for ($i = 1; $i -lt [int32]::MaxValue; $i++)
+					{
+						if ("running", "queued" -contains $Task.Info.State)
+						{
+							$Task.UpdateViewData("Info")
+							if ($Task.Info.Progress -ne $null)
+							{
+								Write-Progress -Activity "Creating a snapshot ... $($Task.Info.Progress)%" -Status "VM [$($VM.Name)]" `
+											   -CurrentOperation "Snapshot [$SnapName] - Description [$SnapDescr]" `
+											   -PercentComplete $Task.Info.Progress -ea SilentlyContinue
+								Start-Sleep -Seconds 3
+							}
+						}
+						else
+						{
+							Write-Progress -Activity "Completed" -Completed
+							Break
+						}
+					}
+					
+					if ($Task.Info.State -eq "error")
+					{
+						$Task.UpdateViewData("Info.Error")
+						$Task.Info.Error.Fault.FaultMessage | % { $_.Message }
+					}
+					
+					Get-Snapshot -VM $VM -vb:$false |
+					select VM,
+						   @{ N = 'Snapshot'; E = { $_.Name } },
+						   Description,
+						   @{ N = 'Type'; E = { '_THIS_' } },
+						   @{ N = 'Created'; E = { ($_.Created).ToString('dd"/"MM"/"yyyy HH:mm') } },
+						   @{ N = 'SizeGiB'; E = { [Math]::Round($_.SizeMB/1024, 1) } },
+						   @{ N = 'DaysOld'; E = { ([datetime]::Now - $_.Created).Days } } | sort Created | select -Last 1
+				}
+				Catch { }
+			}
+		}
+		else
+		{
+			$existSnap |
+			select VM,
+				   @{ N = 'Snapshot'; E = { $_.Name } },
+				   Description,
+				   @{ N = 'Type'; E = { 'Existing' } },
+				   @{ N = 'Created'; E = { ($_.Created).ToString('dd"/"MM"/"yyyy HH:mm') } },
+				   @{ N = 'SizeGiB'; E = { [Math]::Round($_.SizeMB/1024, 1) } },
+				   @{ N = 'DaysOld'; E = { ([datetime]::Now - $_.Created).Days } } | sort Created
+		}
+	}
+	End { }
+	
+} #EndFunction New-SmartSnapshot
