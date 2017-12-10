@@ -81,7 +81,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |No|Function|Description|
 |----|----|----|
 |1|[<b>Get-VAMIHealth</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get Appliance health summary|
-|2|[<b>Get-VAMISummary</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get basic Appliance info|
+|2|[<b>Get-VAMISummary</b>](https://ps1code.com/2017/12/10/vcsa-backup-expiration-powercli)|Get basic Appliance info|
 |3|[<b>Get-VAMIAccess</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get access interfaces|
 |4|[<b>Get-VAMIBackupSize</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get estimated backup size|
 |5|[<b>Get-VAMIDisks</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get VMDK disk number to OS partition mapping|
