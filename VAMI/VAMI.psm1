@@ -14,17 +14,34 @@ Function Get-VAMISummary
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 29-Mar-2017 :: [Release]
+	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
+	Version 1.1 :: 07-Dec-2017 :: [Feature] :: New properties added: Release, ReleaseDate, BackupExpireDate, DaysToExpire
 .LINK
-	http://www.virtuallyghetto.com/2017/01/exploring-new-vcsa-vami-api-wpowercli-part-1.html
+	https://ps1code.com/2017/12/10/vcsa-backup-expiration-powercli
 #>
 	$ErrorActionPreference = 'Stop'
+	
 	foreach ($Server in ($global:DefaultCisServers | ? { $_.IsConnected }))
 	{
 		Try
 		{
 			$SystemVersionAPI = Get-CisService -Name 'com.vmware.appliance.system.version' -Server $Server
 			$results = $SystemVersionAPI.get() | select product, 'type', version, build, install_time
+			
+			$Expiration = switch -exact ($results.build)
+			{
+				'4602587' { '10/22/2017'; $Release = '6.5.0GA'; $ReleaseDate = '11/15/2016' }
+				'4944578' { '10/22/2017'; $Release = '6.5.0a'; $ReleaseDate = '02/02/2017' }
+				'5178943' { '02/03/2018'; $Release = '6.5.0b'; $ReleaseDate = '03/14/2017' }
+				'5318112' { '02/03/2018'; $Release = '6.5.0c'; $ReleaseDate = '04/13/2017' }
+				'5318154' { '02/03/2018'; $Release = '6.5.0d'; $ReleaseDate = '04/18/2017' }
+				'5705665' { '02/03/2018'; $Release = '6.5.0e'; $ReleaseDate = '06/15/2017' }
+				'5973321' { '07/01/2018'; $Release = '6.5.0U1'; $ReleaseDate = '07/27/2017' }
+				'6671409' { '08/14/2018'; $Release = '6.5.0U1a'; $ReleaseDate = '09/21/2017' }
+				'6816762' { '09/26/2018'; $Release = '6.5.0U1b'; $ReleaseDate = '10/26/2017' }
+				'7119070' { '10/01/2018'; $Release = '6.5.0f'; $ReleaseDate = '11/14/2017' }
+				'7119157' { '10/01/2018'; $Release = '6.5.0U1c'; $ReleaseDate = '11/14/2017'}
+			}
 			
 			$SystemUptimeAPI = Get-CisService -Name 'com.vmware.appliance.system.uptime' -Server $Server
 			$ts = [timespan]::FromSeconds($SystemUptimeAPI.get().ToString())
@@ -34,14 +51,18 @@ Function Get-VAMISummary
 				Server = $Server.Name
 				Product = $results.product
 				Type = $results.type
-				Version = $results.version
-				Build = $results.build
-				InstallDate = ([datetime]($results.install_time -replace '[a-zA-Z]', ' ')).ToLocalTime().ToString()
+				Version = [version]$results.version
+				Build = [uint32]$results.build
+				Release = $Release
+				ReleaseDate = Get-Date $ReleaseDate -Format "MM/dd/yyyy"
+				InstallDate = ([datetime]($results.install_time -replace '[a-zA-Z]', ' ')).ToLocalTime()
+				BackupExpireDate = Get-Date $Expiration -Format "MM/dd/yyyy"
+				DaysToExpire = [System.Math]::Round((New-TimeSpan -End $Expiration -Start (Get-Date)).TotalDays, 0)
 				Uptime = $uptime
 			}
 			$SummaryResult
 		}
-		Catch { }
+		Catch {  }
 	}
 	
 } #EndFunction Get-VAMISummary
@@ -62,7 +83,7 @@ Function Get-VAMIHealth
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 29-Mar-2017 :: [Release]
+	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 	Version 1.1 :: 19-Apr-2017 :: [Change] :: 'HealthLastCheck' property converted to the Universal time
 .LINK
 	http://www.virtuallyghetto.com/2017/01/exploring-new-vcsa-vami-api-wpowercli-part-2.html
@@ -127,7 +148,7 @@ Function Get-VAMIAccess
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 29-Mar-2017 :: [Release]
+	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/01/exploring-new-vcsa-vami-api-wpowercli-part-3.html
 #>
@@ -172,7 +193,7 @@ Function Get-VAMITime
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 29-Mar-2017 :: [Release]
+	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/01/exploring-new-vcsa-vami-api-wpowercli-part-4.html
 #>
@@ -227,7 +248,7 @@ Function Get-VAMINetwork
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 29-Mar-2017 :: [Release]
+	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-5.html
 #>
@@ -286,7 +307,7 @@ Function Get-VAMIDisks
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 29-Mar-2017 :: [Release]
+	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-6.html
 #>
@@ -330,7 +351,7 @@ Function Start-VAMIDiskResize
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 02-Apr-2017 :: [Release]
+	Version 1.0 :: 02-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-6.html
 #>
@@ -381,7 +402,7 @@ Function Get-VAMIStatsList
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 02-Apr-2017 :: [Release]
+	Version 1.0 :: 02-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-7.html
 #>
@@ -431,7 +452,7 @@ Function Get-VAMIStorageUsed
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 29-Mar-2017 :: [Release]
+	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-7.html
 #>
@@ -566,7 +587,7 @@ Function Get-VAMIPerformance
 	Idea        :: William Lam @lamw
 	Created by  :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 04-Apr-2017 :: [Release]
+	Version 1.0 :: 04-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-7.html
 #>
@@ -690,7 +711,7 @@ Function Get-VAMIService
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 30-Mar-2017 :: [Release]
+	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 	Version 1.1 :: 18-Apr-2017 :: [Change] :: Added property `Description`
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-8.html
@@ -813,7 +834,7 @@ Function Start-VAMIService
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 30-Mar-2017 :: [Release]
+	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-8.html
 #>
@@ -871,7 +892,7 @@ Function Stop-VAMIService
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 30-Mar-2017 :: [Release]
+	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-8.html
 #>
@@ -929,7 +950,7 @@ Function Restart-VAMIService
 	Idea        :: William Lam @lamw
 	Created by  :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 30-Mar-2017 :: [Release]
+	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-8.html
 #>
@@ -985,7 +1006,7 @@ Function Get-VAMIBackupSize
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 30-Mar-2017 :: [Release]
+	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/03/exploring-new-vcsa-vami-api-wpowercli-part-9.html
 #>
@@ -1049,7 +1070,7 @@ Function Get-VAMIUser
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 30-Mar-2017 :: [Release]
+	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/03/exploring-new-vcsa-vami-api-wpowercli-part-10.html
 #>
@@ -1127,7 +1148,7 @@ Function New-VAMIUser
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 30-Mar-2017 :: [Release]
+	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/03/exploring-new-vcsa-vami-api-wpowercli-part-10.html
 #>
@@ -1203,7 +1224,7 @@ Function Remove-VAMIUser
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
-	Version 1.0 :: 30-Mar-2017 :: [Release]
+	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/03/exploring-new-vcsa-vami-api-wpowercli-part-10.html
 #>
