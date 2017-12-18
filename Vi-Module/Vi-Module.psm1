@@ -1282,51 +1282,45 @@ Function Search-Datastore
 	
 <#
 .SYNOPSIS
-	Search files on a VMware Datastore.
+	Search files on VMware Datastores.
 .DESCRIPTION
-	This cmdlet searches files on ESXi hosts' Datastores.
+	This function searches files on ESXi hosts' Datastores.
 .PARAMETER Datastore
-	ESXi host Datastore(s).
+	Specifies Datastore object(s), returtned by Get-Datastore cmdlet or Datastore name.
 .PARAMETER FileName
-	File name pattern, the default is to search all files (*).
+	Specifies file name pattern, the default is to search all files (*).
 .PARAMETER FileType
-	File type to search, the default is to search [.vmdk] or [.iso] files.
+	Specifies file type to search, the default is to search [.vmdk] or [.iso] files.
 .PARAMETER VerboseDatastoreName
-	Sends Datastore name to the command line after processing.
+	If specified, the function sends Datastore name to the console after processing.
 .EXAMPLE
 	PS C:\> Get-Datastore |Search-Datastore
 	Search all [*.vmdk] and [*.iso] files on all Datastores.
 .EXAMPLE
-	PS C:\> Get-Datastore 'cloud*' |Search-Datastore -FileType VmdkOnly
+	PS C:\> Get-Datastore datastore* |Search-Datastore -FileType VmdkOnly
 	Search all [*.vmdk] files on group of Datastores.
 .EXAMPLE
-	PS C:\> Get-DatastoreCluster 'backup' |Get-Datastore |Search-Datastore -FileName 'win' -FileType IsoOnly -VerboseDatastoreName
+	PS C:\> Get-DatastoreCluster backup |Get-Datastore |Search-Datastore -FileName 'win' -FileType IsoOnly -Verbose |ogv
 	Search [*win*.iso] files on all SDRS cluster members. Verbose each Datastore name.
 .EXAMPLE
-	PS C:\> 'localssd' |Search-Datastore -FileName 'vm1*' -FileType All |Format-Table -AutoSize
-	Search the specific VM related files [vm1*.*] on the local Datastore [localssd].
+	PS C:\> Search-Datastore -Datastore localssd -FileName 'vm1*' -FileType All |Format-Table -AutoSize
+	Search the specific VM related files [vm1*.*] on the Datastore named [localssd].
 .EXAMPLE
-	PS C:\> $report = Get-DatastoreCluster 'test' |Get-Datastore |Search-Datastore -FileType VmdkOnly -VerboseDatastoreName
-	PS C:\> $report |? {$_.DaysInactive -gt 7}
-	PS C:\> $report |sort DaysInactive |epcsv -notype -Encoding UTF8 'C:\reports\Test.csv'
-	Save the search results to a variable for future manipulations (queries, export or comparison).
-.INPUTS
-	[VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore[]]
-	[VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.NasDatastore[]]
-	[System.String[]]
-	Datastore objects, returtned by 'Get-Datastore' cmdlet or Datastore names.
-.OUTPUTS
-	[System.Management.Automation.PSCustomObject] PSObject collection.
+	PS C:\> Get-DatastoreCluster test |Get-Datastore |Search-Datastore -FileType VmdkOnly -Verbose |? {$_.DaysInactive -gt 7} |sort DaysInactive -desc |epcsv .\Test.csv' -notype -Encoding UTF8 
+	Export vmdk files that were inactive more than one week.
 .NOTES
 	Author      :: Roman Gelman @rgelman75
 	Version 1.0 :: 09-Aug-2016 :: [Release] :: Publicly available
-	Version 1.1 :: 19-Sep-2016 :: [Bugfix]  :: Some SAN as NetApp return `*-flat.vmdk` files in the search. Such files were recognized as orphaned. `Changed Block Tracking Disk` file type was renamed to `CBT Disk`
+	Version 1.1 :: 19-Sep-2016 :: [Bugfix]  :: Some SAN as NetApp return *-flat.vmdk files in the search. Such files were recognized as orphaned. [Changed Block Tracking Disk] file type was renamed to [CBT Disk]
+	Version 1.2 :: 17-Dec-2017 :: [Change] :: The -VerboseDatastoreName parameter deprecated and replace by common -Verbose. Minor code and examples changes
+	Version 1.3 :: 18-Dec-2017 :: [Feature] :: VSAN Datastore support
 .LINK
 	https://ps1code.com/2016/08/21/search-datastores-powercli
 #>
 	
 	[CmdletBinding()]
 	[Alias("Search-ViMDatastore")]
+	[OutputType([pscustomobject])]
 	Param (
 		[Parameter(Mandatory, Position = 0, ValueFromPipeline)]
 		$Datastore
@@ -1339,21 +1333,16 @@ Function Search-Datastore
 		[ValidateSet("Vmdk&Iso", "VmdkOnly", "IsoOnly", "All")]
 		[Alias("FileExtension")]
 		[string]$FileType = 'Vmdk&Iso'
-		 ,
-		[Parameter(Mandatory = $false, Position = 3)]
-		[switch]$VerboseDatastoreName
-		
 	)
 	
 	Begin
 	{
-		
 		$i = 0
 		$Now = [datetime]::Now
 		$rgxFileExt = '^(?<FileName>.+)\.(?<Ext>.+)$'
 		
 		Write-Progress -Activity "Generating Used Disks list" -Status "In progress ..."
-		$UsedDisks = Get-View -ViewType VirtualMachine | % { $_.Layout } | % { $_.Disk } | % { $_.DiskFile }
+		$UsedDisks = Get-View -Verbose:$false -ViewType VirtualMachine | % { $_.Layout } | % { $_.Disk } | % { $_.DiskFile }
 		Write-Progress -Activity "Completed" -Completed
 		
 		$FileTypes = @{
@@ -1375,9 +1364,9 @@ Function Search-Datastore
 			'' = 'Unknown'
 		}
 		
-		If ($FileName -notmatch '\*') { $FileName = "*$FileName*" }
+		if ($FileName -notmatch '\*') { $FileName = "*$FileName*" }
 		
-		Switch ($FileType)
+		switch ($FileType)
 		{
 			'Vmdk&Iso' { $FilePattern = @(($FileName + '.vmdk'), ($FileName + '.iso')); Break }
 			'VmdkOnly' { $FilePattern = @(($FileName + '.vmdk')); Break }
@@ -1385,19 +1374,17 @@ Function Search-Datastore
 			'All'      { $FilePattern = @(($FileName + '.*')) }
 		}
 		
-	} #EndBegin
-	
+	}
 	Process
 	{
+		if ($Datastore -is [string]) { $DsView = Get-View -Verbose:$false -ViewType Datastore | ? { $_.Name -eq $Datastore } }
+		elseif ($Datastore -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore]) { $DsView = Get-View -Verbose:$false -VIObject $Datastore }
+		elseif ($Datastore -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.NasDatastore]) { $DsView = Get-View -Verbose:$false -VIObject $Datastore }
+		elseif ($Datastore -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.Datastore]) { $DsView = Get-View -Verbose:$false -VIObject $Datastore }
+		else { Throw "Not supported object type" }
 		
-		If ($Datastore -is [string]) { $DsView = Get-View -ViewType Datastore | ? { $_.Name -eq $Datastore } }
-		ElseIf ($Datastore -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.VmfsDatastore]) { $DsView = Get-View -VIObject $Datastore }
-		ElseIf ($Datastore -is [VMware.VimAutomation.ViCore.Types.V1.DatastoreManagement.NasDatastore]) { $DsView = Get-View -VIObject $Datastore }
-		Else { Throw "Not supported object type" }
-		
-		If ($DsView)
+		if ($DsView)
 		{
-			
 			$i += 1
 			
 			$DsCapacityGB = $DsView.Summary.Capacity/1GB
@@ -1416,39 +1403,38 @@ Function Search-Datastore
 			$searchSpec.MatchPattern = $FilePattern
 			$searchSpec.SortFoldersFirst = $true
 			
-			$DsBrowser = Get-View $DsView.Browser
+			$DsBrowser = Get-View $DsView.Browser -Verbose:$false
 			$rootPath = "[$($DsView.Name)]"
 			$searchResult = $DsBrowser.SearchDatastoreSubFolders($rootPath, $searchSpec)
 			
-			Foreach ($folder in $searchResult)
+			foreach ($folder in $searchResult)
 			{
-				Foreach ($fileResult in $folder.File)
+				foreach ($fileResult in $folder.File)
 				{
-					If ($fileResult.Path)
+					if ($fileResult.Path)
 					{
-						
-						If ($fileResult.FileSize/1GB -lt 1) { $Round = 3 }
-						Else { $Round = 0 }
+						if ($fileResult.FileSize/1GB -lt 1) { $Round = 3 }
+						else { $Round = 0 }
 						$SizeGiB = [Math]::Round($fileResult.FileSize/1GB, $Round)
 						
 						$File = [regex]::Match($fileResult.Path, $rgxFileExt)
 						$FileBody = $File.Groups['FileName'].Value
 						$ShortExt = $File.Groups['Ext'].Value
 						
-						If ($FileTypes.ContainsKey($ShortExt)) { $LongExt = $FileTypes.$ShortExt }
-						Else { $LongExt = '.' + $ShortExt.ToUpper() }
+						if ($FileTypes.ContainsKey($ShortExt)) { $LongExt = $FileTypes.$ShortExt }
+						else { $LongExt = '.' + $ShortExt.ToUpper() }
 						
-						If ($ShortExt -eq 'vmdk')
+						if ($ShortExt -eq 'vmdk')
 						{
-							If ($FileBody -match '-ctk$') { $LongExt = 'CBT Disk' }
-							Else
+							if ($FileBody -match '-ctk$') { $LongExt = 'CBT Disk' }
+							else
 							{
-								If ($FileBody -match '-(\d{6}|delta)$') { $LongExt = 'Snapshot Disk' }
-								If ($UsedDisks -notcontains ($folder.FolderPath + $fileResult.Path) -and $FileBody -notmatch '-flat$') { $LongExt = 'Orphaned ' + $LongExt }
+								if ($FileBody -match '-(\d{6}|delta)$') { $LongExt = 'Snapshot Disk' }
+								if ($UsedDisks -notcontains ($folder.FolderPath + $fileResult.Path) -and $FileBody -notmatch '-flat$') { $LongExt = 'Orphaned ' + $LongExt }
 							}
 						}
 						
-						$Properties = [ordered]@{
+						[pscustomobject]@{
 							Datastore = $DsView.Name
 							Folder = [regex]::Match($folder.FolderPath, '\]\s(?<Folder>.+)/').Groups[1].Value
 							File = $fileResult.Path
@@ -1458,15 +1444,12 @@ Function Search-Datastore
 							Modified = ([datetime]$fileResult.Modification).ToString('dd-MMM-yyyy HH:mm')
 							DaysInactive = (New-TimeSpan -Start ($fileResult.Modification) -End $Now).Days
 						}
-						$Object = New-Object PSObject -Property $Properties
-						$Object
 					}
 				}
 			}
-			If ($PSBoundParameters.ContainsKey('VerboseDatastoreName')) { "Datastore N" + [char][byte]186 + "$i [$($DsView.Name)] completed" | Out-Host }
+			Write-Verbose "Datastore N$([char][byte]186)$i [$($DsView.Name)] search is finished"
 		}
-	} #EndProcess
-	
+	}
 	End { Write-Progress -Activity "Completed" -Completed }
 	
 } #EndFunction Search-Datastore
