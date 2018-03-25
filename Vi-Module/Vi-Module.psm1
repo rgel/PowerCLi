@@ -3331,3 +3331,95 @@ Function New-SmartSnapshot
 	End { }
 	
 } #EndFunction New-SmartSnapshot
+
+Function Get-VMHostCDP
+{
+	
+<#
+.SYNOPSIS
+	Get CDP info for ESXi hosts.
+.DESCRIPTION
+	This function retrieves CDP (Cisco Discovery Protocol) info for ESXi host(s).
+.PARAMETER VMHost
+	Specifies ESXi host object(s), returnd by Get-VMHost cmdlet.
+.PARAMETER CdpOnly
+	If specified, vmnics connected to non-CDP capable ports are excluded from the output.	
+.EXAMPLE
+	PS> Get-VMHost | Get-VMHostCDP
+	Return default properties only.
+.EXAMPLE
+	PS> Get-VMHost esx1.* | Get-VMHostCDP | select * 
+	Show all returned properties.
+.EXAMPLE
+	PS> Get-Cluster PROD | Get-VMHost | Get-VMHostCDP -CdpOnly | Export-Csv -notype .\Nexus.csv
+	Export all CDP capable ports from particular Cluster.
+.EXAMPLE
+	PS> Get-VMHost | Get-VMHostCDP -CdpOnly | % { $_.ToString() }
+	Show brief port-to-port view by static ToString() method.
+.EXAMPLE
+	PS> Get-Cluster PROD | Get-VMHost | Get-VMHostCDP -CdpOnly | % { $_.GetVlan() } | ? { $_.Vlan -eq 25 } | sort Switch, { [int]([regex]::Match($_.Port, '\d+$').Value) } | ft -au
+	Show VLAN view by static GetVlan() method.
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5.2
+	Platform    :: Tested on vSphere 5.5/6.5 | VCenter 5.5U2/VCSA 6.5U1 | Cisco Nexus 5000 Series
+	Version 1.0 :: 25-Mar-2018 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/2018/03/25/cdp-powercli
+#>
+	
+	[CmdletBinding()]
+	[Alias("Get-ViMVMHostCDP", "Get-ViMCDP")]
+	[OutputType([ViCDP])]
+	Param
+	(
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VMHost]$VMHost
+		 ,
+		[Parameter(Mandatory = $false)]
+		[switch]$CdpOnly
+	)
+	
+	Begin { $return = @() }
+	Process
+	{
+		$ConfigManagerView = Get-View $VMHost.ExtensionData.ConfigManager.NetworkSystem
+		$PNICs = $ConfigManagerView.NetworkInfo.Pnic
+		
+		foreach ($PNIC in $PNICs)
+		{
+			$PhysicalNicHintInfo = $ConfigManagerView.QueryNetworkHint($PNIC.Device)
+			
+			$Vendor = switch -regex ($PNIC.Driver)
+			{
+				'^(elx|be)' { 'Emulex'; Break }
+				'^(igb|ixgb|e10)' { 'Intel'; Break }
+				'^(bnx|tg|ntg)' { 'Broadcom'; Break }
+				'^nmlx' { 'HPE'; Break }
+				'^cdc' { 'IBM/LENOVO' }
+				Default { 'Unknown' }
+			}
+			
+			$portInfo = [ViCDP] @{
+				VMHost = if ($VMHost.Name -match '\w') { [regex]::Match($VMHost.Name, '^(.+?)(\.|$)').Groups[1].Value } else { $VMHost.Name };
+				NIC = $PNIC.Device;
+				MAC = $PNIC.Mac.ToUpper();
+				Vendor = $Vendor;
+				Driver = $PNIC.Driver;
+				CDP = if ($PhysicalNicHintInfo.ConnectedSwitchPort) { $true } else { $false };
+				LinkMbps = if ($PNIC.LinkSpeed.SpeedMb) { $PNIC.LinkSpeed.SpeedMb } else { 0 };
+				Switch = [string]$PhysicalNicHintInfo.ConnectedSwitchPort.DevId;
+				Hardware = [string]$PhysicalNicHintInfo.ConnectedSwitchPort.HardwarePlatform;
+				Software = [string]$PhysicalNicHintInfo.ConnectedSwitchPort.SoftwareVersion;
+				MgmtIP = [ipaddress]$PhysicalNicHintInfo.ConnectedSwitchPort.MgmtAddr;
+				MgmtVlan = [string]$PhysicalNicHintInfo.ConnectedSwitchPort.Vlan;
+				PortId = [string]$PhysicalNicHintInfo.ConnectedSwitchPort.PortId;
+				Vlan = if ($PhysicalNicHintInfo.Subnet.VlanId) { ($PhysicalNicHintInfo.Subnet.VlanId | sort) -join ', ' -as [string] } else { [string]::Empty };
+			}
+			if ($CdpOnly) { if ($portInfo.CDP) { $return += $portInfo } }
+			else { $return += $portInfo }
+		}
+	}
+	End { $return | sort VMHost, { [int]([regex]::Match($_.NIC, '\d+').Value) } }
+	
+} #EndFunction Get-VMHostCDP
