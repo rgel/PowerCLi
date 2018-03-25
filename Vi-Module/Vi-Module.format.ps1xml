@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Configuration>
 	<ViewDefinitions>
+    <!-- **************
+    Vi-Module_ViSession
+    *************** -->
 		<View>
 			<Name>Vi-Module_ViSession</Name>
 			<ViewSelectedBy><TypeName>ViSession</TypeName></ViewSelectedBy>
@@ -27,5 +30,37 @@
 				</TableRowEntries>
 			</TableControl>
 		</View>
+    <!-- **********
+    Vi-Module_ViCDP
+    *********** -->  
+ 		<View>
+			<Name>Vi-Module_ViCDP</Name>
+			<ViewSelectedBy><TypeName>ViCDP</TypeName></ViewSelectedBy>
+			<TableControl>
+        <TableHeaders>
+          <TableColumnHeader><Label>VMHost</Label><Width>10</Width><Alignment>Left</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>NIC</Label><Width>7</Width><Alignment>Right</Alignment></TableColumnHeader>
+					<TableColumnHeader><Label>Vendor</Label><Width>10</Width><Alignment>Left</Alignment></TableColumnHeader>
+					<TableColumnHeader><Label>LinkMbps</Label><Width>8</Width><Alignment>Left</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Switch</Label><Width>30</Width><Alignment>Left</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>PortId</Label><Width>19</Width><Alignment>Right</Alignment></TableColumnHeader>
+          <TableColumnHeader><Label>Vlan</Label><Width>46</Width><Alignment>Left</Alignment></TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem><PropertyName>VMHost</PropertyName></TableColumnItem>
+							<TableColumnItem><PropertyName>NIC</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Vendor</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>LinkMbps</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Switch</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>PortId</PropertyName></TableColumnItem>
+              <TableColumnItem><PropertyName>Vlan</PropertyName></TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>  
+
 	</ViewDefinitions>
 </Configuration>
