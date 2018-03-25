@@ -1,4 +1,6 @@
-Class ViSession
+Class ViModule { } #EndClass ViModule
+
+Class ViSession: ViModule
 {
 	[ValidateNotNullOrEmpty()][string]$VC
 	[ValidateNotNullOrEmpty()][string]$Key
@@ -11,6 +13,37 @@ Class ViSession
 	[ValidateSet('_THIS_', 'Foreign')][string]$Session
 	[double]$IdleMinutes
 } #EndClass ViSession
+
+Class ViCDP: ViModule
+{
+	[ValidateNotNullOrEmpty()][string]$VMHost
+	[ValidateNotNullOrEmpty()][string]$NIC
+	[ValidateNotNullOrEmpty()][string]$MAC
+	[ValidateNotNullOrEmpty()][string]$Vendor
+	[ValidateNotNullOrEmpty()][string]$Driver
+	[bool]$CDP
+	[int]$LinkMbps
+	[string]$Switch
+	[string]$Hardware
+	[string]$Software
+	[ipaddress]$MgmtIP
+	[string]$MgmtVlan
+	[string]$PortId
+	[string]$Vlan
+	
+	[string] ToString () { return "$($this.VMHost)::$($this.NIC) -> $($this.Switch)::$($this.PortId)" }
+	
+	[pscustomobject[]] GetAllVlan ()
+	{
+		return $this.Vlan -split ', ' | % { [pscustomobject] @{ VMHost = $this.VMHost; NIC = $this.NIC; Switch = $this.Switch; Port = $this.PortId; Vlan = $_ -as [int] } }
+	}
+	
+	[pscustomobject[]] GetVlan ([ValidateRange(1, 4094)][int[]]$VlanId)
+	{
+		return $this.Vlan -split ', ' | % { if ($VlanId -contains $_) { [pscustomobject] @{ VMHost = $this.VMHost; NIC = $this.NIC; Switch = $this.Switch; Port = $this.PortId; Vlan = $_ -as [int] } } }
+	}
+	
+} #EndClass ViCDP
 
 Function Get-RDM
 {
