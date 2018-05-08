@@ -11,11 +11,14 @@ Function Get-VAMISummary
     PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
     PS C:\> Get-VAMISummary
 .NOTES
-	Created by  :: William Lam @lamw
+	Created by  :: William Lam @lamw (http://www.virtuallyghetto.com/2017/01/exploring-new-vcsa-vami-api-wpowercli-part-1.html)
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
 	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 	Version 1.1 :: 07-Dec-2017 :: [Feature] :: New properties added: Release, ReleaseDate, BackupExpireDate, DaysToExpire
+	Version 1.2 :: 21-Dec-2017 :: [Change] :: Release [6.5.0 U1d] added
+	Version 1.3 :: 21-Jan-2018 :: [Change] :: Release [6.5.0 U1e] added
+	Version 1.4 :: 29-Apr-2018 :: [Change] :: Release [6.5.0 U1g] added
 .LINK
 	https://ps1code.com/2017/12/10/vcsa-backup-expiration-powercli
 #>
@@ -40,7 +43,10 @@ Function Get-VAMISummary
 				'6671409' { '08/14/2018'; $Release = '6.5.0U1a'; $ReleaseDate = '09/21/2017' }
 				'6816762' { '09/26/2018'; $Release = '6.5.0U1b'; $ReleaseDate = '10/26/2017' }
 				'7119070' { '10/01/2018'; $Release = '6.5.0f'; $ReleaseDate = '11/14/2017' }
-				'7119157' { '10/01/2018'; $Release = '6.5.0U1c'; $ReleaseDate = '11/14/2017'}
+				'7119157' { '10/01/2018'; $Release = '6.5.0U1c'; $ReleaseDate = '11/14/2017' }
+				'7312210' { '11/01/2018'; $Release = '6.5.0U1d'; $ReleaseDate = '12/19/2017' }
+				'7515524' { '12/01/2018'; $Release = '6.5.0U1e'; $ReleaseDate = '01/09/2018' }
+				'8024368' { '02/01/2019'; $Release = '6.5.0U1g'; $ReleaseDate = '03/20/2018' }
 			}
 			
 			$SystemUptimeAPI = Get-CisService -Name 'com.vmware.appliance.system.uptime' -Server $Server
@@ -712,7 +718,7 @@ Function Get-VAMIService
 	Edited by   :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5+, VCSA 6.5+
 	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
-	Version 1.1 :: 18-Apr-2017 :: [Change] :: Added property `Description`
+	Version 1.1 :: 18-Apr-2017 :: [Change] :: Added property 'Description'
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-8.html
 #>
