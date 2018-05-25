@@ -2998,7 +2998,7 @@ Function Expand-VMGuestPartition
 			}
 			else
 			{
-				New-Object System.Management.Automation.PSCredential($GuestUser, (ConvertTo-SecureString $GuestPassword -AsPlainText –Force))
+				New-Object System.Management.Automation.PSCredential($GuestUser, (ConvertTo-SecureString $GuestPassword -AsPlainText -Force))
 			}
 			
 			$SelectedPartitionCapacityBefore = ($VMPartition | ? { $_.Volume -eq $SelectedPartition.Volume }).CapacityGB
@@ -3126,7 +3126,8 @@ Function Get-ViSession
 			else { $Session | Add-Member -MemberType NoteProperty -Name Session -Value "Foreign" }
 			
 			### Add idle time ###
-			$Session | Add-Member -MemberType NoteProperty -Name IdleMinutes -Value ([Math]::Round(((Get-Date) – ($_.LastActiveTime).ToLocalTime()).TotalMinutes))
+			$Session | Add-Member -MemberType NoteProperty -Name IdleMinutes -Value ([Math]::Round(((Get-Date) - ($_.LastActiveTime).ToLocalTime()).TotalMinutes))
+
 			
 			### Filter output out ###
 			$ViSessions += if ($PSCmdlet.ParameterSetName -eq 'USER')
