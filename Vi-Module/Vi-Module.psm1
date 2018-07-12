@@ -38,7 +38,7 @@ Class ViCDP: ViModule
 		return $this.Vlan -split ', ' | % { [pscustomobject] @{ VMHost = $this.VMHost; NIC = $this.NIC; Switch = $this.Switch; Port = $this.PortId; Vlan = $_ -as [int] } }
 	}
 	
-	[pscustomobject[]] GetVlan ([ValidateRange(1, 4094)][int[]]$VlanId)
+	[pscustomobject[]] GetVlan ([int[]]$VlanId)
 	{
 		return $this.Vlan -split ', ' | % { if ($VlanId -contains $_) { [pscustomobject] @{ VMHost = $this.VMHost; NIC = $this.NIC; Switch = $this.Switch; Port = $this.PortId; Vlan = $_ -as [int] } } }
 	}
