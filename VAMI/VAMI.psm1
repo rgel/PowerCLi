@@ -19,6 +19,7 @@ Function Get-VAMISummary
 	Version 1.2 :: 21-Dec-2017 :: [Change] :: Release [6.5.0 U1d] added
 	Version 1.3 :: 21-Jan-2018 :: [Change] :: Release [6.5.0 U1e] added
 	Version 1.4 :: 29-Apr-2018 :: [Change] :: Release [6.5.0 U1g] added
+	Version 1.5 :: 12-Jul-2018 :: [Change] :: Two [6.5.0 U2] Releases added
 .LINK
 	https://ps1code.com/2017/12/10/vcsa-backup-expiration-powercli
 #>
@@ -33,6 +34,7 @@ Function Get-VAMISummary
 			
 			$Expiration = switch -exact ($results.build)
 			{
+				### Official expiration dates regarding to the KB51124 ###
 				'4602587' { '10/22/2017'; $Release = '6.5.0GA'; $ReleaseDate = '11/15/2016' }
 				'4944578' { '10/22/2017'; $Release = '6.5.0a'; $ReleaseDate = '02/02/2017' }
 				'5178943' { '02/03/2018'; $Release = '6.5.0b'; $ReleaseDate = '03/14/2017' }
@@ -42,11 +44,14 @@ Function Get-VAMISummary
 				'5973321' { '07/01/2018'; $Release = '6.5.0U1'; $ReleaseDate = '07/27/2017' }
 				'6671409' { '08/14/2018'; $Release = '6.5.0U1a'; $ReleaseDate = '09/21/2017' }
 				'6816762' { '09/26/2018'; $Release = '6.5.0U1b'; $ReleaseDate = '10/26/2017' }
+				### Non official/approx expiration dates ###
 				'7119070' { '10/01/2018'; $Release = '6.5.0f'; $ReleaseDate = '11/14/2017' }
 				'7119157' { '10/01/2018'; $Release = '6.5.0U1c'; $ReleaseDate = '11/14/2017' }
 				'7312210' { '11/01/2018'; $Release = '6.5.0U1d'; $ReleaseDate = '12/19/2017' }
 				'7515524' { '12/01/2018'; $Release = '6.5.0U1e'; $ReleaseDate = '01/09/2018' }
 				'8024368' { '02/01/2019'; $Release = '6.5.0U1g'; $ReleaseDate = '03/20/2018' }
+				'8307201' { '04/01/2019'; $Release = '6.5.0U2'; $ReleaseDate = '05/03/2018' }
+				'8815520' { '05/01/2019'; $Release = '6.5.0U2b'; $ReleaseDate = '06/28/2018' }
 			}
 			
 			$SystemUptimeAPI = Get-CisService -Name 'com.vmware.appliance.system.uptime' -Server $Server
