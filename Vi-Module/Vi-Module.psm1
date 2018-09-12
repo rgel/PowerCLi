@@ -2149,15 +2149,16 @@ Function Get-VMHostGPU
 .PARAMETER VMHost
 	VMHost object(s), returnd by Get-VMHost cmdlet.
 .EXAMPLE
-	PowerCLI C:\> Get-VMHost $VMHostName |Get-VMHostGPU
+	PS C:\> Get-VMHost $VMHostName |Get-VMHostGPU
 .EXAMPLE
-	PowerCLI C:\> Get-Cluster $vCluster |Get-VMHost |Get-VMHostGPU |ft -au
+	PS C:\> Get-Cluster $vCluster |Get-VMHost |Get-VMHostGPU |ft -au
 .NOTES
 	Author      :: Roman Gelman @rgelman75
-	Shell       :: Tested on PowerShell 5.0|PowerCLi 6.5
-	Platform    :: Tested on vSphere 5.5/6.5|vCenter 5.5U2/VCSA 6.5a|NVIDIAGRID K2
-	Requirement :: PowerShell 3.0+
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5
+	Platform    :: Tested on vSphere 5.5/6.5 | vCenter 5.5U2/VCSA 6.5a | NVIDIAGRID K2
+	Requirement :: PowerShell 3.0
 	Version 1.0 :: 23-Apr-2017 :: [Release] :: Publicly available
+	Version 1.1 :: 12-Sep-2018 :: [Bugfix] :: VMHosts, registered by IP displayed incorrectly
 .LINK
 	https://ps1code.com/2017/04/23/esxi-vgpu-powercli
 #>
@@ -2175,12 +2176,10 @@ Function Get-VMHostGPU
 		$ErrorActionPreference = 'Stop'
 		$WarningPreference = 'SilentlyContinue'
 		$rgxSuffix = '^grid_'
-	} #EndBegin
-	
+	}
 	Process
 	{
 		$VMHostView = Get-View -Id $VMHost.Id -Verbose:$false
-		
 		$Profiles = $VMHostView.Config.SharedPassthruGpuTypes
 		
 		foreach ($GraphicInfo in $VMHostView.Config.GraphicsInfo)
@@ -2200,21 +2199,21 @@ Function Get-VMHostGPU
 			{
 				$ProfileActive = 'N/A'
 			}
-			$returnGraphInfo = [pscustomobject]@{
-				VMHost = [regex]::Match($VMHost.Name, '^(.+?)(\.|$)').Groups[1].Value
+			
+			$VMHostName = if ($VMHost.Name -match '[a-zA-Z]') { [regex]::Match($VMHost.Name, '^(.+?)(\.|$)').Groups[1].Value } else { $VMHost.Name }
+			
+			[pscustomobject] @{
+				VMHost = $VMHostName
 				VideoCard = $GraphicInfo.DeviceName
 				Vendor = $GraphicInfo.VendorName
 				Mode = $GraphicInfo.GraphicsType
 				MemoryGB = [System.Math]::Round($GraphicInfo.MemorySizeInKB/1MB, 0)
-				ProfileSupported = ($Profiles -replace $rgxSuffix, '') -join ','
+				ProfileSupported = ($Profiles -replace $rgxSuffix, '') -join ', '
 				ProfileActive = $ProfileActive
-				VM = $VMs
+				VM = $VMs -join ', '
 			}
-			$returnGraphInfo
 		}
-		
-	} #EndProcess
-	
+	}
 	End { }
 	
 } #EndFunction Get-VMHostGPU
@@ -3127,7 +3126,6 @@ Function Get-ViSession
 			
 			### Add idle time ###
 			$Session | Add-Member -MemberType NoteProperty -Name IdleMinutes -Value ([Math]::Round(((Get-Date) - ($_.LastActiveTime).ToLocalTime()).TotalMinutes))
-
 			
 			### Filter output out ###
 			$ViSessions += if ($PSCmdlet.ParameterSetName -eq 'USER')
