@@ -61,6 +61,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |26|[<b>Get-ViSession/Disconnect-ViSession</b>](https://ps1code.com/2017/11/21/vcenter-sessions-powercli)|List and disconnect VCenter sessions|
 |27|[<b>New-SmartSnapshot</b>](https://ps1code.com/2017/11/26/vmware-smart-snapshot-powercli)|Intellectual VMware snapshots|
 |28|[<b>Get-VMHostCDP</b>](https://ps1code.com/2018/03/25/cdp-powercli)|Leverage Cisco Discovery Protocol|
+|29|[<b>Get-VMLoggedOnUser</b>](https://ps1code.com/2018/11/22/vm-logged-on-powercli)|Get VM Logged On users|
 
 ### [<ins>VSAN</ins>](https://github.com/rgel/PowerCLi/tree/master/VSAN)
 
