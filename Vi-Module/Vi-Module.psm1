@@ -3455,3 +3455,123 @@ Function Get-VMHostCDP
 	End { $return | sort VMHost, { [int]([regex]::Match($_.NIC, '\d+').Value) } }
 	
 } #EndFunction Get-VMHostCDP
+
+Function Get-VMLoggedOnUser
+{
+	
+<#
+.SYNOPSIS
+	Get users logged on to VMware VM.
+.DESCRIPTION
+	This function retrieves local and domain user accounts logged on to VMware VM(s).
+.PARAMETER Username
+	Specifies a search criteria for the user account's name.
+.PARAMETER ExcludeLocal
+	If specified, local (non domain) user accounts will be excluded from the output.
+.EXAMPLE
+	PS C:\> Get-VM vm1 | Get-VMLoggedOnUser
+.EXAMPLE
+	PS C:\> Get-VM vm1, vm2 | Get-VMLoggedOnUser -ExcludeLocal
+.EXAMPLE
+	PS C:\> Get-VM | Get-VMLoggedOnUser -Username admin
+.EXAMPLE
+	PS C:\> Get-VM | Get-VMLoggedOnUser -Username '^[a-z][^_-]+$'
+	Find logged on users, that do not contain [_underscore] or [-minus] characters in their name.
+.EXAMPLE
+	PS C:\> Get-VM | Get-VMLoggedOnUser -Username '^[a-z][^_-]{5,8}$'
+	Find logged on users, that do not contain [_underscore] or [-minus] in their name and have length between 5 to 8 chars.
+.EXAMPLE
+	PS C:\> Get-Cluster PROD | Get-VM | Get-VMLoggedOnUser -Verbose | ogv -Title LoggedOnReport
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Shell       :: Tested on PowerShell 5.0 | PowerCLi 6.5
+	Platform    :: Tested on vSphere 5.5/6.5 | VCenter 5.5U2/VCSA 6.5U1
+	Requirement :: Windows VMGuest NT6 or above
+	Restriction :: The user running current PowerShell session (powershell.exe) is excluded from the output!
+	Version 1.0 :: 22-Nov-2018 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com/2018/11/22/vm-logged-on-powercli
+#>
+	
+	[CmdletBinding(DefaultParameterSetName = 'EXC')]
+	[Alias("Get-VMLoggedInUser")]
+	[OutputType([pscustomobject])]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.VirtualMachine]$VM
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'EXC')]
+		[switch]$ExcludeLocal
+		 ,
+		[Parameter(Mandatory = $false, ParameterSetName = 'USR')]
+		[ValidateNotNullOrEmpty()]
+		[string]$Username
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'SilentlyContinue'
+		$WarningPreference = 'SilentlyContinue'
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+		Write-Verbose "$FunctionName :: Started at [$(Get-Date)]"
+		$Me = "$env:USERDOMAIN\$env:USERNAME"
+		$SYSTEM = @($null, 'ANONYMOUS LOGON', 'LOCAL SERVICE', 'NETWORK SERVICE', 'SYSTEM', 'IUSR', 'IUSR_METRO', 'DefaultAppPool')
+		$LogonSession = @()
+	}
+	Process
+	{
+		if ($VM.PowerState -eq 'PoweredOn' -and $VM.Guest.State -eq 'Running' -and $VM.Guest.RuntimeGuestId -match '^win')
+		{
+			$VMGuestHostname = if ('localhost', $null -notcontains $VM.Guest.HostName) { $VM.Guest.HostName }
+			else { $VM.Name }
+			
+			Write-Progress -Activity $FunctionName -Status "Retrieving logged on users on VM [$($VM.Name)] ..." -CurrentOperation "VMGuest [$VMGuestHostname]"
+			
+			$Session = Get-CimInstance -CN $VMGuestHostname -Class Win32_LoggedOnUser -Verbose:$false -OperationTimeoutSec 5 |
+			select -Unique @{ N = 'Computer'; E = { $_.PSComputerName } },
+				   @{ N = 'Domain'; E = { $_.Antecedent.Domain } },
+				   @{ N = 'Account'; E = { $_.Antecedent.Name } },
+				   @{ N = 'Username'; E = { "$($_.Antecedent.Domain)\$($_.Antecedent.Name)" } } |
+			? { $SYSTEM -notcontains $_.Account -and $_.Account -notmatch '(\$$|^MSSQL\$|^\.NET|^DWM-\d)' -and $_.Username -ne $Me } | sort Domain, Account
+			
+			$LogonSession = $Session | % {
+				[pscustomobject] @{
+					VM = $VM.Name
+					Notes = $VM.Notes -replace ("`n", ' ')
+					Guest = $_.Computer
+					Domain = $_.Domain
+					User = $_.Account
+					Logon = $_.Username
+				}
+			}
+			
+			### Exclude local logons ###
+			if ($PSCmdlet.ParameterSetName -eq 'EXC')
+			{
+				if ($ExcludeLocal) { $LogonSession | % { if ($_.Domain -ne [regex]::Match($_.Guest, '^(.+?)(\.|$)').Groups[1].Value) { $_ } } }
+				else { $LogonSession }
+			}
+			### Find specific logon ###
+			else
+			{
+				if ($Username) { $LogonSession | % { if ($_.User -imatch $Username) { $_ } } }
+				else { $LogonSession }
+			}
+		}
+		else
+		{
+			### Write verbose message for skipped VM ###
+			$Reason = if ($VM.PowerState -ne 'PoweredOn') { "VM $($VM.PowerState)" }
+			elseif ($VM.Guest.State -ne 'Running') { "Guest $($VM.Guest.State)" }
+			elseif ($VM.Guest.RuntimeGuestId -notmatch '^windows') { "Not supported Guest $($VM.Guest.GuestFamily)" }
+			else { 'Unknown' }
+			
+			Write-Verbose "$FunctionName :: Skipped VM [$($VM.Name)] :: Reason [$Reason]"
+		}
+	}
+	End
+	{
+		Write-Verbose "$FunctionName :: Finished at [$(Get-Date)]"
+	}
+	
+} #EndFunction Get-VMLoggedOnUser
