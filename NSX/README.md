@@ -14,7 +14,7 @@ Connect to your NSX Manager(s) by `Connect-NsxServer` cmdlet from the PowerNSX m
 
 You are ready to invoke imported cmdlets. To see the cmdlets imported, type `Get-Command -Noun nsxentity*`.
 
-All the action cmdlets (`Add-`/`New-`/`Remove-') are advanced functions and support `-Debug`, `-Verbose` and `-Confirm` parameters.
+All the action cmdlets (`Add-`/`New-`/`Remove-`) are advanced functions and support `-Debug`, `-Verbose` and `-Confirm` parameters.
 
 For help on each individual cmdlet, run `Get-Help CmdletName -Full [-Online][-Examples]`.
 
