@@ -6,11 +6,15 @@
 
 <ins>Requirements:</ins> PowerShell 4 or above. To check, type the following command: `$PSVersionTable.PSVersion.Major`.
 
-To use this script, save the '<b>Power-NsxRole.ps1</b>' file to your computer.
+To use this script, save the '<b>Power-NsxRole.ps1</b>' file to your computer and go to the script directory, e.g. `cd C:\scripts`.
 
-Then go to the script directory, e.g. `cd C:\scripts` and type following command: `Import-Module .\Power-NsxRole.ps1 -Force`.
+Import the script to the current PowerShell session: `Import-Module .\Power-NsxRole.ps1 -Force`.
 
-To see the cmdlets imported, type `Get-Command -Noun nsxentity*`.
+Connect to your NSX Manager(s) by `Connect-NsxServer` cmdlet from the PowerNSX module.
+
+You are ready to invoke imported cmdlets. To see the cmdlets imported, type `Get-Command -Noun nsxentity*`.
+
+All the action cmdlets (`Add-`/`New-`/`Remove-') are advanced functions and support `-Debug`, `-Verbose` and `-Confirm` parameters.
 
 For help on each individual cmdlet, run `Get-Help CmdletName -Full [-Online][-Examples]`.
 
