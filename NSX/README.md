@@ -2,7 +2,7 @@
 
 ## [Power-NsxRole.ps1](https://github.com/rgel/PowerCLi/blob/master/NSX/Power-NsxRole.ps1)
 
-### Manage <b>NSX Manager Roles</b> leveraging [PowerNSX](https://github.com/vmware/powernsx) and NSX API
+### Manage NSX Manager Roles leveraging [PowerNSX](https://github.com/vmware/powernsx) and NSX API
 
 <ins>Requirements:</ins> PowerShell 4 or above. To check, type the following command: `$PSVersionTable.PSVersion.Major`.
 
@@ -18,6 +18,6 @@ For help on each individual cmdlet, run `Get-Help CmdletName -Full [-Online][-Ex
 |----|----|----|
 |1|<b>Get-NsxEntityRoleAssignment</b>|Get users and groups who have been assigned a NSX Manager role|
 |2|<b>Add-NsxEntityRoleAssignment</b>|Assign the NSX Manager role to any vCenter user or group|
-|3|<b>Add-NsxEntityAccessScope</b>|Assign vCenter user or group NSX Manager scope aware role in a custom Access Scope. This returns `Limit Scope` [capability](https://vswitchzero.com/2018/10/19/limiting-user-scope-and-permissions-in-nsx/), removed from <b>6.2</b> UI and later|
+|3|<b>Add-NsxEntityAccessScope</b>|Assign vCenter user or group NSX Manager scope aware role in a custom Access Scope. This replaces `Limit Scope` [capability](https://vswitchzero.com/2018/10/19/limiting-user-scope-and-permissions-in-nsx/), removed from <b>6.2</b> UI and later|
 |4|<b>Remove-NsxEntityRoleAssignment</b>|Remove NSX Manager role assignment for any vCenter user or group|
 |5|<b>Get-NsxRoleDisplayName</b>|Convert NSX Manager Role name to display name and vice versa (internal helper function)|
