@@ -1,8 +1,8 @@
 # ![nsx-256](https://user-images.githubusercontent.com/6964549/49496838-920a3180-f86f-11e8-8c02-c924493b87dc.png)VMware NSX
 
-## Power-NsxRole.ps1
+## [Power-NsxRole.ps1](https://github.com/rgel/PowerCLi/blob/master/NSX/Power-NsxRole.ps1)
 
-### [<ins>Power-NsxRole.ps1</ins>](https://github.com/rgel/PowerCLi/blob/master/NSX/Power-NsxRole.ps1) Manage `NSX Manager Roles` leveraging [PowerNSX](https://github.com/vmware/powernsx) and NSX API
+### Manage <b>NSX Manager Roles</b> leveraging [PowerNSX](https://github.com/vmware/powernsx) and NSX API
 
 <ins>Requirements:</ins> PowerShell 4 or above. To check, type the following command: `$PSVersionTable.PSVersion.Major`.
 
