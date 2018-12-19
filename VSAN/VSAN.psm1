@@ -17,11 +17,16 @@ Function Get-VSANVersion
 	Author      :: Roman Gelman @rgelman75
 	Requirement :: PowerCLI 6.5.1, VSAN 6.6
 	Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
+	Version 1.1 :: 20-Jul-2017 :: [Bugfix]  :: The '$global:DefaultVIServers' variable used instead of '$global:DefaultVIServer' to determine VC name
+	Version 1.2 :: 20-Jul-2017 :: [Improve] :: The 'Version' property type changed from [string] to [System.Version], the 'Cluster' property added
+	Version 1.3 :: 20-Jul-2017 :: [Improve] :: Returned object standardized to [PSCustomObject] data type
+	Version 1.4 :: 19-Dec-2018 :: [Improve] :: Added 'Type' property
 .LINK
 	http://www.virtuallyghetto.com/2017/04/getting-started-wthe-new-powercli-6-5-1-get-vsanview-cmdlet.html
 #>
 	
 	[CmdletBinding()]
+	[OutputType([PSCustomObject])]
 	Param (
 		[Parameter(Mandatory, ValueFromPipeline)]
 		[Alias("Cluster")]
@@ -36,12 +41,32 @@ Function Get-VSANVersion
 	{
 		if ($VsanCluster.VsanEnabled)
 		{
-			$result = $vchs.VsanVcClusterQueryVerifyHealthSystemVersions($VsanCluster.Id)
+			$ClusterVc = [regex]::Match($VsanCluster.Uid, '@(.+):\d+/').Groups[1].Value
+			$result = $vchs.VsanVcClusterQueryVerifyHealthSystemVersions($VsanCluster.Id)			
 			$return = $result.HostResults | select Hostname, Version | sort Hostname
-			$VcName = if ($global:DefaultVIServers.Length -eq 1) {$global:DefaultVIServer.Name} else {'VC'}
-			$vc = [pscustomobject] @{ Hostname = $VcName; Version = $result.VcVersion }
-			$return
-			$vc
+			
+			### Return Hosts' version ###
+			$return | %{
+				[pscustomobject] @{
+					Cluster = $VsanCluster.Name
+					Hostname = $_.Hostname
+					Type = 'VMHost'
+					Version = [version]$_.Version
+				}
+			}
+			
+			### Return VC version ###
+			$global:DefaultVIServers | %{
+				if ($_.Name -eq $ClusterVc)
+				{
+					[pscustomobject] @{
+						Cluster = $VsanCluster.Name
+						Hostname = $_.Name
+						Type = 'VC'
+						Version = [version]$result.VcVersion
+					}
+				}
+			}
 		}
 		else
 		{
@@ -696,3 +721,267 @@ Function Get-VSANCapability
 	End { }
 	
 } #EndFunction Get-VSANCapability
+
+Function Get-VSANLimit
+{
+	
+<#
+.SYNOPSIS
+	Get a vSAN cluster limits.
+.DESCRIPTION
+    This function utilizes vSAN Management API to retrieve
+    the exact same information provided by the RVC "vsan.check_limits" command.
+.PARAMETER VsanCluster
+    Specifies a vSAN Cluster object(s), returned by Get-Cluster cmdlet.
+.NOTES
+	Idea        :: William Lam @lamw
+	Author      :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5.1, VSAN 6.6
+	Version 1.0 :: 17-Jan-2018 :: [Release] :: Publicly available
+.EXAMPLE
+    PS C:\> Get-Cluster VSAN-Cluster | Get-VSANLimit
+.EXAMPLE
+	PS C:\> Get-Cluster | Get-VSANLimit -Verbose | ft -au
+.LINK
+	http://www.virtuallyghetto.com/2017/06/how-to-convert-vsan-rvc-commands-into-powercli-andor-other-vsphere-sdks.html
+#>	
+	
+	[CmdletBinding()]
+	[Alias("Get-VSANLimits")]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[Alias("Cluster")]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster]$VsanCluster
+	)
+	
+	Begin
+	{
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+		Write-Verbose "$FunctionName :: Started at [$(Get-Date)]"
+	}
+	Process
+	{
+		if ($VsanCluster.VsanEnabled)
+		{
+			$VMHosts = ($VsanCluster | Get-VMHost -Verbose:$false | Sort-Object -Property Name)
+			
+			foreach ($VMHost in $VMHosts)
+			{
+				$connectionState = $VMHost.ExtensionData.Runtime.ConnectionState
+				$vsanEnabled = (Get-View $VMHost.ExtensionData.ConfigManager.VsanSystem -Verbose:$false).Config.Enabled
+				
+				if ($connectionState -eq "connected" -and $vsanEnabled)
+				{
+					$vsanInternalSystem = Get-View $VMHost.ExtensionData.ConfigManager.VsanInternalSystem -Verbose:$false
+					
+					# Fetch RDT Information
+					$jsonRdtLsomDom = $vsanInternalSystem.QueryVsanStatistics(@('rdtglobal', 'lsom-node', 'lsom', 'dom', 'dom-objects-counts')) | ConvertFrom-Json
+					
+					# Process RDT Data Start #
+					$rdtAssocs = $jsonRdtLsomDom.'rdt.globalinfo'.assocCount.ToString() + "/" + $jsonRdtLsomDom.'rdt.globalinfo'.maxAssocCount.ToString()
+					$rdtSockets = $jsonRdtLsomDom.'rdt.globalinfo'.socketCount.ToString() + "/" + $jsonRdtLsomDom.'rdt.globalinfo'.maxSocketCount.ToString()
+					$rdtClients = 0
+					foreach ($line in $jsonRdtLsomDom.'dom.clients' | Get-Member)
+					{
+						# crappy way to iterate through keys ...
+						if ($($line.Name) -ne "Equals" -and $($line.Name) -ne "GetHashCode" -and $($line.Name) -ne "GetType" -and $($line.Name) -ne "ToString")
+						{
+							$rdtClients++
+						}
+					}
+					$rdtOwners = 0
+					foreach ($line in $jsonRdtLsomDom.'dom.owners.count' | Get-Member)
+					{
+						# crappy way to iterate through keys ...
+						if ($($line.Name) -ne "Equals" -and $($line.Name) -ne "GetHashCode" -and $($line.Name) -ne "GetType" -and $($line.Name) -ne "ToString")
+						{
+							$rdtOwners++
+						}
+					}
+					# Process RDT Data End #
+					
+					# Fetch Component information
+					$jsonComponents = $vsanInternalSystem.QueryPhysicalVsanDisks(@('lsom_objects_count', 'uuid', 'isSsd', 'capacity', 'capacityUsed')) | ConvertFrom-Json
+					
+					# Process Component Data Start #
+					$vsanUUIDs = @{ }
+					$vsanDiskMgmtSystem = Get-VsanView -Id VimClusterVsanVcDiskManagementSystem-vsan-disk-management-system -Verbose:$false
+					$diskGroups = $vsanDiskMgmtSystem.QueryDiskMappings($VMHost.ExtensionData.MoRef)
+					foreach ($diskGroup in $diskGroups)
+					{
+						$mappings = $diskGroup.mapping
+						foreach ($mapping in $mappings)
+						{
+							$ssds = $mapping.ssd
+							$nonSsds = $mapping.nonSsd
+							
+							foreach ($ssd in $ssds)
+							{
+								$vsanUUIDs.add($ssd.vsanDiskInfo.vsanUuid, $ssd)
+							}
+							
+							foreach ($nonSsd in $nonSsds)
+							{
+								$vsanUUIDs.add($nonSsd.vsanDiskInfo.vsanUuid, $nonSsd)
+							}
+						}
+					}
+					$maxComponents = $jsonRdtLsomDom.'lsom.node'.numMaxComponents
+					
+					$diskString = ""
+					$hostComponents = 0
+					foreach ($line in $jsonComponents | Get-Member)
+					{
+						# crappy way to iterate through keys ...
+						if ($($line.Name) -ne "Equals" -and $($line.Name) -ne "GetHashCode" -and $($line.Name) -ne "GetType" -and $($line.Name) -ne "ToString")
+						{
+							if ($vsanUUIDs.ContainsKey($line.Name))
+							{
+								$numComponents = ($jsonRdtLsomDom.'lsom.disks'.$($line.Name).info.numComp).ToString()
+								$maxCoponents = ($jsonRdtLsomDom.'lsom.disks'.$($line.Name).info.maxComp).ToString()
+								$hostComponents += $jsonComponents.$($line.Name).lsom_objects_count
+								$usage = ($jsonRdtLsomDom.'lsom.disks'.$($line.Name).info.capacityUsed * 100) / $jsonRdtLsomDom.'lsom.disks'.$($line.Name).info.capacity
+								$usage = [Math]::ceiling($usage)
+								
+								$diskString += $vsanUUIDs.$($line.Name).CanonicalName + ": " + $usage + "% Components: " + $numComponents + "/" + $maxCoponents + "`n"
+							}
+						}
+					}
+					# Process Component Data End #
+					
+					[pscustomobject] @{
+						Cluster = $VsanCluster.Name
+						VMHost = $VMHost.Name
+						RDT = "Assocs: " + $rdtAssocs + "`nSockets: " + $rdtSockets + "`nClients: " + $rdtClients + "`nOwners: " + $rdtOwners
+						Disks = "Components: " + $hostComponents + "/" + $maxComponents + "`n" + $diskString
+					}
+				}
+			}
+		}
+		else
+		{
+			Write-Verbose "$FunctionName :: The [$($VsanCluster.Name)] cluster is not VSAN Enabled"
+		}
+	}
+	End { Write-Verbose "$FunctionName :: Finished at [$(Get-Date)]" }
+	
+} #EndFunction Get-VSANLimit
+
+Function Get-VSANUsage
+{
+	
+<#
+.SYNOPSIS
+	Get VSAN Datastore usage.
+.DESCRIPTION
+    This function retrieves VSAN Datastore usage for all or specific VM.
+.PARAMETER VsanCluster
+	Specifies a vSAN Cluster object(s), returned by Get-Cluster cmdlet.
+.PARAMETER VM
+    Specifies a VM name(s) or VM name pattern to query specifically.
+.PARAMETER Credential
+	Specifies VMHost credentials for direct connect.
+.EXAMPLE
+    PS C:\> Get-Cluster | Get-VSANUsage -Verbose | Format-Table -AutoSize
+	Get VSAN datastore usage in all VSAN enabled clusters.
+.EXAMPLE
+    PS C:\> Get-Cluster VSANCluster | Get-VSANUsage -VM vm1, vm2
+	Get VSAN datastore usage for two particular VM.
+.EXAMPLE
+    PS C:\> Get-Cluster VSANCluster | Get-VSANUsage -VM lnx*
+	Get VSAN datastore usage for VM, taken by pattern.
+.NOTES
+	Idea        :: William Lam @lamw (Get-VSANVMDetailedUsage function)
+	Author      :: Roman Gelman @rgelman75
+	Version 1.0 :: 19-Jul-2018 :: [Release] :: Publicly available
+.LINK
+	https://www.virtuallyghetto.com/2018/06/retrieving-detailed-per-vm-space-utilization-on-vsan.html
+#>
+	
+	[CmdletBinding()]
+	Param (
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[Alias("Cluster")]
+		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster]$VsanCluster
+		 ,
+		[Parameter(Mandatory = $false)]
+		[ValidateNotNullOrEmpty()]
+		[string[]]$VM
+		 ,
+		[Parameter(Mandatory = $false)]
+		[pscredential]$Credential = $(Get-Credential -Message "VMHost Credentials")
+	)
+	
+	Begin
+	{
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+		$rgxVsanPath = '\[(?<Datastore>vsanDatastore)\]\s(?<Folder>.+)/(?<File>.+)$'
+		if ($PSBoundParameters.ContainsKey('VM')) { $VM = if ($VM -match '\*') { @((Get-VM $VM -Location $VsanCluster -Verbose:$false).Name) } else { $VM } }
+	}
+	Process
+	{
+		if ($VsanCluster.VsanEnabled)
+		{
+			$clusterView = Get-View -Verbose:$false -ViewType ClusterComputeResource -Property Name, Host -Filter @{ "name" = "$($VsanCluster.Name)" }
+			
+			foreach ($vmhost in $($clusterView.Host))
+			{
+				$vmhostView = Get-View $vmhost -Verbose:$false -Property Name
+				$esxiConnection = Try { Connect-VIServer -Server $vmhostView.name -Credential $Credential -ErrorAction Stop }
+				Catch { Write-Verbose "$FunctionName :: Failed to connect to the [$($VsanCluster.Name)\$($vmhostView.Name)] VMHost"; Break }
+				
+				$vos = Get-VSANView -Id "VsanObjectSystem-vsan-object-system" -Server $esxiConnection -Verbose:$false
+				$identities = $vos.VsanQueryObjectIdentities($null, $null, $null, $false, $true, $true)
+				
+				$json = $identities.RawData | ConvertFrom-Json
+				$jsonResults = $json.identities.vmIdentities
+				
+				foreach ($vmInstance in $jsonResults)
+				{
+					$identities = $vmInstance.objIdentities
+					foreach ($identity in $identities | Sort-Object -Property "type", "description")
+					{
+						### Retrieve the VM Name ###
+						if ($identity.type -eq "namespace")
+						{
+							$vsanIntSys = Get-View (Get-VMHost -Server $esxiConnection -Verbose:$false).ExtensionData.ConfigManager.vsanInternalSystem -Verbose:$false
+							$attributes = ($vsanIntSys.GetVsanObjExtAttrs($identity.uuid)) | ConvertFrom-JSON
+							
+							foreach ($attribute in $attributes | Get-Member)
+							{
+								if ("Equals", "GetHashCode", "GetType", "ToString" -notcontains $($attribute.Name))
+								{
+									$objectID = $attribute.name
+									$vmName = $attributes.$($objectID).'User friendly name'
+								}
+							}
+						}
+						
+						$VsanPath = [regex]::Match($identity.description, $rgxVsanPath)
+						
+						$return = [pscustomobject] @{
+							Cluster = $VsanCluster.Name
+							VM = $vmName
+							Folder = $VsanPath.Groups['Folder'].Value
+							File = $VsanPath.Groups['File'].Value
+							Type = $identity.type
+							UsedGB = [Math]::Round($identity.physicalUsedB/1GB, 2)
+							ReservedGB = [Math]::Round($identity.reservedCapacityB/1GB, 2)
+						}
+						
+						### Filter out a specific VM if provided ###
+						if ($PSBoundParameters.ContainsKey('VM')) { if ($VM -icontains $return.VM) { $return } }
+						else { $return }
+					}
+				}
+				Disconnect-VIServer -Server $esxiConnection -Confirm:$false -Force -Verbose:$false
+			}
+		}
+		else
+		{
+			Write-Verbose "$FunctionName :: The [$($VsanCluster.Name)] cluster is not VSAN Enabled"
+		}
+	}
+	End { }
+	
+} #EndFunction Get-VSANUsage
