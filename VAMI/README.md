@@ -22,7 +22,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |----|----|----|
 |1|[<b>Get-VAMIHealth</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get Appliance health summary|
 |2|[<b>Get-VAMISummary</b>](https://ps1code.com/2017/12/10/vcsa-backup-expiration-powercli)|Get basic Appliance info|
-|3|[<b>Get-VAMIAccess/Set-VAMIAccess</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get & control access interfaces (SSH, Shell, Console & DCUI)|
+|3|[<b>Get-VAMIAccess/Set-VAMIAccess</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get & `New!`enable/disable access interfaces (SSH, Shell, Console & DCUI)|
 |4|[<b>Get-VAMIBackupSize</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get estimated backup size|
 |5|[<b>Get-VAMIDisks</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get VMDK disk number to OS partition mapping|
 |6|[<b>Get-VAMIStorageUsed/Start-VAMIDiskResize</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get OS partition usage & Resize partition|
@@ -32,5 +32,5 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |10|[<b>Get-VAMIStatsList</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get available monitoring metrics|
 |11|[<b>Get-VAMITime</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get current Time and NTP info|
 |12|[<b>Get-VAMIUser/New-VAMIUser/Remove-VAMIUser</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Manipulate local users|
-|13|<b>Stop-VAMIAppliance</b>|Shutdown/Reboot VMware Appliance|
-|14|<b>Suspend-VAMIShutdown</b>|Cancel pending VMware Appliance reboot/shutdown|
+|13|<b>Stop-VAMIAppliance</b>|`New!`Shutdown/Reboot VMware Appliance|
+|14|<b>Suspend-VAMIShutdown</b>|`New!`Cancel pending VMware Appliance reboot/shutdown|
