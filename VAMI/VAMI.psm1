@@ -1,25 +1,43 @@
+Class VAMI { } #EndClass VAMI
+
+Class VamiService: VAMI
+{
+	[ValidateNotNullOrEmpty()][string]$Server
+	[ValidateNotNullOrEmpty()][string]$Name
+	[string]$Description
+	[ValidateNotNullOrEmpty()][string]$State
+	[string]$Health
+	[ValidateNotNullOrEmpty()][string]$Startup
+	
+	[string] ToString () { return "$($this.Name)" }
+	[string] GetServer () { return "$($this.Server)" }
+	
+} #EndClass VamiService
+
+
 Function Get-VAMISummary
 {
 	
 <#
 .SYNOPSIS
-    This function retrieves some basic information from VAMI interface (5480)
-    for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
+    Get basic VCSA summary and version info.
 .DESCRIPTION
-    Function to return basic VAMI summary info.
+	This function retrieves some basic information from VAMI interface (5480)
+    for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
 .EXAMPLE
     PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
     PS C:\> Get-VAMISummary
 .NOTES
 	Created by  :: William Lam @lamw (http://www.virtuallyghetto.com/2017/01/exploring-new-vcsa-vami-api-wpowercli-part-1.html)
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 	Version 1.1 :: 07-Dec-2017 :: [Feature] :: New properties added: Release, ReleaseDate, BackupExpireDate, DaysToExpire
 	Version 1.2 :: 21-Dec-2017 :: [Change] :: Release [6.5.0 U1d] added
 	Version 1.3 :: 21-Jan-2018 :: [Change] :: Release [6.5.0 U1e] added
 	Version 1.4 :: 29-Apr-2018 :: [Change] :: Release [6.5.0 U1g] added
 	Version 1.5 :: 12-Jul-2018 :: [Change] :: Two [6.5.0 U2] Releases added
+	Version 2.0 :: 16-Jan-2019 :: [Build] :: The BackupExpireDate and DaysToExpire properties replaced by IsExpired, VCSA 6.7 supported
 .LINK
 	https://ps1code.com/2017/12/10/vcsa-backup-expiration-powercli
 #>
@@ -29,49 +47,71 @@ Function Get-VAMISummary
 	{
 		Try
 		{
-			$SystemVersionAPI = Get-CisService -Name 'com.vmware.appliance.system.version' -Server $Server
-			$results = $SystemVersionAPI.get() | select product, 'type', version, build, install_time
+			$SystemVersionAPI = Get-CisService -Name 'com.vmware.appliance.system.version' -Server $Server -Verbose:$false
+			$VersionInfo = $SystemVersionAPI.get() | select product, 'type', version, build, install_time
+			$FullVersion = [version]$VersionInfo.version
+			$Version = "$($FullVersion.Major).$($FullVersion.Minor)"
 			
-			$Expiration = switch -exact ($results.build)
+			$ReleaseInfo = switch -exact ($Version)
 			{
-				### Official expiration dates regarding to the KB51124 ###
-				'4602587' { '10/22/2017'; $Release = '6.5.0GA'; $ReleaseDate = '11/15/2016' }
-				'4944578' { '10/22/2017'; $Release = '6.5.0a'; $ReleaseDate = '02/02/2017' }
-				'5178943' { '02/03/2018'; $Release = '6.5.0b'; $ReleaseDate = '03/14/2017' }
-				'5318112' { '02/03/2018'; $Release = '6.5.0c'; $ReleaseDate = '04/13/2017' }
-				'5318154' { '02/03/2018'; $Release = '6.5.0d'; $ReleaseDate = '04/18/2017' }
-				'5705665' { '02/03/2018'; $Release = '6.5.0e'; $ReleaseDate = '06/15/2017' }
-				'5973321' { '07/01/2018'; $Release = '6.5.0U1'; $ReleaseDate = '07/27/2017' }
-				'6671409' { '08/14/2018'; $Release = '6.5.0U1a'; $ReleaseDate = '09/21/2017' }
-				'6816762' { '09/26/2018'; $Release = '6.5.0U1b'; $ReleaseDate = '10/26/2017' }
-				### Non official/approx expiration dates ###
-				'7119070' { '10/01/2018'; $Release = '6.5.0f'; $ReleaseDate = '11/14/2017' }
-				'7119157' { '10/01/2018'; $Release = '6.5.0U1c'; $ReleaseDate = '11/14/2017' }
-				'7312210' { '11/01/2018'; $Release = '6.5.0U1d'; $ReleaseDate = '12/19/2017' }
-				'7515524' { '12/01/2018'; $Release = '6.5.0U1e'; $ReleaseDate = '01/09/2018' }
-				'8024368' { '02/01/2019'; $Release = '6.5.0U1g'; $ReleaseDate = '03/20/2018' }
-				'8307201' { '04/01/2019'; $Release = '6.5.0U2'; $ReleaseDate = '05/03/2018' }
-				'8815520' { '05/01/2019'; $Release = '6.5.0U2b'; $ReleaseDate = '06/28/2018' }
+				'6.5'
+				{
+					switch -exact ($VersionInfo.build)
+					{
+						### Official expiration dates regarding to the KB51124 ###
+						'4602587' { @{ 'Expired' = $true; 'Release' = '6.5.GA'; 'ReleaseDate' = '11/15/2016' } }
+						'4944578' { @{ 'Expired' = $true; 'Release' = '6.5.a'; 'ReleaseDate' = '02/02/2017' } }
+						'5178943' { @{ 'Expired' = $true; 'Release' = '6.5.b'; 'ReleaseDate' = '03/14/2017' } }
+						'5318112' { @{ 'Expired' = $true; 'Release' = '6.5.c'; 'ReleaseDate' = '04/13/2017' } }
+						'5318154' { @{ 'Expired' = $true; 'Release' = '6.5.d'; 'ReleaseDate' = '04/18/2017' } }
+						'5705665' { @{ 'Expired' = $true; 'Release' = '6.5.e'; 'ReleaseDate' = '06/15/2017' } }
+						'5973321' { @{ 'Expired' = $true; 'Release' = '6.5 U1'; 'ReleaseDate' = '07/27/2017' } }
+						'6671409' { @{ 'Expired' = $true; 'Release' = '6.5 U1a'; 'ReleaseDate' = '09/21/2017' } }
+						'6816762' { @{ 'Expired' = $true; 'Release' = '6.5 U1b'; 'ReleaseDate' = '10/26/2017' } }
+						### Root password expiration issue has resolved starting from Update 1c release ###
+						'7119070' { @{ 'Expired' = $false; 'Release' = '6.5.f'; 'ReleaseDate' = '11/14/2017' } }
+						'7119157' { @{ 'Expired' = $false; 'Release' = '6.5 U1c'; 'ReleaseDate' = '11/14/2017' } }
+						'7312210' { @{ 'Expired' = $false; 'Release' = '6.5 U1d'; 'ReleaseDate' = '12/19/2017' } }
+						'7515524' { @{ 'Expired' = $false; 'Release' = '6.5 U1e'; 'ReleaseDate' = '01/09/2018' } }
+						'8024368' { @{ 'Expired' = $false; 'Release' = '6.5 U1g'; 'ReleaseDate' = '03/20/2018' } }
+						'8307201' { @{ 'Expired' = $false; 'Release' = '6.5 U2'; 'ReleaseDate' = '05/03/2018' } }
+						'8815520' { @{ 'Expired' = $false; 'Release' = '6.5 U2b'; 'ReleaseDate' = '06/28/2018' } }
+						'9451637' { @{ 'Expired' = $false; 'Release' = '6.5 U2c'; 'ReleaseDate' = '08/14/2018' } }
+						'10964411' { @{ 'Expired' = $false; 'Release' = '6.5 U2d'; 'ReleaseDate' = '11/29/2018' } }
+						default { @{ 'Expired' = $false; 'Release' = '6.5 U?'; 'ReleaseDate' = (Get-Date) } }
+					}
+				}
+				'6.7'
+				{
+					switch -exact ($VersionInfo.build)
+					{
+						'8546234' { @{ 'Expired' = $false; 'Release' = '6.7.a'; 'ReleaseDate' = '05/22/2018' } }
+						'8832884' { @{ 'Expired' = $false; 'Release' = '6.7.b'; 'ReleaseDate' = '06/28/2018' } }
+						'9232925' { @{ 'Expired' = $false; 'Release' = '6.7.c'; 'ReleaseDate' = '07/26/2018' } }
+						'9451876' { @{ 'Expired' = $false; 'Release' = '6.7.d'; 'ReleaseDate' = '08/14/2018' } }
+						'10244745' { @{ 'Expired' = $false; 'Release' = '6.7 U1'; 'ReleaseDate' = '10/16/2018' } }
+						default { @{ 'Expired' = $false; 'Release' = '6.7 U?'; 'ReleaseDate' = (Get-Date) } }
+					}
+				}
+				default { @{ 'Expired' = $false; 'Release' = '?'; 'ReleaseDate' = (Get-Date) } }
 			}
-			
-			$SystemUptimeAPI = Get-CisService -Name 'com.vmware.appliance.system.uptime' -Server $Server
+			$SystemUptimeAPI = Get-CisService -Name 'com.vmware.appliance.system.uptime' -Server $Server -Verbose:$false
 			$ts = [timespan]::FromSeconds($SystemUptimeAPI.get().ToString())
 			$uptime = $ts.ToString("dd\ \D\a\y\s\,\ hh\:mm\:ss")
 			
-			$SummaryResult = [pscustomobject] @{
+			[pscustomobject] @{
 				Server = $Server.Name
-				Product = $results.product
-				Type = $results.type
-				Version = [version]$results.version
-				Build = [uint32]$results.build
-				Release = $Release
-				ReleaseDate = Get-Date $ReleaseDate -Format "MM/dd/yyyy"
-				InstallDate = ([datetime]($results.install_time -replace '[a-zA-Z]', ' ')).ToLocalTime()
-				BackupExpireDate = Get-Date $Expiration -Format "MM/dd/yyyy"
-				DaysToExpire = [System.Math]::Round((New-TimeSpan -End $Expiration -Start (Get-Date)).TotalDays, 0)
+				Product = $VersionInfo.product
+				Type = $VersionInfo.type.Replace('Platform Services Controller', 'PSC')
+				Version = $Version
+				FullVersion = $FullVersion
+				Build = [uint32]$VersionInfo.build
+				Release = $ReleaseInfo.Release
+				ReleaseDate = Get-Date $ReleaseInfo.ReleaseDate
+				InstallDate = ([datetime]($VersionInfo.install_time -replace '[a-zA-Z]', ' ')).ToLocalTime()
+				IsExpired = $ReleaseInfo.Expired
 				Uptime = $uptime
 			}
-			$SummaryResult
 		}
 		Catch {  }
 	}
@@ -93,7 +133,7 @@ Function Get-VAMIHealth
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 	Version 1.1 :: 19-Apr-2017 :: [Change] :: 'HealthLastCheck' property converted to the Universal time
 .LINK
@@ -148,23 +188,25 @@ Function Get-VAMIAccess
 	
 <#
 .SYNOPSIS
+    Get VAMI access interfaces (Console, DCUI, Bash Shell & SSH).
+.DESCRIPTION
     This function retrieves access information from VAMI interface (5480)
     for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
-.DESCRIPTION
-    Function to return VAMI access interfaces (Console,DCUI,Bash Shell & SSH).
 .EXAMPLE
     PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
     PS C:\> Get-VAMIAccess
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
+	Version 1.1 :: 14-Jan-2019 :: [Change] :: Added 'BashDisable' property
 .LINK
 	http://www.virtuallyghetto.com/2017/01/exploring-new-vcsa-vami-api-wpowercli-part-3.html
 #>
 	
 	$ErrorActionPreference = 'Stop'
+	
 	foreach ($Server in ($global:DefaultCisServers | ? { $_.IsConnected }))
 	{
 		Try
@@ -174,19 +216,106 @@ Function Get-VAMIAccess
 			$shellAccess = (Get-CisService -Name 'com.vmware.appliance.access.shell' -Server $Server).get()
 			$sshAccess = (Get-CisService -Name 'com.vmware.appliance.access.ssh' -Server $Server).get()
 			
-			$accessResult = [pscustomobject] @{
+			[pscustomobject] @{
 				Server = $Server.Name
 				Console = $consoleAccess
 				DCUI = $dcuiAccess
 				BashShell = $shellAccess.enabled
+				BashDisable = (Get-Date).AddSeconds($shellAccess.timeout)
 				SSH = $sshAccess
 			}
-			$accessResult	
 		}
 		Catch { }
 	}
 	
 } #EndFunction Get-VAMIAccess
+
+Function Set-VAMIAccess
+{
+	
+<#
+.SYNOPSIS
+    Enable/disable VCSA access interfaces (Console, DCUI, Bash Shell & SSH).
+.DESCRIPTION
+    This function enables or disables VCSA access interfaces from VAMI interface (5480)
+    for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
+.PARAMETER Interface
+	Specifies access interface(s).
+.PARAMETER Access
+	Specifies selected interfaces state, enabled or disabled.
+.EXAMPLE
+    PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
+    PS C:\> Set-VAMIAccess -Interface SSH -Access Enable
+	Enable SSH access to appliance.
+.EXAMPLE
+	PS C:\> Set-VAMIAccess SSH,Console Disable -Confirm:$false
+	Silently disable multiple access interfaces.
+.EXAMPLE
+	PS C:\> Set-VAMIAccess SSH,Console,BashShell,DCUI
+	Enable all possible interfaces. Note, the BashShell disallowed after 24H, the counter is 'BashDisable' property.
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
+	Version 1.0 :: 15-Jan-2019 :: [Release] :: Publicly available
+.LINK
+	https://code.vmware.com/apis/60/vcenter-server-appliance-management
+#>
+	
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
+	Param (
+		[Parameter(Mandatory, Position = 0)]
+		[ValidateSet('SSH', 'DCUI', 'BashShell', 'Console')]
+		[string[]]$Interface
+		 ,
+		[Parameter(Position = 1)]
+		[ValidateSet('Enable', 'Disable')]
+		[string]$Access = 'Enable'
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$Set = if ($Access -eq 'Enable') { $true } else { $false }
+		$hashInt = @{
+			'SSH' = 'ssh';
+			'DCUI' = 'dcui';
+			'BashShell' = 'shell';
+			'Console' = 'consolecli';
+		}
+	}
+	Process
+	{
+		foreach ($Server in ($global:DefaultCisServers | ? { $_.IsConnected }))
+		{
+			foreach ($Int in $Interface)
+			{
+				if ($PSCmdlet.ShouldProcess("VCSA [$($Server.Name)]", "$Access [$Int] interface"))
+				{
+					Try
+					{
+						$AccessAPI = Get-CisService -Name "com.vmware.appliance.access.$($hashInt.$Int)" -Server $Server -Verbose:$false
+						
+						if ($Int -ne 'BashShell')
+						{
+							$AccessAPI.set($Set)
+						}
+						else
+						{
+							$ShellConfig = $AccessAPI.Help.set.config.Create()
+							$ShellConfig.enabled = $Set
+							$ShellConfig.timeout = 86400
+							$AccessAPI.set($ShellConfig)
+						}
+					}
+					Catch { }
+				}
+			}
+			Get-VAMIAccess | Where-Object { $_.Server -eq $Server.Name }
+		}
+	}
+	End { }
+	
+} #EndFunction Set-VAMIAccess
 
 Function Get-VAMITime
 {
@@ -203,7 +332,7 @@ Function Get-VAMITime
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/01/exploring-new-vcsa-vami-api-wpowercli-part-4.html
@@ -258,7 +387,7 @@ Function Get-VAMINetwork
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-5.html
@@ -317,7 +446,7 @@ Function Get-VAMIDisks
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-6.html
@@ -361,7 +490,7 @@ Function Start-VAMIDiskResize
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 02-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-6.html
@@ -412,7 +541,7 @@ Function Get-VAMIStatsList
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 02-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-7.html
@@ -462,7 +591,7 @@ Function Get-VAMIStorageUsed
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 29-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-7.html
@@ -597,7 +726,7 @@ Function Get-VAMIPerformance
 .NOTES
 	Idea        :: William Lam @lamw
 	Created by  :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 04-Apr-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-7.html
@@ -699,97 +828,150 @@ Function Get-VAMIPerformance
 	
 } #EndFunction Get-VAMIPerformance
 
+Function Get-VAMIServiceDescription
+{
+	
+<#
+.SYNOPSIS
+    Get VCSA service description.
+.DESCRIPTION
+    This function translates VCSA service name (service-id) to its full name (description).
+.EXAMPLE
+    PS C:\> Get-VAMIServiceDescription -Name vsphere-ui
+.EXAMPLE
+	PS C:\> Get-VAMIServiceDescription vsphere-client
+.NOTES
+	Created by  :: Roman Gelman @rgelman75
+	Version 1.0 :: 14-Jan-2019 :: [Release] :: Publicly available
+.LINK
+	https://ps1code.com
+#>
+	
+	Param
+	(
+		[Parameter(Mandatory, Position = 0)]
+		[string]$Name
+	)
+	
+	$vcsaSvc = @{
+		'vmware-vpostgres' = 'Postgres';
+		'imagebuilder' = 'Image Builder Manager';
+		'cm' = 'Component Manager';
+		'vpxd' = 'vCenter Server';
+		'sps' = 'Storage Profile-Driven Service';
+		'applmgmt' = 'Appliance Management Service';
+		'statsmonitor' = 'Appliance Monitoring Service';
+		'rhttpproxy' = 'HTTP Reverse Proxy';
+		'vapi-endpoint' = 'vAPI Endpoint';
+		'vmware-stsd' = 'Security Token Service';
+		'lwsmd' = 'Likewise Service Manager';
+		'vmafdd' = 'Authentication Framework';
+		'vmware-psc-client' = 'PSC Client';
+		'vsm' = 'vService Manager';
+		'vmonapi' = 'Service Lifecycle Manager API';
+		'perfcharts' = 'Performance Charts';
+		'updatemgr' = 'Update Manager';
+		'vmware-vmon' = 'Service Lifecycle Manager';
+		'vsan-health' = 'VSAN Health Service';
+		'vsphere-client' = 'vSphere Web Client';
+		'vmware-sts-idmd' = 'Identity Management Service';
+		'vmcad' = 'Certificate Service';
+		'eam' = 'ESXi Agent Manager';
+		'cis-license' = 'License Service';
+		'vmcam' = 'Authentication Proxy';
+		'pschealth' = 'PSC Health Monitor';
+		'vmdird' = 'Directory Service';
+		'mbcs' = 'Message Bus Config Service';
+		'vcha' = 'vCenter High Availability';
+		'vsphere-ui' = 'vSphere Client';
+		'content-library' = 'Content Library Service';
+		'vmdnsd' = 'Domain Name Service';
+		'sca' = 'Service Control Agent';
+		'netdumper' = 'ESXi Dump Collector';
+		'vpxd-svcs' = 'vCenter-Services';
+		'rbd' = 'Auto Deploy Waiter';
+	}
+	
+	$Description = if ($vcsaSvc.ContainsKey($Name)) { $vcsaSvc.$Name } else { '_UNKNOWN_' }
+	
+	[pscustomobject] @{
+		Service = $Name
+		Description = $Description
+	}
+	
+} #EndFunction Get-VAMIServiceDescription
+
 Function Get-VAMIService
 {
 	
 <#
 .SYNOPSIS
-    This function retrieves list of services in VAMI interface (5480)
-    for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
+    Get VCSA services info.
 .DESCRIPTION
-    Function to return list of services and their description.
+    This function retrieves services info in VAMI interface (5480)
+    for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
+.PARAMETER Name
+	Specifies service name(s) to retrieve.
+.PARAMETER State
+	Specifies services current state.
+.PARAMETER Startup
+	Specifies services startup mode.
 .EXAMPLE
     PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
-    PS C:\> Get-VAMIService |ft -au
+    PS C:\> Get-VAMIService | ogv
 .EXAMPLE
-	PS C:\> Get-VAMIService |? {$_.Startup -eq 'AUTOMATIC' -and $_.Health -ne 'HEALTHY'}
-	Get all Unhealthy automatic services.
+	PS C:\> Get-VAMIService -State STOPPED -Startup AUTOMATIC | ft -au
+	Get all UNHEALTHY services (automatic & stopped).
 .EXAMPLE
-    PS C:\> Get-VAMIService -Name rbd
+    PS C:\> Get-VAMIService -Name vsphere-client
+	Get service by name.
 .EXAMPLE
-    PS C:\> Get-VAMIService rbd,vsphere-client
+    PS C:\> Get-VAMIService rbd, vsphere-client -Verbose
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+ | PowerShell 4.0
 	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 	Version 1.1 :: 18-Apr-2017 :: [Change] :: Added property 'Description'
+	Version 2.0 :: 16-Jan-2019 :: [Build] :: Returned object changed to [VamiService], new parameters -State & -Startup added, the -Verbose supported
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-8.html
 #>
 	
+	[CmdletBinding(DefaultParameterSetName = 'ALL')]
+	[OutputType([VamiService])]
 	Param (
-		[Parameter(Mandatory = $false)]
+		[Parameter(Position = 0, ParameterSetName = 'NAME')]
 		[ValidateNotNullOrEmpty()]
 		[string[]]$Name
+		 ,
+		[Parameter(ParameterSetName = 'ALL')]
+		[ValidateSet('STARTED', 'STOPPED')]
+		[string]$State
+		 ,
+		[Parameter(ParameterSetName = 'ALL')]
+		[ValidateSet('AUTOMATIC', 'MANUAL', 'DISABLED')]
+		[string]$Startup
 	)
 	
-	$vcsaSvc = @{
-		'vmware-vpostgres' = 'VMware Postgres';
-		'imagebuilder' = 'VMware Image Builder Manager';
-		'cm' = 'VMware Component Manager';
-		'vpxd' = 'VMware vCenter Server';
-		'sps' = 'VMware vSphere Profile-Driven Storage Service';
-		'applmgmt' = 'VMware Appliance Management Service';
-		'statsmonitor' = 'VMware Appliance Monitoring Service';
-		'rhttpproxy' = 'VMware HTTP Reverse Proxy';
-		'vapi-endpoint' = 'VMware vAPI Endpoint';
-		'vmware-stsd' = 'VMware Security Token Service';
-		'lwsmd' = 'Likewise Service Manager';
-		'vmafdd' = 'VMware Authentication Framework';
-		'vmware-psc-client' = 'VMware Platform Services Controller Client';
-		'vsm' = 'VMware vService Manager';
-		'vmonapi' = 'VMware Service Lifecycle Manager API';
-		'perfcharts' = 'VMware Performance Charts';
-		'updatemgr' = 'VMware Update Manager';
-		'vmware-vmon' = 'VMware Service Lifecycle Manager';
-		'vsan-health' = 'VMware VSAN Health Service';
-		'vsphere-client' = 'VMware vSphere Web Client';
-		'vmware-sts-idmd' = 'VMware Identity Management Service';
-		'vmcad' = 'VMware Certificate Service';
-		'eam' = 'VMware ESX Agent Manager';
-		'cis-license' = 'VMware License Service';
-		'vmcam' = 'VMware vSphere Authentication Proxy';
-		'pschealth' = 'VMware Platform Services Controller Health Monitor';
-		'vmdird' = 'VMware Directory Service';
-		'mbcs' = 'VMware Message Bus Configuration Service';
-		'vcha' = 'VMware vCenter High Availability';
-		'vsphere-ui' = 'VMware vSphere Client';
-		'content-library' = 'VMware Content Library Service';
-		'vmdnsd' = 'VMware Domain Name Service';
-		'sca' = 'VMware Service Control Agent';
-		'netdumper' = 'VMware vSphere ESXi Dump Collector';
-		'vpxd-svcs' = 'VMware vCenter-Services';
-		'rbd' = 'VMware vSphere Auto Deploy Waiter';
-	}
-	
+	$FunctionName = '{0}' -f $MyInvocation.MyCommand
 	$ErrorActionPreference = 'Stop'
 	foreach ($Server in ($global:DefaultCisServers | ? { $_.IsConnected }))
 	{
 		$serviceResult = @()
-		$vMonAPI = Get-CisService 'com.vmware.appliance.vmon.service' -Server $Server
+		$vMonAPI = Get-CisService 'com.vmware.appliance.vmon.service' -Server $Server -Verbose:$false
 		
-		If ($PSBoundParameters.ContainsKey('Name'))
+		if ($PSCmdlet.ParameterSetName -eq 'NAME')
 		{			
 			foreach ($svc in $Name)
 			{
 				Try
 				{
 					$serviceStatus = $vMonAPI.get($svc, 0)
-					$serviceString = [pscustomobject] @{
+					$serviceString = [VamiService] @{
 						Server = $Server.Name
 						Name = $svc
-						Description = $vcsaSvc[$svc]
+						Description = (Get-VAMIServiceDescription $svc).Description
 						State = $serviceStatus.state
 						Health = ""
 						Startup = $serviceStatus.startup_type
@@ -799,19 +981,22 @@ Function Get-VAMIService
 
 					$serviceResult += $serviceString
 				}
-				Catch { }
+				Catch
+				{
+					Write-Verbose "$FunctionName :: The service [$svc] not found"	
+				}
 			}
 		}
-		Else
+		else
 		{
 			$services = $vMonAPI.list_details()
 			
 			foreach ($key in $services.Keys | sort -Property Value)
 			{
-				$serviceString = [pscustomobject] @{
+				$serviceString = [VamiService] @{
 					Server = $Server.Name
 					Name = $key
-					Description = $vcsaSvc[$key.Value]
+					Description = (Get-VAMIServiceDescription $key.Value).Description
 					State = $services[$key].state
 					Health = ""
 					Startup = $services[$key].Startup_type
@@ -821,8 +1006,11 @@ Function Get-VAMIService
 				
 				$serviceResult += $serviceString
 			}
+			$serviceResult = if ($PSBoundParameters.ContainsKey('State')) { $serviceResult.Where{ $_.State -eq $State } } else { $serviceResult }
+			$serviceResult = if ($PSBoundParameters.ContainsKey('Startup')) { $serviceResult.Where{ $_.Startup -eq $Startup } } else { $serviceResult }
 		}
-		$serviceResult
+		
+		$serviceResult | Sort-Object Startup, State, Name
 	}
 	
 } #EndFunction Get-VAMIService
@@ -832,52 +1020,63 @@ Function Start-VAMIService
 	
 <#
 .SYNOPSIS
+    Start VCSA service(s).
+.DESCRIPTION
     This function starts service(s) in VAMI interface (5480)
     for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
-.DESCRIPTION
-    Function to start VCSA service(s).
 .EXAMPLE
     PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
-    PS C:\> Start-VAMIService -Name rbd
+    PS C:\> Get-VAMIService -Name vsphere-client | Start-VAMIService
 .EXAMPLE
-	PS C:\> Get-VAMIService rbd,vsphere-client |Start-VAMIService -Verbose
+	PS C:\> Get-VAMIService vsan-health, vsphere-ui | Start-VAMIService -Verbose
+.EXAMPLE
+	PS C:\> Get-VAMIService -State STOPPED -Startup AUTOMATIC | Start-VAMIService -Confirm:$false
 .NOTES
-	Created by  :: William Lam @lamw
-	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Idea        :: William Lam @lamw
+	Created by  :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+ | PowerShell 4.0
 	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
+	Version 2.0 :: 14-Jan-2019 :: [Build] :: Gets pipeline input from the Get-VAMIService, the -Confirm parameter supported
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-8.html
 #>
 	
-	[CmdletBinding()]
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
 	Param (
-		[Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-		[string]$Name
-		 ,
-		[Parameter(Mandatory, ValueFromPipelineByPropertyName)]
-		[string]$Server
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VamiService]$Service
 	)
 	
-	Begin { }
-	
+	Begin
+	{
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+	}
 	Process
 	{
-		$CisServer = $global:DefaultCisServers | ? { $_.Name -eq $Server -and $_.IsConnected }
-		Try { $vMonAPI = Get-CisService 'com.vmware.appliance.vmon.service' -Server $CisServer -Verbose:$false }
-		Catch { Throw "Failed to retrieve services info from [$Server] server" }
+		Try { $vMonAPI = Get-CisService 'com.vmware.appliance.vmon.service' -Server $Service.GetServer() -Verbose:$false }
+		Catch { Throw "Failed to retrieve services info from the [$($Service.GetServer())] server" }
 		
-		Try
+		if ($Service.State -eq 'STOPPED')
 		{
-			Write-Verbose "Starting [$Name] service ..."
-			$vMonAPI.start($Name)
-			Write-Verbose "Service [$Name] started successfully"
-			
-			If (!$PSBoundParameters.ContainsKey('Verbose')) { Get-VAMIService $Name }
+			if ($PSCmdlet.ShouldProcess("VCSA [$($Service.GetServer())]", "Start [$((Get-VAMIServiceDescription $Service).Description)] service"))
+			{
+				Try
+				{
+					Write-Verbose "$FunctionName :: Starting [$Service] service ..."
+					$vMonAPI.start($Service)
+					Write-Verbose "$FunctionName :: Service [$Service] started successfully"
+					
+				}
+				Catch
+				{
+					Write-Verbose "$FunctionName :: Failed to start [$Service] service ..."
+				}
+				(Get-VAMIService $Service).Where{ $_.Server -eq $Service.GetServer() }
+			}
 		}
-		Catch
+		else
 		{
-			Write-Verbose "Failed to start [$Name] service"
+			Write-Verbose "$FunctionName :: The service [$Service] is skipped because it's already started"
 		}
 	}
 	
@@ -890,52 +1089,61 @@ Function Stop-VAMIService
 	
 <#
 .SYNOPSIS
+    Stop VCSA service(s).
+.DESCRIPTION
     This function stops service(s) in VAMI interface (5480)
     for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
-.DESCRIPTION
-    Function to stop VCSA service(s).
 .EXAMPLE
     PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
-    PS C:\> Stop-VAMIService -Name rbd
+    PS C:\> Get-VAMIService -Name vsphere-client | Stop-VAMIService
 .EXAMPLE
-	PS C:\> Get-VAMIService rbd,vsphere-client |Stop-VAMIService -Verbose
+	PS C:\> Get-VAMIService vsan-health, vsphere-ui | Stop-VAMIService -Confirm:$false -Verbose
 .NOTES
-	Created by  :: William Lam @lamw
-	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Idea        :: William Lam @lamw
+	Created by  :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+ | PowerShell 4.0
 	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
+	Version 2.0 :: 14-Jan-2019 :: [Build] :: Gets pipeline input from the Get-VAMIService, the -Confirm parameter supported
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-8.html
 #>
 	
-	[CmdletBinding()]
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
 	Param (
-		[Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-		[string]$Name
-		 ,
-		[Parameter(Mandatory, ValueFromPipelineByPropertyName)]
-		[string]$Server
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VamiService]$Service
 	)
 	
-	Begin { }
-	
+	Begin
+	{
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+	}
 	Process
 	{
-		$CisServer = $global:DefaultCisServers | ? { $_.Name -eq $Server -and $_.IsConnected }
-		Try { $vMonAPI = Get-CisService 'com.vmware.appliance.vmon.service' -Server $CisServer -Verbose:$false }
-		Catch { Throw "Failed to retrieve services info from [$Server] server" }
+		Try { $vMonAPI = Get-CisService 'com.vmware.appliance.vmon.service' -Server $Service.GetServer() -Verbose:$false }
+		Catch { Throw "Failed to retrieve services info from the [$($Service.GetServer())] server" }
 		
-		Try
+		if ($Service.State -eq 'STARTED')
 		{
-			Write-Verbose "Stoping [$Name] service ..."
-			$vMonAPI.stop($Name)
-			Write-Verbose "Service [$Name] stoped successfully"
-			
-			If (!$PSBoundParameters.ContainsKey('Verbose')) { Get-VAMIService $Name }
+			if ($PSCmdlet.ShouldProcess("VCSA [$($Service.GetServer())]", "Stop [$((Get-VAMIServiceDescription $Service).Description)] service"))
+			{
+				Try
+				{
+					Write-Verbose "$FunctionName :: Stopping [$Service] service ..."
+					$vMonAPI.stop($Service)
+					Write-Verbose "$FunctionName :: Service [$Service] stopped successfully"
+					
+				}
+				Catch
+				{
+					Write-Verbose "$FunctionName :: Failed to stop [$Service] service ..."
+				}
+				(Get-VAMIService $Service).Where{ $_.Server -eq $Service.GetServer() }
+			}
 		}
-		Catch
+		else
 		{
-			Write-Verbose "Failed to stop [$Name] service ..."
+			Write-Verbose "$FunctionName :: The service [$Service] is skipped because it's already stopped"
 		}
 	}
 	
@@ -948,52 +1156,61 @@ Function Restart-VAMIService
 	
 <#
 .SYNOPSIS
+    Restart VCSA service(s).
+.DESCRIPTION
     This function restarts service(s) in VAMI interface (5480)
     for a VCSA node which can be an Embedded VCSA, External PSC or External VCSA.
-.DESCRIPTION
-    Function to restart VCSA service(s).
 .EXAMPLE
     PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
-    PS C:\> Restart-VAMIService -Name rbd
+    PS C:\> Get-VAMIService -Name vsphere-client | Restart-VAMIService
 .EXAMPLE
-	PS C:\> Get-VAMIService rbd,vsphere-client |Restart-VAMIService -Verbose
+	PS C:\> Get-VAMIService vsan-health, vsphere-ui | Restart-VAMIService -Confirm:$false -Verbose
 .NOTES
 	Idea        :: William Lam @lamw
 	Created by  :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+ | PowerShell 4.0
 	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
+	Version 2.0 :: 14-Jan-2019 :: [Build] :: Gets pipeline input from the Get-VAMIService, the -Confirm parameter supported
 .LINK
 	http://www.virtuallyghetto.com/2017/02/exploring-new-vcsa-vami-api-wpowercli-part-8.html
 #>
 	
-	[CmdletBinding()]
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
 	Param (
-		[Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
-		[string]$Name
-		 ,
-		[Parameter(Mandatory, ValueFromPipelineByPropertyName)]
-		[string]$Server
+		[Parameter(Mandatory, ValueFromPipeline)]
+		[VamiService]$Service
 	)
 	
-	Begin { }
-	
+	Begin
+	{
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+	}
 	Process
 	{
-		$CisServer = $global:DefaultCisServers | ? { $_.Name -eq $Server -and $_.IsConnected }
-		Try { $vMonAPI = Get-CisService 'com.vmware.appliance.vmon.service' -Server $CisServer -Verbose:$false }
-		Catch { Throw "Failed to retrieve services info from [$Server] server" }
+		Try { $vMonAPI = Get-CisService 'com.vmware.appliance.vmon.service' -Server $Service.GetServer() -Verbose:$false }
+		Catch { Throw "Failed to retrieve services info from the [$($Service.GetServer())] server" }
 		
-		Try
+		if ($Service.State -eq 'STARTED')
 		{
-			Write-Verbose "Restarting [$Name] service ..."
-			$vMonAPI.restart($Name)
-			Write-Verbose "Service [$Name] restarted successfully"
-			
-			If (!$PSBoundParameters.ContainsKey('Verbose')) { Get-VAMIService $Name }
+			if ($PSCmdlet.ShouldProcess("VCSA [$($Service.GetServer())]", "Restart [$((Get-VAMIServiceDescription $Service).Description)] service"))
+			{
+				Try
+				{
+					Write-Verbose "$FunctionName :: Restarting [$Service] service ..."
+					$vMonAPI.restart($Service)
+					Write-Verbose "$FunctionName :: Service [$Service] restarted successfully"
+					
+				}
+				Catch
+				{
+					Write-Verbose "$FunctionName :: Failed to restart [$Service] service ..."
+				}
+				(Get-VAMIService $Service).Where{ $_.Server -eq $Service.GetServer() }
+			}
 		}
-		Catch
+		else
 		{
-			Write-Verbose "Failed to restart [$Name] service ..."
+			Write-Verbose "$FunctionName :: The service [$Service] is skipped because it's not started"	
 		}
 	}
 	
@@ -1016,7 +1233,7 @@ Function Get-VAMIBackupSize
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/03/exploring-new-vcsa-vami-api-wpowercli-part-9.html
@@ -1080,7 +1297,7 @@ Function Get-VAMIUser
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/03/exploring-new-vcsa-vami-api-wpowercli-part-10.html
@@ -1158,7 +1375,7 @@ Function New-VAMIUser
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/03/exploring-new-vcsa-vami-api-wpowercli-part-10.html
@@ -1234,7 +1451,7 @@ Function Remove-VAMIUser
 .NOTES
 	Created by  :: William Lam @lamw
 	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5+, VCSA 6.5+
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
 	Version 1.0 :: 30-Mar-2017 :: [Release] :: Publicly available
 .LINK
 	http://www.virtuallyghetto.com/2017/03/exploring-new-vcsa-vami-api-wpowercli-part-10.html
@@ -1273,3 +1490,175 @@ Function Remove-VAMIUser
 	}
 	
 } #EndFunction Remove-VAMIUser
+
+Function Suspend-VAMIShutdown
+{
+	
+<#
+.SYNOPSIS
+    Cancel pending VMware Appliance reboot/shutdown.
+.DESCRIPTION
+    This function cancels a pending reboot or shutdown for any connected VMware Appliance(s).
+.EXAMPLE
+    PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
+    PS C:\> Suspend-VAMIShutdown
+.EXAMPLE
+	PS C:\> Suspend-VAMIShutdown -Verbose
+.EXAMPLE
+	PS C:\> Suspend-VAMIShutdown -Confirm:$false
+	Silently cancel a pending shutdown in all connected appliances.
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
+	Version 1.0 :: 15-Jan-2019 :: [Release] :: Publicly available
+.LINK
+	https://code.vmware.com/apis/60/vcenter-server-appliance-management
+#>
+	
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
+	[Alias('Cancel-VAMIShutdown', 'Cancel-VAMIRestart')]
+	Param ()
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+	}
+	Process
+	{
+		foreach ($Server in ($global:DefaultCisServers | ? { $_.IsConnected }))
+		{
+			$ShutdownAPI = Get-CisService -Name "com.vmware.appliance.techpreview.shutdown" -Server $Server -Verbose:$false
+			$Schedule = $ShutdownAPI.get()
+			
+			if ($Schedule.shutdown_time)
+			{
+				if ($PSCmdlet.ShouldProcess("VMware Appliance [$($Server.Name)]", "Cancel pending $($Schedule.action) scheduled to $($Schedule.shutdown_time)"))
+				{
+					Try
+					{
+						$ShutdownAPI.cancel()
+						Write-Verbose "$FunctionName :: Pending $($Schedule.action) successfully canceled on the [$($Server.Name)] VMware Appliance"
+					}
+					Catch { Write-Verbose "$FunctionName :: Failed to cancel $($Schedule.action) on [$($Server.Name)] VMware Appliance" }
+				}
+			}
+			else
+			{
+				Write-Verbose "$FunctionName :: The VMware Appliance [$($Server.Name)] is not scheduled for reboot or shutdown"
+			}
+		}
+	}
+	End { }
+	
+} #EndFunction Suspend-VAMIShutdown
+
+Function Stop-VAMIAppliance
+{
+	
+<#
+.SYNOPSIS
+    Shutdown/Reboot VMware Appliance.
+.DESCRIPTION
+    This function schedules shutdown or reboot for any connected VMware Appliance(s).
+.PARAMETER Reason
+	Specifies reason for what reboot or shutdown was made.
+.PARAMETER Delay
+	Specifies delay for the scheduled shutdown/reboot in MINUTES.
+	The minimum allowed by API is one minute.
+	The maximum allowed by function is one week.
+.PARAMETER Wait
+	If specified, the function will wait for the action to complete,
+	otherwise the action will be scheduled and the function exits.
+.PARAMETER Reboot
+	If specified, the reboot is scheduled, otherwise the action is shutdown.
+.EXAMPLE
+    PS C:\> Connect-CisServer -Server 192.168.1.51 -User administrator@vsphere.local -Password VMware1!
+    PS C:\> Stop-VAMIAppliance
+	Shutdown connected appliance(s).
+.EXAMPLE
+	PS C:\> Stop-VAMIAppliance xyu 20 -Verbose -Wait
+	Schedule shutdown and wait for complete.
+.EXAMPLE
+	PS C:\> Stop-VAMIAppliance -Confirm:$false -Reboot
+	Silently restart all connected appliances using default delay and reason.
+.NOTES
+	Author      :: Roman Gelman @rgelman75
+	Requirement :: PowerCLI 6.5+ | VCSA 6.5+
+	Version 1.0 :: 15-Jan-2019 :: [Release] :: Publicly available
+.LINK
+	https://code.vmware.com/apis/60/vcenter-server-appliance-management
+#>
+	
+	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess)]
+	[Alias('Shutdown-VAMIAppliance', 'Restart-VAMIAppliance')]
+	Param (
+		[Parameter(Position = 0)]
+		[string]$Reason
+		 ,
+		[Parameter(Position = 1)]
+		[ValidateRange(1, 10080)]
+		[uint16]$Delay = 1
+		 ,
+		[switch]$Wait
+		 ,
+		[switch]$Reboot
+	)
+	
+	Begin
+	{
+		$ErrorActionPreference = 'Stop'
+		$FunctionName = '{0}' -f $MyInvocation.MyCommand
+		$CmdAPI = @{ }
+		if ($Reboot) { $CmdAPI.api = 'reboot'; $CmdAPI.action = 'reboot'; $CmdAPI.Capital = 'Reboot' }
+		else { $CmdAPI.api = 'poweroff'; $CmdAPI.action = 'shutdown'; $CmdAPI.Capital = 'Shutdown'; }
+	}
+	Process
+	{
+		foreach ($Server in ($global:DefaultCisServers | ? { $_.IsConnected }))
+		{
+			$Reason = if (!$Reason) { $Server.User } else { $Reason }
+			
+			if ($PSCmdlet.ShouldProcess("VMware Appliance [$($Server.Name)]", "$($CmdAPI.Capital) for the [$Reason] reason"))
+			{
+				Try
+				{
+					$ShutdownAPI = Get-CisService -Name "com.vmware.appliance.techpreview.shutdown" -Server $Server -Verbose:$false
+					
+					$ShutdownConfig = $ShutdownAPI.Help.$($CmdAPI.api).config.Create()
+					$ShutdownConfig.delay = $Delay
+					$ShutdownConfig.reason = $Reason
+					
+					$ShutdownAPI.$($CmdAPI.api)($ShutdownConfig)
+					
+					Write-Verbose "$FunctionName :: The VMware Appliance [$($Server.Name)] scheduled for the $($CmdAPI.action)"
+					
+					$Schedule = $ShutdownAPI.get()
+					[pscustomobject] @{
+						Server = $Server.Name
+						Action = (Get-Culture -Verbose:$false).TextInfo.ToTitleCase($Schedule.action)
+						Reason = $Schedule.reason
+						Invoked = Get-Date -Verbose:$false -Format 'yyyy-MM-dd HH:mm:ss'
+						Scheduled = $Schedule.shutdown_time
+					}
+					
+					if ($Wait)
+					{
+						$TotalSec = [Math]::Round((New-TimeSpan -Start (Get-Date) -End (Get-Date $Schedule.shutdown_time) -Verbose:$false).TotalSeconds, 0)
+						for ($i = 0; $i -lt $TotalSec; $i++)
+						{
+							Write-Progress -Activity "$FunctionName :: VMware Appliance [$($Server.Name)]" `
+										   -Status "Elapsed $i seconds" `
+										   -CurrentOperation "Left $($TotalSec - $i) seconds before $($CmdAPI.action)" `
+										   -PercentComplete ([Math]::Round($i/$TotalSec * 100, 0))
+							Start-Sleep -Milliseconds 980
+						}
+					}
+				}
+				Catch { Write-Verbose "$FunctionName :: Failed to $($CmdAPI.action) the [$($Server.Name)] VMware Appliance" }
+			}
+		}
+	}
+	End { }
+	
+} #EndFunction Stop-VAMIAppliance
