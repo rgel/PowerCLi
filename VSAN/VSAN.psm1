@@ -349,17 +349,24 @@ Function Get-VSANSmartData
     This function retreives S.M.A.R.T. (Self Monitoring, Analysis & Reporting Technology) drive data.
 .PARAMETER VsanCluster
     Specifies a vSAN Cluster object(s), returned by Get-Cluster cmdlet.
+.PARAMETER HideGood
+	If specified, only thresholded attributes returned.
 .EXAMPLE
-	PS C:\> Get-Cluster VSAN-Cluster |Get-VSANSmartData -Verbose
+	PS C:\> Get-Cluster VSAN-Cluster | Get-VSANSmartData -Verbose
 .EXAMPLE
-    PS C:\> Get-Cluster |Get-VSANSmartData |ft -au
+	PS C:\> Get-Cluster | Get-VSANSmartData -HideGood
+.EXAMPLE
+	PS C:\> Get-Cluster | Get-VSANSmartData | ogv -Title 'S.M.A.R.T Data'
 .NOTES
-	Idea        :: William Lam @lamw
-	Edited by   :: Roman Gelman @rgelman75
-	Requirement :: PowerCLI 6.5.1, VSAN 6.6
-	Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
+   Idea        :: William Lam @lamw
+   Edited by   :: Roman Gelman @rgelman75
+   Requirement :: PowerCLI 6.5.1, PowerShell 4.0, VSAN 6.6
+   Version 1.0 :: 26-Apr-2017 :: [Release] :: Publicly available
+   Version 1.1 :: 08-Jan-2019 :: [Bugfix] :: Blank statistics returned
+   Version 1.2 :: 09-Jan-2019 :: [Change] :: Added a lot of new properties
+   Version 1.3 :: 10-Jan-2019 :: [Change] :: Added -HideGood parameter
 .LINK
-	http://www.virtuallyghetto.com/2017/04/smart-drive-data-now-available-using-vsan-management-6-6-api.html
+   http://www.virtuallyghetto.com/2017/04/smart-drive-data-now-available-using-vsan-management-6-6-api.html
 #>
 	
 	[CmdletBinding()]
@@ -367,6 +374,8 @@ Function Get-VSANSmartData
 		[Parameter(Mandatory, ValueFromPipeline)]
 		[Alias("Cluster")]
 		[VMware.VimAutomation.ViCore.Types.V1.Inventory.Cluster]$VsanCluster
+		 ,
+		[switch]$HideGood
 	)
 	
 	Begin
@@ -379,21 +388,50 @@ Function Get-VSANSmartData
 		{
 			$results = $vchs.VsanQueryVcClusterSmartStatsSummary($VsanCluster.Id)
 			
-			foreach ($VMHost in $results)
+			foreach ($VMHost in ($results | sort Hostname))
 			{
-				foreach ($SmartStat in ($VMHost.SmartStats | ? {$null -ne $_.Stats }))
+				$Host = Get-VMHost $VMHost.Hostname -Verbose:$false
+				$VMHostName = if ($VMHost.Hostname -match '[a-zA-Z]') { [regex]::Match($VMHost.Hostname, '^(.+?)(\.|$)').Groups[1].Value } else { $VMHost.Hostname }
+				
+				foreach ($SmartStat in $VMHost.SmartStats.Where{ $null -ne $_.Stats })
 				{
-					foreach ($stat in $SmartStat)
+					$DiskInfo = $Host.StorageInfo.ExtensionData.StorageDeviceInfo.ScsiLun.Where{ $_.CanonicalName -eq $SmartStat.Disk }
+					
+					foreach ($Stat in $SmartStat.Stats.Where{ $_.Threshold -ne $null })
 					{
-						[pscustomobject]@{
-							Cluster = $VsanCluster.Name
-							VMHost = $VMHost.Hostname
-							Disk = $SmartStat.Disk
-							Parameter = $stat.Parameter
-							Value = $stat.Value
-							Threshold = $stat.Threshold
-							Worst = $stat.Worst
+						$ParameterType = if ($Stat.Threshold -ne 0)
+						{
+							'Critical'
+							$IsFailed = if ($Stat.Worst -le $Stat.Threshold) { $true } else { $false }
 						}
+						else
+						{
+							'Info'
+							$IsFailed = $false
+						}
+						
+						$Healthy = if ($Stat.Value -ne 100) { [math]::Round($Stat.Value * 100 / (253 - $Stat.Threshold), 0) } else { 100 }
+						
+						$return = [pscustomobject]@{
+							Cluster = $VsanCluster.Name
+							VMHost = $VMHostName
+							Disk = $SmartStat.Disk
+							IsSSD = $DiskInfo.SSD
+							DiskModel = $DiskInfo.Model
+							DiskState = $DiskInfo.OperationalState
+							Attribute = (Get-Culture).TextInfo.ToTitleCase(($Stat.Parameter -replace 'smart', $null))
+							Type = $ParameterType
+							Value = $Stat.Value
+							Worst = $Stat.Worst
+							Threshold = $Stat.Threshold
+							'Health%' = $Healthy
+							DiskFail = $IsFailed
+						}
+						if ($HideGood)
+						{
+							if ($return.DiskFail) { $return }
+						}
+						else { $return }
 					}
 				}
 			}
