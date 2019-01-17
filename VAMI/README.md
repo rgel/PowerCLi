@@ -28,7 +28,7 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |6|[<b>Get-VAMIStorageUsed/Start-VAMIDiskResize</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get OS partition usage & Resize partition|
 |7|[<b>Get-VAMINetwork</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get networking info|
 |8|[<b>Get-VAMIPerformance</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get CPU% & Memory% usage|
-|9|[<b>Get-VAMIService/Restart-VAMIService/Start-VAMIService/Stop-VAMIService</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get & control services' state|
+|9|[<b>Get-VAMIService/Restart-VAMIService/Start-VAMIService/Stop-VAMIService</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|<b>`Update!`</b>Get & control services' state|
 |10|[<b>Get-VAMIStatsList</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get available monitoring metrics|
 |11|[<b>Get-VAMITime</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get current Time and NTP info|
 |12|[<b>Get-VAMIUser/New-VAMIUser/Remove-VAMIUser</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Manipulate local users|
