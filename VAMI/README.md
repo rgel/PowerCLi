@@ -33,4 +33,4 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |11|[<b>Get-VAMITime</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Get current Time and NTP info|
 |12|[<b>Get-VAMIUser/New-VAMIUser/Remove-VAMIUser</b>](https://ps1code.com/2017/05/11/vami-powercli-module)|Manipulate local users|
 |13|<b>Stop-VAMIAppliance</b>|`New!`Shutdown/Reboot VMware Appliance|
-|14|<b>Suspend-VAMIShutdown</b>|_`New!`_Cancel pending VMware Appliance reboot/shutdown|
+|14|<b>Suspend-VAMIShutdown</b>|`<b>New!</b>`Cancel pending VMware Appliance reboot/shutdown|
