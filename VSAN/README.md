@@ -30,3 +30,5 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |8|[<b>Get-VSANHealthSummary</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Fetch VSAN Cluster Health status|
 |9|[<b>Invoke-VSANHealthCheck</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Run VSAN Cluster Health Test|
 |10|[<b>Get-VSANCapability</b>](https://ps1code.com/2017/07/19/vsan-capabilities)|Get VSAN capabilities|
+|11|<b>Get-VSANUsage</b>|Get VSAN Datastore usage. [Idea](https://www.virtuallyghetto.com/2018/06/retrieving-detailed-per-vm-space-utilization-on-vsan.html) by William Lam|
+|12|<b>Get-VSANLimit</b>|Get VSAN Cluster limits. [Idea](http://www.virtuallyghetto.com/2017/06/how-to-convert-vsan-rvc-commands-into-powercli-andor-other-vsphere-sdks.html) by William Lam|
