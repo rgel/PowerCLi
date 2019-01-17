@@ -25,10 +25,10 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |3|[<b>Get-VSANHealthCheckGroup</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Get all VSAN Health Check groups. [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
 |4|[<b>Enable-VSANHealthCheckSkipped</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Enable skipped VSAN Health Check(s). [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
 |5|[<b>Disable-VSANHealthCheck</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Disable VSAN Health Check(s). [Idea](http://www.virtuallyghetto.com/2017/04/managing-silencing-vsan-health-checks-using-powercli.html#more-22754) by William Lam|
-|6|[<b>Get-VSANSmartData</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Get SMART drive data. [Idea](http://www.virtuallyghetto.com/2017/04/smart-drive-data-now-available-using-vsan-management-6-6-api.html) by William Lam|
+|6|[<b>Get-VSANSmartData</b>](https://ps1code.com/2017/05/08/vsan-health-check)|<b>`Update!`</b>Get S.M.A.R.T drive data. [Idea](http://www.virtuallyghetto.com/2017/04/smart-drive-data-now-available-using-vsan-management-6-6-api.html) by William Lam|
 |7|[<b>Get-VSANVersion</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Get VSAN health service version. [Idea](http://www.virtuallyghetto.com/2017/04/getting-started-wthe-new-powercli-6-5-1-get-vsanview-cmdlet.html) by William Lam|
 |8|[<b>Get-VSANHealthSummary</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Fetch VSAN Cluster Health status|
 |9|[<b>Invoke-VSANHealthCheck</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Run VSAN Cluster Health Test|
 |10|[<b>Get-VSANCapability</b>](https://ps1code.com/2017/07/19/vsan-capabilities)|Get VSAN capabilities|
-|11|<b>Get-VSANUsage</b>|Get VSAN Datastore usage. [Idea](https://www.virtuallyghetto.com/2018/06/retrieving-detailed-per-vm-space-utilization-on-vsan.html) by William Lam|
-|12|<b>Get-VSANLimit</b>|Get VSAN Cluster limits. [Idea](http://www.virtuallyghetto.com/2017/06/how-to-convert-vsan-rvc-commands-into-powercli-andor-other-vsphere-sdks.html) by William Lam|
+|11|<b>Get-VSANUsage</b>|<b>`New!`</b>Get VSAN Datastore usage. [Idea](https://www.virtuallyghetto.com/2018/06/retrieving-detailed-per-vm-space-utilization-on-vsan.html) by William Lam|
+|12|<b>Get-VSANLimit</b>|<b>`New!`</b>Get VSAN Cluster limits. [Idea](http://www.virtuallyghetto.com/2017/06/how-to-convert-vsan-rvc-commands-into-powercli-andor-other-vsphere-sdks.html) by William Lam|
