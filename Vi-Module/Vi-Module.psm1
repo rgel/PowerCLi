@@ -425,7 +425,7 @@ Function Set-PowerCLiTitle
 	Write connected VI servers info to the PowerCLi window title bar.
 .DESCRIPTION
 	This function writes connected VI servers info to the PowerCLi window/console title bar
-	in the following format: [VIServerName :: ProductType (VCenter/VCSA/ESXi/SRM/VAMI)-ProductVersion].
+	in the following format: [VIServerName :: ProductType (VCenter/VCSA/ESXi/SRM/VAMI/NSX)-ProductVersion].
 .EXAMPLE
 	PS C:\> Connect-VIServer VC1, VC2 -WarningAction SilentlyContinue
 	PS C:\> Set-PowerCLiTitle
@@ -435,12 +435,16 @@ Function Set-PowerCLiTitle
 .EXAMPLE
 	PS C:\> Connect-CisServer VCSA1, VCSA2 -WarningAction SilentlyContinue
 	PS C:\> Set-PowerCLiTitle
+.EXAMPLE
+	PS C:\> Connect-NsxServer -NsxServer nsxmgr1 -Credential $credNSX -VICredential $credVC
+	PS C:\> Set-PowerCLiTitle
 .NOTES
 	Author      :: Roman Gelman @rgelman75
 	Version 1.0 :: 17-Nov-2015 :: [Release] :: Publicly available
 	Version 1.1 :: 22-Aug-2016 :: [Improvement] :: Added support for SRM servers. Now the function differs berween VCSA and Windows VCenters. Minor visual changes
 	Version 1.2 :: 11-Jan-2017 :: [Change] :: Now this is advanced function, minor code changes
 	Version 1.3 :: 25-Oct-2017 :: [Improvement] :: Added support for VAMI servers, some code optimizations
+	Version 1.4 :: 01-Nov-2018 :: [Improvement] :: Added support for NSX Managers, requires PowerNSX module, -Verbose parameter supported
 .LINK
 	https://ps1code.com/2015/11/17/set-powercli-title
 #>
@@ -454,6 +458,7 @@ Function Set-PowerCLiTitle
 		$VIS = $global:DefaultVIServers | ? { $_.IsConnected } | sort -Descending ProductLine, Name
 		$SRM = $global:DefaultSrmServers | ? { $_.IsConnected } | sort -Descending ProductLine, Name
 		$CIS = $global:DefaultCisServers | ? { $_.IsConnected } | sort Name
+		$NSX = $global:DefaultNSXConnection | sort Server
 	}
 	Process
 	{
@@ -462,7 +467,8 @@ Function Set-PowerCLiTitle
 		{
 			$VIProduct = switch -exact ($ConnectedVIS.ProductLine)
 			{
-				'vpx' { if ($ConnectedVIS.ExtensionData.Content.About.OsType -match '^linux') { 'VCSA' } else { 'VCenter' }; Break }
+				'vpx' { if ($ConnectedVIS.ExtensionData.Content.About.OsType -match '^linux') { 'VCSA' }
+					else { 'VCenter' }; Break }
 				'embeddedEsx' { 'ESXi' }
 				Default { $ConnectedVIS.ProductLine }
 			}
@@ -481,11 +487,16 @@ Function Set-PowerCLiTitle
 		
 		### VAMI Servers ###
 		$CIS | % { $Header += "[$($_.Name) :: VAMI] " }
+		
+		### NSX Managers ###
+		$NSX | % { $Header += "[$($_.Server) :: NSX-$($_.Version)] " }
 	}
 	End
 	{
-		if (!$VIS -and !$SRM -and !$CIS) { $Header = ':: Not connected to any VI Servers ::' }
+		if (!$VIS -and !$SRM -and !$CIS -and !$NSX) { $Header = ':: Not connected to any VI Servers ::' }
 		$Host.UI.RawUI.WindowTitle = $Header
+		$Header -replace '\[|\s\[', $null -split '\]' | % { Write-Verbose $_ }
+		
 	}
 	
 } #EndFunction Set-PowerCLiTitle
@@ -916,8 +927,9 @@ Function Get-Version
 	[System.Management.Automation.PSCustomObject] PSObject collection.
 .NOTES
 	Author      :: Roman Gelman @rgelman75
-	Version 1.0 :: 23-May-2016 :: Release :: Publicly available
-	Version 1.1 :: 03-Aug-2016 :: Bugfix :: VDSwitch data type changed. Function Get-VersionVDSwitch edited
+	Version 1.0 :: 23-May-2016 :: [Release] :: Publicly available
+	Version 1.1 :: 03-Aug-2016 :: [Bugfix] :: VDSwitch data type changed. Function Get-VersionVDSwitch edited
+	Version 1.2 :: 24-Jan-2019 :: [Bugfix] :: Uncorrect PowerCLI version for post 6.5.1 binary modules
 .LINK
 	https://ps1code.com/2016/05/25/get-version-powercli
 #>
@@ -1087,19 +1099,30 @@ Function Get-Version
 			$ErrorActionPreference = 'Stop'
 			Try
 			{
-				$PCLi = Get-PowerCLIVersion
-				$PCLiVer = [string]$PCLi.Major + '.' + [string]$PCLi.Minor + '.' + [string]$PCLi.Revision + '.' + [string]$PCLi.Build
+				if ($CoreVersion = (Get-Module VMware.VimAutomation.Core))
+				{
+					if ($CoreVersion.Version.ToString() -lt '6.5.2')
+					{
+						$NativeVersion = Get-PowerCLIVersion -WarningAction SilentlyContinue
+						$FullVersion = $NativeVersion.UserFriendlyVersion
+						$Version = [version]"$($NativeVersion.Major).$($NativeVersion.Minor).$($NativeVersion.Revision).$($NativeVersion.Build)"
+					}
+					else
+					{
+						$FullVersion = "$($CoreVersion.Name) $($CoreVersion.Version)"
+						$Version = $CoreVersion.Version
+					}
+				}
 				
-				$Properties = [ordered]@{
+				[pscustomobject]@{
 					ProductName = $env:COMPUTERNAME
 					ProductType = 'VMware vSphere PowerCLi'
-					FullVersion = $PCLi.UserFriendlyVersion
-					Version = [version]$PCLiVer
+					FullVersion = $FullVersion
+					Version = $Version
 				}
-				$Object = New-Object PSObject -Property $Properties
-				$Object
 			}
 			Catch { }
+			
 		} #EndFunction Get-VersionPowerCLi
 		
 		Function Get-VersionVCenter
