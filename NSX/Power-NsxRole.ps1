@@ -26,7 +26,7 @@ Function Get-NsxRoleDisplayName
 	Version 1.0 :: 02-Dec-2018 :: [Release] :: Publicly available
 	Version 1.1 :: 03-Dec-2018 :: [Change] :: Two new roles are introduced in NSX 6.4.2 (Security & Network Engineer)
 .LINK
-	https://ps1code.com/
+	https://ps1code.com/2019/01/28/nsx-manager-roles-powernsx
 #>
 	
 	Param (
@@ -92,7 +92,7 @@ Function Add-NsxEntityAccessScope
 	Dependency  :: PowerNSX Module
 	Version 1.0 :: 04-Dec-2018 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/
+	https://ps1code.com/2019/01/28/nsx-manager-roles-powernsx
 #>
 	
 	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess, DefaultParameterSetName = 'USR')]
@@ -236,7 +236,7 @@ Function Remove-NsxEntityRoleAssignment
 	Dependency  :: PowerNSX Module
 	Version 1.0 :: 03-Dec-2018 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/
+	https://ps1code.com/2019/01/28/nsx-manager-roles-powernsx
 #>
 	
 	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess, DefaultParameterSetName = 'USR')]
@@ -330,7 +330,7 @@ Function Add-NsxEntityRoleAssignment
 	Dependency  :: PowerNSX Module
 	Version 1.0 :: 03-Dec-2018 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/
+	https://ps1code.com/2019/01/28/nsx-manager-roles-powernsx
 #>
 	
 	[CmdletBinding(ConfirmImpact = 'High', SupportsShouldProcess, DefaultParameterSetName = 'USR')]
@@ -455,7 +455,7 @@ Function Get-NsxEntityRoleAssignment
 	Dependency  :: PowerNSX Module
 	Version 1.0 :: 04-Dec-2018 :: [Release] :: Publicly available
 .LINK
-	https://ps1code.com/
+	https://ps1code.com/2019/01/28/nsx-manager-roles-powernsx
 #>
 	
 	[CmdletBinding()]
