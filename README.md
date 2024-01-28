@@ -1,6 +1,6 @@
-# ![powerclilogo](https://cloud.githubusercontent.com/assets/6964549/17082247/44e1392e-517f-11e6-9cbe-9efa0277deaa.png)VMware PowerCLi Repo
+# ![powerclilogo](https://cloud.githubusercontent.com/assets/6964549/17082247/44e1392e-517f-11e6-9cbe-9efa0277deaa.png)$${\color{blue}VMware \space PowerCLI \space Repo}$$
 
-### SCRIPTS
+### $${\color{green}SCRIPTS}$$
 
 |No|Script|Description|
 |----|----|----|
@@ -9,9 +9,8 @@
 |3|[<b>Find-VC.ps1</b>](https://github.com/rgel/PowerCLi/blob/master/Scripts/Find-VC.ps1)|Search VCenter VM throw direct connection to group of ESXi hosts|
 |4|[<b>Power-NsxRole.ps1</b>](https://github.com/rgel/PowerCLi/blob/master/NSX)|Manage `NSX Manager Roles` leveraging [PowerNSX](https://github.com/vmware/powernsx) and NSX API|
 
-
 ##
-### MODULES
+### $${\color{green}MODULES}$$
 
 |No|Module|Description|
 |----|----|----|
