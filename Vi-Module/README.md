@@ -4,7 +4,7 @@
 > PowerShell `5` or above is required\
 > To check, type the following: `$PSVersionTable.PSVersion.Major`
 
-To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories
+To install this module, drop the entire `Vi-Module` folder into one of your module directories
 
 The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable
 
