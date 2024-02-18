@@ -1,22 +1,24 @@
-# ![vsan-256](https://user-images.githubusercontent.com/6964549/49511294-6e58e280-f893-11e8-8f41-f024dd5e9d63.png)VMware VSAN Management Module
+# ![vsan-256](https://user-images.githubusercontent.com/6964549/49511294-6e58e280-f893-11e8-8f41-f024dd5e9d63.png)$${\color{green}VMware \space VSAN \space Management \space Module}$$
 
-<ins>Requirements:</ins> PowerShell 3 or above. To check, type the following command: `$PSVersionTable.PSVersion.Major`.
+> [!NOTE]
+> PowerShell `3` or above is required\
+> To check, type the following: `$PSVersionTable.PSVersion.Major`
 
-To install this module, drop the entire '<b>VSAN</b>' folder into one of your module directories.
+To install this module, drop the entire '<b>VSAN</b>' folder into one of your module directories
 
-The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable.
+The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable
 
 To make it look better, split the paths in this manner: `$env:PSModulePath -split ';'`
 
-The default per-user module path is: `"$env:HOMEDRIVE$env:HOMEPATH\Documents\WindowsPowerShell\Modules"`.
+The default per-user module path is: `"$env:HOMEDRIVE$env:HOMEPATH\Documents\WindowsPowerShell\Modules"`
 
-The default computer-level module path is: `"$env:windir\System32\WindowsPowerShell\v1.0\Modules"`.
+The default computer-level module path is: `"$env:windir\System32\WindowsPowerShell\v1.0\Modules"`
 
-To use the module, type following command: `Import-Module VSAN -Force -Verbose`.
+To use the module, type following command: `Import-Module VSAN -Force -Verbose`
 
-To see the commands imported, type `Get-Command -Module VSAN`.
+To see the commands imported, type `Get-Command -Module VSAN`
 
-For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [-Online][-Examples]`.
+For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [-Online][-Examples]`
 
 |No|Cmdlet|Description|
 |----|----|----|
@@ -30,5 +32,5 @@ For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [
 |8|[<b>Get-VSANHealthSummary</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Fetch VSAN Cluster Health status|
 |9|[<b>Invoke-VSANHealthCheck</b>](https://ps1code.com/2017/05/08/vsan-health-check)|Run VSAN Cluster Health Test|
 |10|[<b>Get-VSANCapability</b>](https://ps1code.com/2017/07/19/vsan-capabilities)|Get VSAN capabilities|
-|11|<b>Get-VSANUsage</b>|<b>`New!`</b>Get VSAN Datastore usage. [Idea](https://www.virtuallyghetto.com/2018/06/retrieving-detailed-per-vm-space-utilization-on-vsan.html) by William Lam|
-|12|<b>Get-VSANLimit</b>|<b>`New!`</b>Get VSAN Cluster limits. [Idea](http://www.virtuallyghetto.com/2017/06/how-to-convert-vsan-rvc-commands-into-powercli-andor-other-vsphere-sdks.html) by William Lam|
+|11|<b>Get-VSANUsage</b>|Get VSAN Datastore usage. [Idea](https://www.virtuallyghetto.com/2018/06/retrieving-detailed-per-vm-space-utilization-on-vsan.html) by William Lam|
+|12|<b>Get-VSANLimit</b>|Get VSAN Cluster limits. [Idea](http://www.virtuallyghetto.com/2017/06/how-to-convert-vsan-rvc-commands-into-powercli-andor-other-vsphere-sdks.html) by William Lam|
