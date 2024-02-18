@@ -4,7 +4,7 @@
 > PowerShell `3` or above is required\
 > To check, type the following: `$PSVersionTable.PSVersion.Major`
 
-To install this module, drop the entire '<b>VAMI</b>' folder into one of your module directories
+To install this module, drop the entire `VAMI` folder into one of your module directories
 
 The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable
 
