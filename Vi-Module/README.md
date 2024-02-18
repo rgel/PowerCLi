@@ -1,22 +1,24 @@
 # ![powercli](https://user-images.githubusercontent.com/6964549/49510073-dc030f80-f88f-11e8-9f9a-e1f0415c7ad2.png)$${\color{green}VMware \space VI \space Automation \space Module}$$
 
-<ins>Requirements:</ins> PowerShell 5 or above. To check, type the following command: `$PSVersionTable.PSVersion.Major`.
+> [!NOTE]
+> PowerShell `5` or above is required\
+> To check, type the following: `$PSVersionTable.PSVersion.Major`
 
-To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories.
+To install this module, drop the entire '<b>Vi-Module</b>' folder into one of your module directories
 
-The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable.
+The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable
 
 To make it look better, split the paths in this manner: `$env:PSModulePath -split ';'`
 
-The default per-user module path is: `"$env:HOMEDRIVE$env:HOMEPATH\Documents\WindowsPowerShell\Modules"`.
+The default per-user module path is: `"$env:HOMEDRIVE$env:HOMEPATH\Documents\WindowsPowerShell\Modules"`
 
-The default computer-level module path is: `"$env:windir\System32\WindowsPowerShell\v1.0\Modules"`.
+The default computer-level module path is: `"$env:windir\System32\WindowsPowerShell\v1.0\Modules"`
 
-To use the module, type following command: `Import-Module Vi-Module -Force -Verbose`.
+To use the module, type following command: `Import-Module Vi-Module -Force -Verbose`
 
-To see the commands imported, type `Get-Command -Module Vi-Module`.
+To see the commands imported, type `Get-Command -Module Vi-Module`
 
-For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [-Online][-Examples]`.
+For help on each individual cmdlet or function, run `Get-Help CmdletName -Full [-Online][-Examples]`
 
 |No|Cmdlet|Description|
 |----|----|----|
