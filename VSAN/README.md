@@ -4,7 +4,7 @@
 > PowerShell `3` or above is required\
 > To check, type the following: `$PSVersionTable.PSVersion.Major`
 
-To install this module, drop the entire '<b>VSAN</b>' folder into one of your module directories
+To install this module, drop the entire `VSAN` folder into one of your module directories
 
 The default PowerShell module paths are listed in the `$env:PSModulePath` environment variable
 
